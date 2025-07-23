@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@whiskeysockets/baileys": "github:whiskeysockets/baileys@6.7.18",
+    "@whiskeysockets/baileys": "github:whiskeysockets/baileys#6.7.18",
     "node-cache": "^5.1.2",
     "async-lock": "^1.4.1",
     "sharp": "^0.32.6",
