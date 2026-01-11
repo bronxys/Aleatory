@@ -1,0 +1,3 @@
+ if (A && !isGroup) return { true: true, txt: Res_SoGrupo };
+        if (B && !isGroupAdmins) return { true: true, txt: Res_SoAdm };
+        if (C && !isBotGroupAdmins) return { true: true, txt: Res_BotADM };
