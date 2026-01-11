@@ -1,16 +1,15 @@
 {
   "name": "aleatory-md",
-  "description": "Sempre buscando melhorar, qualquer dúvida chama lá no WhatsApp: +55 81 9892-3680",
+  "description": "Sempre buscando melhorar, qualquer dúvida chama lá no WhatsApp: +55 12 97898-6457",
   "version": "5.0",
   "scripts": {
-    "start": "ulimit -c 0 && npm i && bash start.sh sim",
+    "start": "node iniciar.js",
     "test": "node iniciar.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.21",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "async-lock": "^1.4.1",
     "axios": "^0.21.1",
-    "baileys": "^6.7.21",
     "cfonts": "^2.10.0",
     "cheerio": "^1.0.0-rc.12",
     "colors": "^1.4.0",
