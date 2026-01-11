@@ -7,10 +7,10 @@
     "test": "node iniciar.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^7.0.0-rc.8",
+    "@whiskeysockets/baileys": "^6.7.21",
     "async-lock": "^1.4.1",
     "axios": "^0.21.1",
-    "baileys": "^7.0.0-rc.9",
+    "baileys": "^6.7.21",
     "cfonts": "^2.10.0",
     "cheerio": "^1.0.0-rc.12",
     "colors": "^1.4.0",
