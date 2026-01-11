@@ -1,12 +1,13 @@
 {
   "name": "aleatory-md",
   "description": "Sempre buscando melhorar, qualquer dúvida chama lá no WhatsApp: +55 81 9892-3680",
-  "version": "4.7",
+  "version": "5.0",
   "scripts": {
     "start": "ulimit -c 0 && npm i && bash start.sh sim",
     "test": "node iniciar.js"
   },
   "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc.8",
     "async-lock": "^1.4.1",
     "axios": "^0.21.1",
     "baileys": "^7.0.0-rc.9",
