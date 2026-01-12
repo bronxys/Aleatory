@@ -120,6 +120,7 @@ const menu = (prefix, NomeDoBot, sender) => {
 │ 𒁂〆 ${prefix}aptoide_pesquisa
 │ 𒁂〆 ${prefix}pesquisar
 │ 𒁂〆 ${prefix}limpar
+│ 𒁂〆 ${prefix}revelar
 └──────────────────
 
 ╭──────────────────╮
@@ -152,6 +153,7 @@ const adms = (prefix, sender) => {
 │ 𒁂〆 ${prefix}simih
 │ 𒁂〆 ${prefix}sorteio
 │ 𒁂〆 ${prefix}sorteionumeros
+│ 𒁂〆 ${prefix}soadm
 │ 𒁂〆 ${prefix}sorte
 │ 𒁂〆 ${prefix}atividades
 │ 𒁂〆 ${prefix}multiprefixo
