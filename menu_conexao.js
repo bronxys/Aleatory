@@ -122,7 +122,7 @@ async function showSystemInfo() {
     
     // Baileys
     try {
-      require('baileys');
+      require('@whiskeysockets/baileys');
       console.log(`  ${colors.green}${symbols.check}${colors.reset} Baileys: ${colors.brightWhite}v7.0+ Instalado${colors.reset}`);
     } catch {
       console.log(`  ${colors.red}${symbols.cross}${colors.reset} Baileys: ${colors.red}Não instalado${colors.reset}`);

@@ -18,7 +18,7 @@ const {
   delay,
   getLastMessageInChat,
   BufferJSON,
-} = require("baileys");
+} = require("@whiskeysockets/baileys");
 
 //_-_-_-__-_-_-_-_-_-MODULOS/FUNÇÕES-_-_-_-_-_-__-_-_-_-_-\\
 
@@ -794,7 +794,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       }
 
       if (upsert.type === "append") return;
-      const baileys = require("baileys");
+      const baileys = require("@whiskeysockets/baileys");
       const type = baileys.getContentType(info.message);
       const content = JSON.stringify(info.message);
       const pushname = info.pushName ? info.pushName : "";

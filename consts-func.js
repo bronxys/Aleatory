@@ -18,7 +18,7 @@ const {
   Browsers,
   delay,
   MessageRetryMap,
-} = require("baileys");
+} = require("@whiskeysockets/baileys");
 
 // MÓDULOS ABAIXO..
 

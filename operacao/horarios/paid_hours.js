@@ -131,7 +131,7 @@ function rmPaid(from, idpaid) {
   savePaid();
 }
 
-const { prepareWAMessageMedia } = require(`baileys`);
+const { prepareWAMessageMedia } = require(`@whiskeysockets/baileys`);
 
 const paidgrouplinkpath = `./operacao/horarios/grouplink.json`;
 
