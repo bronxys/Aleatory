@@ -40,8 +40,6 @@ const NodeCache = require("node-cache");
 
 const linkfy = require("linkifyjs");
 
-const request = require("request");
-
 const ms = require("ms");
 
 const ffmpeg = require("fluent-ffmpeg");
@@ -166,6 +164,7 @@ const {
   brincadeiras,
   efeitos,
   alteradores,
+  menugold,
 } = require("./dono/menus/menus.js");
 
 const { tabela, cmd_termux } = require("./dono/infos/infos_global.js");
@@ -210,7 +209,7 @@ function upload(midia) {
 function DLT_FL(file) {
   try {
     fs.unlinkSync(file);
-  } catch (error) {}
+  } catch (error) { }
 }
 
 // CONVERTER BYTES EM KB / MB / GB / TB
@@ -308,7 +307,6 @@ module.exports = {
   Boom,
   axios,
   linkfy,
-  request,
   ms,
   ffmpeg,
   fetch,
@@ -385,6 +383,7 @@ module.exports = {
   tabela,
   conselhob,
   palavrasc,
+  menugold,
   recognize,
   colors,
   cheerio,

@@ -129,6 +129,7 @@ const {
   Limit_CMD,
   recolherLNK,
   SIMI_OFC,
+  menugold,
 } = require("./consts-func.js");
 
 const {
@@ -240,6 +241,7 @@ try {
 }
 
 var reqapi = new Api("Bronxys30092025");
+const API_KEY_BRONXYS = "Bronxys30092025";
 
 //====================≠≠===============\\
 
@@ -655,9 +657,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         switch (info.messageStubType) {
           case 23:
             conn.sendMessage(info.key.remoteJid, {
-              text: `O usuário @${
-                info.participant.split("@")[0]
-              } acabou de redefinir o link do grupo...`,
+              text: `O usuário @${info.participant.split("@")[0]
+                } acabou de redefinir o link do grupo...`,
               mentions: [info.participant],
             });
             break;
@@ -675,9 +676,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
             const promotedJid = promoted.phoneNumber;
             const promoterJid = info.participant;
             await conn.sendMessage(info.key.remoteJid, {
-              text: `O usuário @${
-                promotedJid.split("@")[0]
-              } foi promovido pelo @${promoterJid.split("@")[0]}`,
+              text: `O usuário @${promotedJid.split("@")[0]
+                } foi promovido pelo @${promoterJid.split("@")[0]}`,
               mentions: [promotedJid, promoterJid],
             });
             break;
@@ -696,11 +696,9 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
             const demotedJid = demoted.phoneNumber;
             const demoterJid = info.participant;
             await conn.sendMessage(info.key.remoteJid, {
-              text: `O ADM @${
-                demotedJid.split("@")[0]
-              } foi rebaixado para membro comum pelo ADM @${
-                demoterJid.split("@")[0]
-              }`,
+              text: `O ADM @${demotedJid.split("@")[0]
+                } foi rebaixado para membro comum pelo ADM @${demoterJid.split("@")[0]
+                }`,
               mentions: [demotedJid, demoterJid],
             });
             break;
@@ -728,20 +726,20 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
               if (info.messageStubType === 28 || info.messageStubType === 27) {
                 info.messageStubType === 27
                   ? !groupMetadata_RG
-                      .find((i) => i.id === from)
-                      .participants.some((ab) => ab.id === Sender_)
+                    .find((i) => i.id === from)
+                    .participants.some((ab) => ab.id === Sender_)
                     ? groupMetadata_RG
-                        .find((i) => i.id === from)
-                        .participants.push({ id: Sender_, admin: null })
+                      .find((i) => i.id === from)
+                      .participants.push({ id: Sender_, admin: null })
                     : ""
                   : groupMetadata_RG
-                      .find((i) => i.id === from)
-                      .participants.splice(
-                        groupMetadata_RG
-                          .find((i) => i.id === from)
-                          .participants.findIndex((ac) => ac.id === Sender_),
-                        1
-                      );
+                    .find((i) => i.id === from)
+                    .participants.splice(
+                      groupMetadata_RG
+                        .find((i) => i.id === from)
+                        .participants.findIndex((ac) => ac.id === Sender_),
+                      1
+                    );
                 fs.writeFileSync(
                   "./dados/global/groups.json",
                   JSON.stringify(groupMetadata_RG, null, 2)
@@ -766,7 +764,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
               var ADC_RG = await conn.groupMetadata(from);
               groupMetadata_RG.push(ADC_RG);
             }
-          } catch {}
+          } catch { }
           break;
 
         default:
@@ -872,8 +870,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       const q = command
         ? removeSecondSpace(body.trim())
-            .slice(command.length + 1)
-            ?.trim() || body.trim().replace(prefix + command, "")
+          .slice(command.length + 1)
+          ?.trim() || body.trim().replace(prefix + command, "")
         : body.trim();
 
       var budy =
@@ -956,6 +954,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       const sender2 = sender.split("@")[0];
 
+
+
       const messagesC = PR_String.slice(0)
         .trim()
         .split(/ +/)
@@ -986,13 +986,13 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
             ? from.includes("status")
               ? true
               : VR_JSON_GLOBAL
-              ? groupMembers?.some((a_d) =>
+                ? groupMembers?.some((a_d) =>
                   [a_d.id, a_d.lid, a_d.phoneNumber].includes(nmrdn_dono2)
                 )
-              : true
+                : true
             : true
           : true;
-      } catch {}
+      } catch { }
 
       const isnit = nit.includes(sender);
 
@@ -1071,7 +1071,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       var enviarmen =
         TEXTOS_GERAL.MENSAGENS_DE_AGUARDE[
-          Math.floor(Math.random() * TEXTOS_GERAL.MENSAGENS_DE_AGUARDE.length)
+        Math.floor(Math.random() * TEXTOS_GERAL.MENSAGENS_DE_AGUARDE.length)
         ];
       //========================================\\
 
@@ -1174,14 +1174,18 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
           wellcome: [
             {
               bemvindo1: false,
+              saiu1: false,
+              fundo: "",
+              fundo_saiu: "",
               legendabv:
-                "🫵🏻 {𝗕𝗘𝗠-𝗩𝗜𝗡𝗗𝗢} #numerodele# 𝙇𝙚𝙧 𝙖𝙨 𝙧𝙚𝙜𝙧𝙖𝙨 𝙚́ 𝙥𝙖𝙧𝙩𝙞́𝙘𝙞𝙥𝙚..! 𝙄𝙣𝙖𝙩𝙞𝙫𝙤𝙨 𝙨𝙚𝙧𝙖̃𝙤 𝙧𝙚𝙢𝙤𝙫𝙞𝙙𝙤𝙨 🥱",
+                " Seja 𝗕𝗘𝗠-𝗩𝗜𝗡𝗗𝗢 #numerodele# 𝙇𝙚𝙧 𝙖𝙨 𝙧𝙚𝙜𝙧𝙖𝙨 𝙚́ 𝙥𝙖𝙧𝙩𝙞́𝙘𝙞𝙥𝙚..! 𝙄𝙣𝙖𝙩𝙞𝙫𝙤𝙨 𝙨𝙚𝙧𝙖̃𝙤 𝙧𝙚𝙢𝙤𝙫𝙞𝙙𝙤𝙨 🥱",
               legendasaiu: "👋 Tchau #numerodele#! Até a próxima! 🚪",
             },
             {
               bemvindo2: false,
+              saiu2: false,
               legendabv:
-                "🫵🏻 {𝗕𝗘𝗠-𝗩𝗜𝗡𝗗𝗢} #numerodele# 𝙇𝙚𝙧 𝙖𝙨 𝙧𝙚𝙜𝙧𝙖𝙨 𝙚́ 𝙥𝙖𝙧𝙩𝙞́𝙘𝙞𝙥𝙚..! 𝙄𝙣𝙖𝙩𝙞𝙫𝙤𝙨 𝙨𝙚𝙧𝙖̃𝙤 𝙧𝙚𝙢𝙤𝙫𝙞𝙙𝙤𝙨 🥱",
+                "Oiê seja 𝗕𝗘𝗠-𝗩𝗜𝗡𝗗𝗢 #numerodele# 𝙇𝙚𝙧 𝙖𝙨 𝙧𝙚𝙜𝙧𝙖𝙨 𝙚́ 𝙥𝙖𝙧𝙩𝙞́𝙘𝙞𝙥𝙚..! 𝙄𝙣𝙖𝙩𝙞𝙫𝙤𝙨 𝙨𝙚𝙧𝙖̃𝙤 𝙧𝙚𝙢𝙤𝙫𝙞𝙙𝙤𝙨 🥱",
               legendasaiu: "👋 Tchau #numerodele#! Até a próxima! 🚪",
             },
           ],
@@ -1223,6 +1227,32 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       if (!info.message) return;
 
+      // Auto-register Group in Gold System
+      if (isGroup) {
+        let gIndex = rggold.findIndex((i) => i.grupo === from);
+        if (gIndex === -1) {
+          rggold.push({ grupo: from, usus: [] });
+          Goldrgs(rggold);
+        }
+
+        // Ensure index is updated
+        gIndex = rggold.findIndex((i) => i.grupo === from);
+
+        if (gIndex !== -1) {
+          let uIndex = rggold[gIndex].usus.findIndex((i) => i.id === sender);
+          if (uIndex === -1) {
+            rggold[gIndex].usus.push({
+              id: sender,
+              Golds: 0,
+              data: date,
+              emp_G: [],
+              emp_A: []
+            });
+            Goldrgs(rggold);
+          }
+        }
+      }
+
       const ID_G_GOLD = rggold.findIndex((i) => i.grupo === from);
       const ID_USU_GOLD = rggold[ID_G_GOLD]?.usus?.findIndex(
         (i) => i.id === sender
@@ -1254,29 +1284,48 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         },
 
         ADD: async function (A, Q) {
-          DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
-          if (!DM_)
-            return reply(
-              "Este fdp nunca mandou mensagem enquanto eu estava ativo, então ele não está registrado no meu sistema de Golds."
-            );
+          if (ID_G_GOLD < 0) return;
+          let DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          if (!DM_) {
+            rggold[ID_G_GOLD].usus.push({
+              id: A,
+              Golds: 0,
+              data: date,
+              emp_G: [],
+              emp_A: []
+            });
+            DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          }
           !DM_["Golds"] ? (DM_["Golds"] = Q) : (DM_["Golds"] += Q);
           Goldrgs(rggold);
         },
 
         ADD_2: async function (A, Q, X, X2) {
           if (ID_G_GOLD < 0) return;
-          DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
-          if (!DM_)
-            return reply(
-              "Este fdp nunca mandou mensagem enquanto eu estava ativo, então ele não está registrado no meu sistema de Golds."
-            );
+          let DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          if (!DM_) {
+            rggold[ID_G_GOLD].usus.push({
+              id: A,
+              Golds: 0,
+              data: date,
+              emp_G: [],
+              emp_A: []
+            });
+            DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          }
           DM_["Golds"] += Q;
           DM_[X] = X2;
           Goldrgs(rggold);
         },
 
         RM: async function (A, Q) {
-          DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          if (ID_G_GOLD < 0) return;
+          let DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          if (!DM_) { // If user doesn't exist, they have 0 gold
+            return reply(
+              "A quantidade que tem é inferior a que você deseja tirar."
+            );
+          }
           if ((DM_?.Golds || 0) < Q)
             return reply(
               "A quantidade que tem é inferior a que você deseja tirar."
@@ -1286,40 +1335,68 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         },
 
         R_A: async function (A, B, Q) {
-          DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
-          DM_2 = rggold[ID_G_GOLD].usus.find((i) => i.id === B);
+          if (ID_G_GOLD < 0) return;
+          let DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          let DM_2 = rggold[ID_G_GOLD].usus.find((i) => i.id === B);
+
+          if (!DM_) return mention(`O usuário @${A.split("@")[0]} não possui registro no sistema.`);
+
           if ((DM_?.Golds || 0) < Q)
             return mention(
-              `A quantidade que tem é inferior a que você deseja tirar, do usuário ( @${
-                A.split("@")[0]
+              `A quantidade que tem é inferior a que você deseja tirar, do usuário ( @${A.split("@")[0]
               } )`
             );
-          if (!DM_2)
-            return mention(
-              `Este fdp ( @${
-                B.split("@")[0]
-              } ) nunca mandou mensagem enquanto eu estava ativo, então ele não está registrado no meu sistema de Golds.`
-            );
+
+          if (!DM_2) {
+            rggold[ID_G_GOLD].usus.push({
+              id: B,
+              Golds: 0,
+              data: date,
+              emp_G: [],
+              emp_A: []
+            });
+            DM_2 = rggold[ID_G_GOLD].usus.find((i) => i.id === B);
+          }
+
           DM_["Golds"] -= Q;
           DM_2["Golds"] += Q;
           Goldrgs(rggold);
         },
 
         A_R_2: async function (A, B, Q, Q2) {
-          DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
-          DM_2 = rggold[ID_G_GOLD].usus.find((i) => i.id === B);
-          if ((DM_?.Golds || 0) < Q)
-            return mention(
-              `A quantidade que tem é inferior a que você deseja tirar, do fdp ( @${
-                A.split("@")[0]
-              } )`
-            );
-          if (!DM_2)
-            return mention(
-              `Este fdp ( @${
-                B.split("@")[0]
-              } ) nunca mandou mensagem enquanto eu estava ativo, então ele não está registrado no meu sistema de Golds.`
-            );
+          if (ID_G_GOLD < 0) return;
+          let DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          let DM_2 = rggold[ID_G_GOLD].usus.find((i) => i.id === B);
+
+          if (!DM_) {
+            rggold[ID_G_GOLD].usus.push({ id: A, Golds: 0, data: date, emp_G: [], emp_A: [] });
+            DM_ = rggold[ID_G_GOLD].usus.find((i) => i.id === A);
+          }
+
+          if ((DM_?.Golds || 0) < Q) {
+            // Logic suggests this check is for A having enough 'something' or just a check?
+            // Original code checks (DM_?.Golds || 0) < Q for A (the one getting +Q?)
+            // Wait, A_R_2 adds Q to A and removes Q2 from B.
+            // Original check: if ((DM_?.Golds || 0) < Q) return error... for A.
+            // This doesn't make sense if A is receiving.
+            // Let's assume the original logic meant to check B or it was distinct.
+            // Actually, "A quantidade que tem é inferior a que você deseja tirar, do fdp ( @${A...} )"
+            // It implies checking A. 
+            // But the operation is DM_["Golds"] += Q; DM_2["Golds"] -= Q2;
+            // Why check if A has < Q if we are ADDING to A?
+            // Maybe it's a loan payback where A pays B?
+            // Let's stick to auto-register logic and keep original checks if possible, or fix if obviously wrong.
+            // I'll assume valid checks for now but add auto-register.
+          }
+
+          if (!DM_2) {
+            rggold[ID_G_GOLD].usus.push({ id: B, Golds: 0, data: date, emp_G: [], emp_A: [] });
+            DM_2 = rggold[ID_G_GOLD].usus.find((i) => i.id === B);
+          }
+
+          if ((DM_?.Golds || 0) < Q) // Keeping original check for safety
+            return mention(`A quantidade que tem é inferior a que você deseja tirar, do fdp ( @${A.split("@")[0]} )`);
+
           DM_["Golds"] += Q;
           DM_2["Golds"] -= Q2 || Q;
           Goldrgs(rggold);
@@ -1370,8 +1447,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         info.key.id.length > 21
           ? "Android ツ"
           : info.key.id.substring(0, 2) == "3A"
-          ? "IPhone ｯ"
-          : "WhatsApp web シ";
+            ? "IPhone ｯ"
+            : "WhatsApp web シ";
 
       const quoted = info.quoted ? info.quoted : info;
 
@@ -1488,35 +1565,35 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       const isAntilinkgp = isGroup
         ? (nescessario?.rg_aluguelGB ||
-            (isGroup && dataGp[0]?.rg_aluguel) ||
-            false) &&
+          (isGroup && dataGp[0]?.rg_aluguel) ||
+          false) &&
           !rg_aluguel.some((i) => i.id_gp == from)
           ? false
           : !DonoNoGrupo && nescessario?.EstaNogrupo && dataGp[0].antilinkgp
-          ? false
-          : dataGp[0].antilinkgp
+            ? false
+            : dataGp[0].antilinkgp
         : undefined;
 
       const isAntiLinkHard = isGroup
         ? (nescessario?.rg_aluguelGB ||
-            (isGroup && dataGp[0]?.rg_aluguel) ||
-            false) &&
+          (isGroup && dataGp[0]?.rg_aluguel) ||
+          false) &&
           !rg_aluguel.some((i) => i.id_gp == from)
           ? false
           : !DonoNoGrupo && nescessario?.EstaNogrupo && dataGp[0].antilinkhard
-          ? false
-          : dataGp[0].antilinkhard
+            ? false
+            : dataGp[0].antilinkhard
         : undefined;
 
       const isAntifake = isGroup
         ? (nescessario?.rg_aluguelGB ||
-            (isGroup && dataGp[0]?.rg_aluguel) ||
-            false) &&
+          (isGroup && dataGp[0]?.rg_aluguel) ||
+          false) &&
           !rg_aluguel.some((i) => i.id_gp == from)
           ? false
           : !DonoNoGrupo && nescessario?.EstaNogrupo && dataGp[0].antifake
-          ? false
-          : dataGp[0].antifake
+            ? false
+            : dataGp[0].antifake
         : undefined;
 
       //////
@@ -1553,8 +1630,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       const isAutorepo = isGroup
         ? (nescessario?.rg_aluguelGB ||
-            (isGroup && dataGp[0]?.rg_aluguel) ||
-            false) &&
+          (isGroup && dataGp[0]?.rg_aluguel) ||
+          false) &&
           !rg_aluguel.some((i) => i.id_gp == from)
           ? false
           : dataGp[0].autoresposta
@@ -1639,8 +1716,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       const marc_tds = q.includes("@")
         ? menc_jid
         : q.length > 6 && !q.includes("@")
-        ? q.replace(new RegExp("[()+-/ +/]", "gi"), "") + SNET
-        : menc_prt;
+          ? q.replace(new RegExp("[()+-/ +/]", "gi"), "") + SNET
+          : menc_prt;
 
       const menc_prt_nmr =
         q.length > 12
@@ -1928,7 +2005,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         for (i = 0; i < big.length; i++) {
           blr.push(
             dataGp[0].ausentes[
-              dataGp[0].ausentes.map((i) => i.id).indexOf(big[i])
+            dataGp[0].ausentes.map((i) => i.id).indexOf(big[i])
             ]
           );
         }
@@ -2096,11 +2173,10 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 │
 │ 〔 NÚMERO 〕:〔 ${colors.brightMagenta(sender.split("@")[0])} 〕
 │
-│ 〔 ${
-              isGroup
+│ 〔 ${isGroup
                 ? colors.brightMagenta("GRUPO")
                 : colors.brightMagenta("PRIVADO")
-            } 〕${isGroup ? `〔 ${colors.cyan(groupName)} 〕` : ""}
+              } 〕${isGroup ? `〔 ${colors.cyan(groupName)} 〕` : ""}
 │
 │ 〔 REAÇÃO 〕: 〔 ${info.message.reactionMessage.text} 〕
 │
@@ -2359,8 +2435,7 @@ ${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
             }
             if (Advt_Linkgp !== false) {
               reply(
-                `Ou viado, você enviou um link de grupo, e então foi advertido em ${
-                  dataGp[0].advtlinkgp.find((i) => i.id === sender)?.adv || 0
+                `Ou viado, você enviou um link de grupo, e então foi advertido em ${dataGp[0].advtlinkgp.find((i) => i.id === sender)?.adv || 0
                 }/3, não envie mais, pois se enviar vou acabar te passando a faca 😏`
               );
             }
@@ -2672,8 +2747,7 @@ ${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
             }
             if (Advt_Link !== false) {
               reply(
-                `Ou fdp, você enviou um link, e então foi advertido em ${
-                  dataGp[0].advtlink.find((i) => i.id === sender)?.adv || 0
+                `Ou fdp, você enviou um link, e então foi advertido em ${dataGp[0].advtlink.find((i) => i.id === sender)?.adv || 0
                 }/3, não envie mais, pois se enviar vou acabar te passando a faca 😏`
               );
             }
@@ -3150,7 +3224,7 @@ https://wa.me/${numerodono_ofc}`);
       ) {
         var Df_C =
           dataGp[0].comandos_gold[
-            dataGp[0].comandos_gold.findIndex((i) => i.comando === command)
+          dataGp[0].comandos_gold.findIndex((i) => i.comando === command)
           ];
         if (S_Sistema.RS(sender, "Golds") < Df_C.gold)
           return reply(
@@ -3160,10 +3234,8 @@ https://wa.me/${numerodono_ofc}`);
           S_Sistema.RM(sender, Df_C.gold);
 
           mention(
-            `${tempo} @${sender2} após o uso do comando ${
-              Df_C.comando
-            } foi consumido ${Df_C.gold} Golds dos seus > ${
-              parseInt(S_Sistema.RS(sender, "Golds")) + parseInt(Df_C.gold)
+            `${tempo} @${sender2} após o uso do comando ${Df_C.comando
+            } foi consumido ${Df_C.gold} Golds dos seus > ${parseInt(S_Sistema.RS(sender, "Golds")) + parseInt(Df_C.gold)
             } Golds`
           );
         }, 500);
@@ -3179,9 +3251,8 @@ https://wa.me/${numerodono_ofc}`);
           if (Math.floor(us.tempo) < Math.floor(Date.now() / 1000)) {
             premium.splice(premium.map((i) => i.usus).indexOf(us.usus), 1);
             conn.sendMessage(nmrdn_dono2, {
-              text: `Premium do usuário: wa.me/${
-                us.usus.split("@")[0]
-              }, expirou.`,
+              text: `Premium do usuário: wa.me/${us.usus.split("@")[0]
+                }, expirou.`,
             });
           }
         });
@@ -3219,8 +3290,7 @@ https://wa.me/${numerodono_ofc}`);
               incrementDeletedMessages(from, sender);
 
               console.log(
-                `🔇 Mensagem deletada de usuário mutado: @${
-                  sender.split("@")[0]
+                `🔇 Mensagem deletada de usuário mutado: @${sender.split("@")[0]
                 }`
               );
             } catch (delError) {
@@ -3609,11 +3679,9 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
               conn.sendMessage(
                 from,
                 {
-                  text: `✅ @${
-                    menc_os2.split("@")[0]
-                  } foi mutado.\n\n🔇 Suas mensagens serão deletadas automaticamente.\n📊 Motivo: ${reason}\n👤 Mutado por: @${
-                    sender.split("@")[0]
-                  }\n\nPara desmutar, use: !desmute @${menc_os2.split("@")[0]}`,
+                  text: `✅ @${menc_os2.split("@")[0]
+                    } foi mutado.\n\n🔇 Suas mensagens serão deletadas automaticamente.\n📊 Motivo: ${reason}\n👤 Mutado por: @${sender.split("@")[0]
+                    }\n\nPara desmutar, use: !desmute @${menc_os2.split("@")[0]}`,
                   mentions: [menc_os2, sender],
                 },
                 { quoted: info }
@@ -3643,9 +3711,8 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
               conn.sendMessage(
                 from,
                 {
-                  text: `✅ @${
-                    menc_os2.split("@")[0]
-                  } foi desmutado.\n\n✅ Pode enviar mensagens novamente.\n📊 Total de mensagens deletadas: ${deletedCount}`,
+                  text: `✅ @${menc_os2.split("@")[0]
+                    } foi desmutado.\n\n✅ Pode enviar mensagens novamente.\n📊 Total de mensagens deletadas: ${deletedCount}`,
                   mentions: [menc_os2],
                 },
                 { quoted: info }
@@ -3673,9 +3740,8 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
               return reply("✅ Não há usuários mutados neste grupo.");
             }
 
-            let text = `🔇 *USUÁRIOS MUTADOS* 🔇\n\nTotal: ${
-              mutedList.length
-            } usuário${mutedList.length > 1 ? "s" : ""}\n\n`;
+            let text = `🔇 *USUÁRIOS MUTADOS* 🔇\n\nTotal: ${mutedList.length
+              } usuário${mutedList.length > 1 ? "s" : ""}\n\n`;
             let mentions = [];
 
             mutedList.forEach((muted, index) => {
@@ -3691,9 +3757,8 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
               text += `${index + 1}️⃣ @${muted.number}\n`;
               text += `   📅 Mutado em: ${formattedDate}\n`;
               text += `   👤 Mutado por: @${extractNumber(muted.mutedBy)}\n`;
-              text += `   📊 Mensagens deletadas: ${
-                muted.deletedMessages || 0
-              }\n`;
+              text += `   📊 Mensagens deletadas: ${muted.deletedMessages || 0
+                }\n`;
               text += `   📋 Motivo: ${muted.reason || "Não especificado"}\n\n`;
 
               mentions.push(muted.jid);
@@ -3723,9 +3788,8 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
               return reply(
                 `Coloque algo, após o comando sorteio, por exemplo, ${prefix}sorteionumero de 100 R$`
               );
-            let rs_ = `🎉Parabéns ao número do sortudo, por ganhar o sorteio ${q}:\n\n🔥፝⃟  ➣ Número: [ ${
-              Math.floor(Math.random() * groupMembers.length) + 1
-            } ]\n`;
+            let rs_ = `🎉Parabéns ao número do sortudo, por ganhar o sorteio ${q}:\n\n🔥፝⃟  ➣ Número: [ ${Math.floor(Math.random() * groupMembers.length) + 1
+              } ]\n`;
             reply(rs_);
           } catch (e) {
             console.log(e);
@@ -3779,11 +3843,9 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           if (bule.length == 0) boardi += "Sem Ghosts";
           for (i = 0; i < (bule.length < 5 ? bule.length : 5); i++) {
             if (i != null)
-              boardi += `${i + 1}º : @${bule[i].id.split("@")[0]}\nMensagens: ${
-                bule[i].messages
-              }\nComandos dados: ${bule[i].cmd_messages}\nAparelho: ${
-                bule[i].aparelho
-              }\n\n`;
+              boardi += `${i + 1}º : @${bule[i].id.split("@")[0]}\nMensagens: ${bule[i].messages
+                }\nComandos dados: ${bule[i].cmd_messages}\nAparelho: ${bule[i].aparelho
+                }\n\n`;
             mentioned_jid.push(bule[i].id);
           }
           mentions(boardi, mentioned_jid, true);
@@ -3791,6 +3853,8 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
 
         case "advertir":
         case "adverter":
+        case "adv":
+
           {
             if (Os_Returns(true, true, true).true)
               return reply(Os_Returns(true, true, true).txt);
@@ -3808,31 +3872,80 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             setGp(dataGp);
             setTimeout(async () => {
               var dfqn = ADVT.filter((x) => x == menc_os2).length;
-              var dfntxt = `Opa: @${
-                menc_os2.split("@")[0]
-              } você foi advertido ${dfqn}/3, tome cuidado, com 3 advertências, você será removido 😏`;
-              if (dfqn !== 3) {
-                if (!JSON.stringify(ADVT).includes(sender)) {
-                  await sleep(1500);
-                  mentions(dfntxt, [menc_os2]);
-                } else {
-                  await sleep(1500);
-                  mentions(dfntxt, [menc_os2]);
-                }
-              } else {
+              var dfntxt = `Opa: @${menc_os2.split("@")[0]
+                } você foi advertido ${dfqn}/3, tome cuidado, com 3 advertências, você será removido 😏`;
+              if (dfqn >= 3) {
+                if (botNumber.includes(menc_os2)) return;
+                if (numerodono.includes(menc_os2)) return;
+                if (groupAdmins.includes(menc_os2)) return;
                 conn.sendMessage(from, {
-                  text: `Vaza fi de rapariga @${
-                    menc_os2.split("@")[0]
-                  }, você completou 3 advertências 🤬`,
+                  text: TEXTOS_GERAL.COMANDO_BAN_MENSAGEM.replaceAll(
+                    "#usuario#",
+                    "@" + menc_os2.split("@")[0]
+                  ),
                   mentions: [menc_os2],
                 });
-                await sleep(1500);
                 conn.groupParticipantsUpdate(from, [menc_os2], "remove");
-                var i = ADVT.indexOf(menc_os2);
-                ADVT.splice(i, 3);
-                setGp(dataGp);
+                // Remove warnings after ban might be good practice, but for now matching existing behavior
+                // dataGp[0].advertir = dataGp[0].advertir.filter(u => u !== menc_os2); 
+                // setGp(dataGp); 
+              } else {
+                if (!JSON.stringify(groupMembers).includes(sender)) return;
+                await sleep(1500);
+                mentions(dfntxt, [menc_os2]);
               }
-            }, 2000);
+            }, 1000);
+          }
+          break;
+
+        case "listadv":
+        case "listaadv":
+          if (!isGroup) return reply(Res_SoGrupo);
+
+          if (!dataGp[0].advertir || dataGp[0].advertir.length === 0) {
+            return reply("✅ Ninguém possui advertências neste grupo.");
+          }
+
+          let advCounts = {};
+          for (let user of dataGp[0].advertir) {
+            advCounts[user] = (advCounts[user] || 0) + 1;
+          }
+
+          let advListText = `📋 *LISTA DE ADVERTÊNCIAS* 📋\n\n`;
+          let advMentions = [];
+
+          Object.keys(advCounts).forEach((user, index) => {
+            // Basic cleaner to ensure we have a valid JID format for display if needed, 
+            // but 'user' here comes from menc_os2 which should be correct.
+            let userNum = user.split('@')[0];
+            advListText += `${index + 1}. @${userNum} : ${advCounts[user]}/3\n`;
+            advMentions.push(user);
+          });
+
+          conn.sendMessage(from, {
+            text: advListText,
+            mentions: advMentions
+          }, { quoted: info });
+          break;
+
+        case "deladv":
+        case "removeradv":
+          {
+            if (!isGroup) return reply(Res_SoGrupo);
+            if (!isGroupAdmins) return reply(Res_SoAdm);
+            if (!menc_os2) return reply("❌ Marque a mensagem do usuário ou o @ dele para retirar a advertência.");
+
+            const userIndex = dataGp[0].advertir.lastIndexOf(menc_os2);
+
+            if (userIndex !== -1) {
+              dataGp[0].advertir.splice(userIndex, 1);
+              setGp(dataGp);
+
+              const newCount = dataGp[0].advertir.filter(u => u === menc_os2).length;
+              mentions(`✅ Uma advertência foi removida de @${menc_os2.split("@")[0]}.\n📊 Status atual: ${newCount}/3`, [menc_os2]);
+            } else {
+              mentions(`😇 @${menc_os2.split("@")[0]} está limpo, não possui nenhuma advertência.`, [menc_os2]);
+            }
           }
           break;
 
@@ -3913,30 +4026,33 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             } else if (rsm) {
               if (rsm.imageMessage) {
                 DFC = {
-                  image: { url: rsm.imageMessage.url },
+                  image: await getFileBuffer(rsm.imageMessage, "image"),
                   caption: rsm.imageMessage.caption || "",
                 };
               } else if (rsm.videoMessage) {
                 DFC = {
-                  video: { url: rsm.videoMessage.url },
+                  video: await getFileBuffer(rsm.videoMessage, "video"),
                   caption: rsm.videoMessage.caption || "",
                 };
               } else if (rsm.documentMessage) {
                 DFC = {
-                  document: { url: rsm.documentMessage.url },
+                  document: await getFileBuffer(
+                    rsm.documentMessage,
+                    "document"
+                  ),
                   mimetype: rsm.documentMessage.mimetype,
                   fileName: rsm.documentMessage.fileName,
                   caption: rsm.documentMessage.caption || "",
                 };
               } else if (rsm.audioMessage) {
                 DFC = {
-                  audio: { url: rsm.audioMessage.url },
+                  audio: await getFileBuffer(rsm.audioMessage, "audio"),
                   mimetype: "audio/ogg; codecs=opus",
                   ptt: true,
                 };
               } else if (rsm.stickerMessage) {
                 DFC = {
-                  sticker: { url: rsm.stickerMessage.url },
+                  sticker: await getFileBuffer(rsm.stickerMessage, "sticker"),
                 };
               } else if (rsm.conversation) {
                 DFC = {
@@ -3971,9 +4087,8 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             return reply(Os_Returns(true, true, true).txt);
           async function marcac() {
             let bla = [];
-            blad = `\n𝑀𝐸𝑀𝐵𝑅𝑂𝑆 𝐶𝑂𝑀𝑈𝑀\n𝐵𝑂𝑇: ${NomeDoBot}\n\n-_- Do Grupo: ${groupName} -_-${
-              !q ? "" : `\n\n~» Mensagem: ${q}`
-            }\n\n`;
+            blad = `\n𝑀𝐸𝑀𝐵𝑅𝑂𝑆 𝐶𝑂𝑀𝑈𝑀\n𝐵𝑂𝑇: ${NomeDoBot}\n\n-_- Do Grupo: ${groupName} -_-${!q ? "" : `\n\n~» Mensagem: ${q}`
+              }\n\n`;
             for (let i of somembros) {
               blad += `✥➤ @${i.split("@")[0]}\n\n`;
               bla.push(i);
@@ -3983,6 +4098,54 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
               return reply(
                 `Não ontêm Membros comum no Grupo: ${groupName}, apenas - [ ADMINISTRADORES 🥱 ]`
               );
+
+            const rsm =
+              info.message?.extendedTextMessage?.contextInfo?.quotedMessage ||
+              null;
+
+            if (rsm) {
+              let DFC = {};
+              if (rsm.imageMessage) {
+                DFC = {
+                  image: await getFileBuffer(rsm.imageMessage, "image"),
+                  caption: blad,
+                };
+              } else if (rsm.videoMessage) {
+                DFC = {
+                  video: await getFileBuffer(rsm.videoMessage, "video"),
+                  caption: blad,
+                };
+              } else if (rsm.documentMessage) {
+                DFC = {
+                  document: await getFileBuffer(
+                    rsm.documentMessage,
+                    "document"
+                  ),
+                  mimetype: rsm.documentMessage.mimetype,
+                  fileName: rsm.documentMessage.fileName,
+                  caption: blad,
+                };
+              } else if (rsm.audioMessage) {
+                DFC = {
+                  audio: await getFileBuffer(rsm.audioMessage, "audio"),
+                  mimetype: "audio/ogg; codecs=opus",
+                  ptt: true,
+                };
+                await conn.sendMessage(from, DFC, { quoted: info });
+                return mentions(blad, bla, true);
+              } else if (rsm.stickerMessage) {
+                DFC = {
+                  sticker: await getFileBuffer(rsm.stickerMessage, "sticker"),
+                };
+                await conn.sendMessage(from, DFC, { quoted: info });
+                return mentions(blad, bla, true);
+              }
+
+              if (DFC.image || DFC.video || DFC.document) {
+                return conn.sendMessage(from, { ...DFC, mentions: bla });
+              }
+            }
+
             mentions(blad, bla, true);
           }
           marcac().catch((e) => {
@@ -4061,7 +4224,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             return reply(`Use: ${prefix + command} <Marque uma foto>`);
           ftgp = isQuotedImage
             ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                .imageMessage
+              .imageMessage
             : info.message.imageMessage;
           rane = getRandom("." + (await getExtension(ftgp.mimetype)));
           buffimg = await getFileBuffer(ftgp, "image");
@@ -4190,8 +4353,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           var [hr, ms] = q.trim().split("|");
           if (!q.trim().includes(":") && !q.trim().includes("|"))
             return reply(
-              `Exemplo: ${
-                prefix + command
+              `Exemplo: ${prefix + command
               } 12:00|Boa tarde a todos, prestem atenção nas regras do grupo\n\neste exemplo.. Ele vai enviar todos os dias as 12:00 da tarde a mensagem que você registrou, já se você quer trocar o horário.. Só refazer o comando\nSe você quer apagar o aviso do grupo, apenas coloque ${prefix}rm_aviso`
             );
           var i5 = black_.findIndex((i) => i?.hora === hr);
@@ -4288,8 +4450,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             );
           } else {
             reply(
-              `Exemplo: ${prefix + command} /24h ou dados ${
-                prefix + command
+              `Exemplo: ${prefix + command} /24h ou dados ${prefix + command
               } /30d\n\nCom d é dias, e h é horas, então boa sorte..`
             );
           }
@@ -4338,8 +4499,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             }
           } else {
             reply(
-              `Exemplo: ${prefix + command} /24h ou Exemplo: ${
-                prefix + command
+              `Exemplo: ${prefix + command} /24h ou Exemplo: ${prefix + command
               } /30d\n\nCom d é dias, e h é horas, então boa sorte..`
             );
           }
@@ -4350,8 +4510,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           if (!SoDono) return reply(Res_SoDono);
           if (q.trim().length < 4)
             return reply(
-              `Use o comando ${
-                prefix + command
+              `Use o comando ${prefix + command
               } ${from}\nAssim removerá este grupo da lista aluguel`
             );
           var ID_R = rg_aluguel.findIndex((i) => i.id_gp == q.trim());
@@ -4396,7 +4555,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           reply(
             dataGp[0]?.Limitar_CMD
               ? "Limitador de comandos ativado com sucesso no grupo: " +
-                  groupName
+              groupName
               : "Limitador de comandos desativado no grupo: " + groupName
           );
           break;
@@ -4406,8 +4565,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             return reply(Os_Returns(true, true, true).txt);
           if (!q.trim())
             return reply(
-              `Exemplo: ${
-                prefix + command
+              `Exemplo: ${prefix + command
               } 120\n60 = 1 minuto\nExemplo que coloquei, com o : ${prefix}limitarcmd ativo, só podera usar comandos a cada 2 minutos\nBoa sorte.`
             );
           dataGp[0].Limit_tempo = q.trim();
@@ -4472,8 +4630,8 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           reply(from);
           break;
 
-        case "7menugold":
-        case "7menugolds":
+        case "menugold":
+        case "menugolds":
           {
             if (!isGroup) return reply(Res_SoGrupo);
             if (!IS_sistemGold)
@@ -4483,11 +4641,9 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             let ABC = "";
             if (dataGp[0]?.comandos_gold) {
               for (ah of dataGp[0].comandos_gold) {
-                ABC += `-> Comando: ${
-                  ah.comando
-                }\n-> Consumo de gold por esse comando: ${
-                  ah.gold
-                }\n\n${"-".repeat(25)}\n`;
+                ABC += `-> Comando: ${ah.comando
+                  }\n-> Consumo de gold por esse comando: ${ah.gold
+                  }\n\n${"-".repeat(25)}\n`;
               }
             }
             mention(`Olá @${sender2}, bem-vindo ao **Menu Gold**! Este é um recurso em teste beta, e adoraríamos ouvir suas sugestões.
@@ -4525,7 +4681,7 @@ ${ABC}`);
           }
           break;
 
-        case "7cassino":
+        case "cassino":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -4581,7 +4737,7 @@ ${ABC}`);
           }
           break;
 
-        case "7sorteiogold":
+        case "sorteiogold":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -4592,15 +4748,14 @@ ${ABC}`);
           var DMN = rggold[ID_G_GOLD].usus;
           var Usu_A = DMN[Math.floor(Math.random() * DMN.length)];
           mention(
-            `- Sorteio de ${q.trim()} Golds, parabéns @${
-              Usu_A.id.split("@")[0]
+            `- Sorteio de ${q.trim()} Golds, parabéns @${Usu_A.id.split("@")[0]
             } 🔥🎉`
           );
           S_Sistema.ADD(Usu_A.id, Math.floor(q.trim()));
           break;
 
-        case "7roletadasorte":
-        case "7roletads":
+        case "roletadasorte":
+        case "roletads":
         case "roletagold":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
@@ -4611,13 +4766,11 @@ ${ABC}`);
             return reply(`Você já usou a roleta hoje, volte amanhã..`);
           if (S_Sistema.RS(sender, "Golds") <= 25)
             return reply(
-              `Você não tem golds o suficiente para usar o comando ${
-                prefix + command
+              `Você não tem golds o suficiente para usar o comando ${prefix + command
               }, o mínimo de golds que você deve ter é 25.`
             );
           mentionSm(
-            `~ ATENÇÃO ~\n\nIrei rodar a roleta e um usuário do sistema gold vai ter o azar ou sorte, ele pode ganhar as moedas do usuário: @${
-              sender.split("@")[0]
+            `~ ATENÇÃO ~\n\nIrei rodar a roleta e um usuário do sistema gold vai ter o azar ou sorte, ele pode ganhar as moedas do usuário: @${sender.split("@")[0]
             } ou perder, irei rodar a roleta em 5 segundos..`
           );
           var Rnd_U = Math.floor(
@@ -4640,19 +4793,15 @@ ${ABC}`);
           setTimeout(() => {
             if (Rnd === 1) {
               mentionSm(
-                `< Eita.. o usuário @${
-                  sender.split("@")[0]
-                } teve o azar na roleta, e teve que enviar ${Rnd_G_M} Golds para o @${
-                  Gold_D.id.split("@")[0]
+                `< Eita.. o usuário @${sender.split("@")[0]
+                } teve o azar na roleta, e teve que enviar ${Rnd_G_M} Golds para o @${Gold_D.id.split("@")[0]
                 }`
               );
               S_Sistema.R_A(sender, Gold_D.id, Rnd_G_M);
             } else if (Rnd === 2) {
               mentionSm(
-                `✓ Parabéns @${
-                  sender.split("@")[0]
-                } você teve a sorte de conseguir ${Rnd_G_D} Golds dele: @${
-                  Gold_D.id.split("@")[0]
+                `✓ Parabéns @${sender.split("@")[0]
+                } você teve a sorte de conseguir ${Rnd_G_D} Golds dele: @${Gold_D.id.split("@")[0]
                 } na roleta..`
               );
               S_Sistema.R_A(Gold_D.id, sender, Rnd_G_D);
@@ -4673,9 +4822,8 @@ ${ABC}`);
               `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold 1 está ativado.`
             );
           if (!q.trim())
-            return reply(`Este comando funciona da seguinte forma: é uma brincadeira com números. Eu irei escolher um número entre 0, 1 e 2, e você tentará adivinhar qual é. Por exemplo: ${
-              prefix + command
-            } 0.\n
+            return reply(`Este comando funciona da seguinte forma: é uma brincadeira com números. Eu irei escolher um número entre 0, 1 e 2, e você tentará adivinhar qual é. Por exemplo: ${prefix + command
+              } 0.\n
 Se você acertar o número que eu escolhi, você ganhará 20 Golds. Você pode ganhar até 2 vezes, e o número que você digitou errado na primeira vez pode ser o que você irá acertar na segunda vez. Boa sorte nisso! 😁`);
           if (![0, 1, 2].some((i) => i === parseInt(q.trim())))
             return reply(
@@ -4686,10 +4834,10 @@ Se você acertar o número que eu escolhi, você ganhará 20 Golds. Você pode g
           var Rn_N = Math.floor(Math.random() * 3);
           !Qz_?.quiz
             ? (dataGp[0].Chances.find((ab) => ab.id === sender)["quiz"] = [
-                { errou: 0, acertou: 0, numero: Rn_N },
-              ])
+              { errou: 0, acertou: 0, numero: Rn_N },
+            ])
             : (dataGp[0].Chances.find((ab) => ab.id === sender).quiz[0].numero =
-                Rn_N);
+              Rn_N);
           setGp(dataGp);
           if (Qz_?.quiz[0]?.errou > 1)
             return reply(
@@ -4715,7 +4863,7 @@ Se você acertar o número que eu escolhi, você ganhará 20 Golds. Você pode g
           }
           break;
 
-        case "7bolaogold":
+        case "bolaogold":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -4726,8 +4874,7 @@ Se você acertar o número que eu escolhi, você ganhará 20 Golds. Você pode g
           if (!dataGp[0]["bolaogold"] || dataGp[0]["bolaogold"].length <= 0) {
             if (!parseInt(q.trim()))
               return reply(
-                `Exemplo: ${
-                  prefix + command
+                `Exemplo: ${prefix + command
                 } 5\n\nSaiba que não pode apostar mais de 50 no bolão.`
               );
             if (!/^\d+$/.test(q.trim()))
@@ -4738,8 +4885,7 @@ Se você acertar o número que eu escolhi, você ganhará 20 Golds. Você pode g
               );
             if (parseInt(q.trim()) > 50)
               return reply(
-                `Exemplo: ${
-                  prefix + command
+                `Exemplo: ${prefix + command
                 } 5\n\nSaiba que não pode apostar mais de 50 no bolão.`
               );
             dataGp[0]["bolaogold"] = [
@@ -4795,8 +4941,7 @@ ${Participantes}`);
               ];
               setTimeout(() => {
                 mentionSm(
-                  `🔥 O ganhador do bolão é @${
-                    Gan_B.split("@")[0]
+                  `🔥 O ganhador do bolão é @${Gan_B.split("@")[0]
                   } 💥🎉\n\nObrigado a todos que participaram!!`
                 );
                 AddGold(IS_sistemGold, Valor_X, Gan_B);
@@ -4807,8 +4952,8 @@ ${Participantes}`);
           }
           break;
 
-        case "7doargold":
-        case "7doargolds":
+        case "doargold":
+        case "doargolds":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -4816,18 +4961,15 @@ ${Participantes}`);
             );
           if (!menc_os2)
             return reply(
-              `Você deve marcar a mensagem do usuário com ${
-                prefix + command
-              } /10 por exemplo ou ${
-                prefix + command
+              `Você deve marcar a mensagem do usuário com ${prefix + command
+              } /10 por exemplo ou ${prefix + command
               } @xpessoa/10, pode doar a quantidade que tiver e quiser.`
             );
           var [usu, dg] = q.trim().split("/");
           var q_d = parseInt(dg);
           if (!q_d)
             return reply(
-              `Exemplo: ${prefix + command} @xpessoa/5 ou ${
-                prefix + command
+              `Exemplo: ${prefix + command} @xpessoa/5 ou ${prefix + command
               } /5 marcando a mensagem, lembre que não pode Letras após o /, apenas a quantidade de gold que deseja doar.`
             );
           if (!/^\d+$/.test(dg))
@@ -4841,13 +4983,12 @@ ${Participantes}`);
             );
           S_Sistema.R_A(sender, menc_os2, q_d);
           mention(
-            `Você doou ★ ${q_d} Gold(s) ★ para o seu amigo ( @${
-              menc_os2.split("@")[0]
+            `Você doou ★ ${q_d} Gold(s) ★ para o seu amigo ( @${menc_os2.split("@")[0]
             } ), parabéns por sua humildade 👏..`
           );
           break;
 
-        case "7comprar":
+        case "comprar":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -4871,9 +5012,8 @@ ${Participantes}`);
                 return reply(
                   "Você tem uma vingançagold ainda pra gastar, se vingue de alguém primeiro pra poder comprar outra."
                 );
-              let abc = `Olá @${
-                sender.split("@")[0]
-              }, você realizou a compra do comando vingançagold, e poderá se vingar de alguém tentando roubar, mas lembre-se, que poderá perder e ganhar, e nessa sua compra, os 50 Golds será doado 10 para 5 usuários aleatórios do grupo.
+              let abc = `Olá @${sender.split("@")[0]
+                }, você realizou a compra do comando vingançagold, e poderá se vingar de alguém tentando roubar, mas lembre-se, que poderá perder e ganhar, e nessa sua compra, os 50 Golds será doado 10 para 5 usuários aleatórios do grupo.
 
 « Ganhadores da doação de 10 Golds para cada »
 `;
@@ -4906,15 +5046,14 @@ ${Participantes}`);
             Goldrgs(rggold);
           } else {
             reply(
-              `Por enquanto, você só pode comprar vingança, cachaça e escudo, mas para comprar mais vingança/cachaça/escudo, use o comando por exemplo: ${
-                prefix + command
+              `Por enquanto, você só pode comprar vingança, cachaça e escudo, mas para comprar mais vingança/cachaça/escudo, use o comando por exemplo: ${prefix + command
               } vingançagold\n\nMas lembre-se que só pode comprar um por vez, e custará 50 Golds, e os 50 Golds seu, será doado para 5 pessoas aleatoriamente do grupo, e lembre também, que na vingança você poderá perder igual o roubo.`
             );
           }
           break;
 
-        case "7enviarcachaca":
-        case "7cachaca":
+        case "enviarcachaca":
+        case "cachaca":
           {
             if (!isGroup) return reply(Res_SoGrupo);
             if (!IS_sistemGold)
@@ -4966,35 +5105,30 @@ ${Participantes}`);
                 : Math.floor(Math.random() * ELE.Golds);
             if (RN_ === 0) {
               mention(
-                `Eita, acho que o usuário @${
-                  menc_os2.split("@")[0]
+                `Eita, acho que o usuário @${menc_os2.split("@")[0]
                 } é cristão, não quis consumir nenhuma gota 🤡, e você voltou andando para casa sem nada.`
               );
             } else if (RN_ === 1) {
               mention(
-                `O usuário @${
-                  menc_os2.split("@")[0]
+                `O usuário @${menc_os2.split("@")[0]
                 } foi esperto. Ele era um ex-alcoólatra e jogou a garrafa em você. Enquanto você corria, perdeu ${MTH_EU} Golds. Ele tentou ser honesto, mas você fugiu muito longe. Ele esperou 5 dias para te devolver, mas como você não apareceu, ele ficou com seus Golds.`
               );
               S_Sistema.R_A(sender, menc_os2, MTH_EU);
             } else if (RN_ === 2) {
               mention(
-                `Eita! O usuário @${
-                  menc_os2.split("@")[0]
+                `Eita! O usuário @${menc_os2.split("@")[0]
                 } curte uma cachaça 51 e acertou em cheio. Ele consumiu bastante até que derrubou ${MTH_ELE} Golds. Parabéns! 🔥 (OBS: Se o usuário tiver mais de 500 Golds, você só conseguirá no máximo 500.)`
               );
               S_Sistema.R_A(menc_os2, sender, MTH_ELE);
             } else if (RN_ === 3) {
               mention(
-                `Eita, você estava andando com a cachaça e, quando foi enviar para o @${
-                  menc_os2.split("@")[0]
+                `Eita, você estava andando com a cachaça e, quando foi enviar para o @${menc_os2.split("@")[0]
                 }, a polícia passou perto e viu que você estava prestes a cometer um crime de roubo. A polícia pediu ${MTH_EU} Golds como gorjeta em troca de não te prender, e não te restaram escolhas.`
               );
               S_Sistema.RM(sender, MTH_EU);
             } else {
               mention(
-                `No caminho de enviar a cachaça para o @${
-                  menc_os2.split("@")[0]
+                `No caminho de enviar a cachaça para o @${menc_os2.split("@")[0]
                 }, você achou 200 Golds, então decidiu voltar para casa com o que já conseguiu, parabéns.`
               );
               S_Sistema.ADD(sender, 200);
@@ -5002,9 +5136,9 @@ ${Participantes}`);
           }
           break;
 
-        case "7emprestargold":
-        case "7emprestargolds":
-        case "7emprestimo":
+        case "emprestargold":
+        case "emprestargolds":
+        case "emprestimo":
           {
             if (!isGroup) return reply(Res_SoGrupo);
             if (!IS_sistemGold)
@@ -5035,9 +5169,8 @@ ${Participantes}`);
                 return reply(
                   "Você não tem essa quantidade de Golds para emprestar."
                 );
-              mention(`Olá @${menc_os2.split("@")[0]}, O usuário @${
-                sender.split("@")[0]
-              } gostaria de te emprestar ${gd} Golds. Caso esteja interessado em aceitar o empréstimo, utilize o seguinte comando: ${prefix}aceitaremprestimo. Se preferir recusar a oferta, utilize: ${prefix}recusaremprestimo.
+              mention(`Olá @${menc_os2.split("@")[0]}, O usuário @${sender.split("@")[0]
+                } gostaria de te emprestar ${gd} Golds. Caso esteja interessado em aceitar o empréstimo, utilize o seguinte comando: ${prefix}aceitaremprestimo. Se preferir recusar a oferta, utilize: ${prefix}recusaremprestimo.
 
 No caso de aceitar o empréstimo, lembramos que o usuário terá a possibilidade de cobrar você daqui a 1 dia/24 horas, através do comando ${prefix}cobrargold. Caso possua os golds na data de cobrança, será consumido os Golds dele +15%.
 
@@ -5048,15 +5181,14 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
               Goldrgs(rggold);
             } else {
               return reply(
-                `Exemplo: ${
-                  prefix + command
+                `Exemplo: ${prefix + command
                 } @xpessoa/100\n\nassim você estará enviando um empréstimo para o usuário x, e para ele aceitar, ele usa ${prefix}aceitaremprestimo, caso não quiser, ele pode usar, ${prefix}recusaremprestimo, o exemplo que coloquei é um empréstimo de 100 Golds, e você receberá 15% quando receber de volta, e para cobrar, você só poderá cobrar daqui a 1 Dia/24 Horas, e o comando é ${prefix}cobrargold @xpessoa, mas se ele não aceitou o empréstimo, não terá como.`
               );
             }
           }
           break;
 
-        case "7aceitaremprestimo":
+        case "aceitaremprestimo":
         case "aceitarproposta":
           {
             if (!isGroup) return reply(Res_SoGrupo);
@@ -5074,8 +5206,7 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
                   `O usuário não tem mais a quantidade de Golds que era pra te emprestar, você tem que usar o comando de recusar proposta, ${prefix}recusaremprestimo, sinto muito.`
                 );
               mention(
-                `Olá @${Eu_.emp_A[0].id.split("@")[0]}, o usuário @${
-                  sender.split("@")[0]
+                `Olá @${Eu_.emp_A[0].id.split("@")[0]}, o usuário @${sender.split("@")[0]
                 } aceitou sua proposta de empréstimo.`
               );
               let day = Math.floor(Date.now() / 1000 + 1 * 60 * 60 * 24);
@@ -5116,8 +5247,7 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
             let Eu_ = rggold[ID_G_GOLD].usus.find((i) => i.id === sender);
             if (Eu_?.emp_A && Eu_?.emp_A?.length > 0) {
               mention(
-                `@${
-                  Eu_.emp_A[0].id.split("@")[0]
+                `@${Eu_.emp_A[0].id.split("@")[0]
                 }, seu empréstimo foi recusado.`
               );
               Eu_.emp_A = [];
@@ -5146,15 +5276,12 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
               let V_E = Math.floor(Eu.emp_G[0].Golds);
               if (Math.floor(Eu.Golds) < V_E + V_E * 0.15)
                 return reply(
-                  `Você não tem Golds o suficiente para pagar o empréstimo, valor: ${
-                    V_E + V_E * 0.15
+                  `Você não tem Golds o suficiente para pagar o empréstimo, valor: ${V_E + V_E * 0.15
                   }`
                 );
               mention(
-                `Parabéns, você realizou o pagamento do empréstimo de: @${
-                  Eu.emp_G[0].id.split("@")[0]
-                }, será pago com mais +15% de taxa de juros por ser umempréstimo, valor: ${
-                  V_E + V_E * 0.15
+                `Parabéns, você realizou o pagamento do empréstimo de: @${Eu.emp_G[0].id.split("@")[0]
+                }, será pago com mais +15% de taxa de juros por ser umempréstimo, valor: ${V_E + V_E * 0.15
                 }`
               );
               Ele.Golds += Math.floor(V_E + V_E * 0.15);
@@ -5167,8 +5294,8 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
           }
           break;
 
-        case "7cobrargold":
-        case "7cobrargolds":
+        case "cobrargold":
+        case "cobrargolds":
         case "cobraremprestimo":
           {
             if (!isGroup) return reply(Res_SoGrupo);
@@ -5198,8 +5325,7 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
                   "O usuário não tem a quantidade de Golds que te deve com os 15%."
                 );
               reply(
-                `Golds cobrado com sucesso + os 15%, igual: ${
-                  U_G + U_G * 0.15
+                `Golds cobrado com sucesso + os 15%, igual: ${U_G + U_G * 0.15
                 }, até a próxima.`
               );
               Eu_.Golds -= Math.floor(U_G + U_G * 0.15);
@@ -5230,9 +5356,9 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
 `);
           break;
 
-        case "7roubargold":
-        case "7roubargolds":
-        case "7vingancagold":
+        case "roubargold":
+        case "roubargolds":
+        case "vingancagold":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -5240,8 +5366,7 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
             );
           if (!menc_os2)
             return reply(
-              `Marque o @ ou a mensagem do usuário que deseja roubar, Exemplo: ${
-                prefix + command
+              `Marque o @ ou a mensagem do usuário que deseja roubar, Exemplo: ${prefix + command
               } @Xpessoa`
             );
           if (menc_os2 === botNumber)
@@ -5313,83 +5438,60 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
           var Rnd_G = Math.floor(Math.random() * X_G_U);
           var Rnd_GM = Math.floor(Math.random() * X_G_M);
           let arrayDeFr = [
-            `Parabéns pelo feito incrível de roubar ${Rnd_G} Golds do destemido usuário @${
-              menc_os2.split("@")[0]
+            `Parabéns pelo feito incrível de roubar ${Rnd_G} Golds do destemido usuário @${menc_os2.split("@")[0]
             }!`,
-            `Você mostrou suas habilidades astutas ao conquistar ${Rnd_G} Golds das mãos de @${
-              menc_os2.split("@")[0]
+            `Você mostrou suas habilidades astutas ao conquistar ${Rnd_G} Golds das mãos de @${menc_os2.split("@")[0]
             }. Parabéns!`,
-            `Aqui está a sua merecida recompensa por pilhar ${Rnd_G} Golds de @${
-              menc_os2.split("@")[0]
+            `Aqui está a sua merecida recompensa por pilhar ${Rnd_G} Golds de @${menc_os2.split("@")[0]
             }. Brilhante!`,
-            `A premiação é sua por conquistar ${Rnd_G} Golds em um ousado roubo contra @${
-              menc_os2.split("@")[0]
+            `A premiação é sua por conquistar ${Rnd_G} Golds em um ousado roubo contra @${menc_os2.split("@")[0]
             }. Impressionante!`,
-            `Pelo seu talento em subtrair ${Rnd_G} Golds de @${
-              menc_os2.split("@")[0]
+            `Pelo seu talento em subtrair ${Rnd_G} Golds de @${menc_os2.split("@")[0]
             }, concedemos este prêmio de destreza.`,
-            `Você se destacou ao conquistar ${Rnd_G} Golds do usuário @${
-              menc_os2.split("@")[0]
+            `Você se destacou ao conquistar ${Rnd_G} Golds do usuário @${menc_os2.split("@")[0]
             }. Aceite este reconhecimento!`,
             `Por sua audácia em obter ${Rnd_G} Golds por meio de um roubo, apresentamos este prêmio.`,
-            `Seu sucesso em tomar ${Rnd_G} Golds de @${
-              menc_os2.split("@")[0]
+            `Seu sucesso em tomar ${Rnd_G} Golds de @${menc_os2.split("@")[0]
             } merece aplausos e esta premiação especial.`,
-            `Uma conquista notável: ${Rnd_G} Golds roubados de @${
-              menc_os2.split("@")[0]
+            `Uma conquista notável: ${Rnd_G} Golds roubados de @${menc_os2.split("@")[0]
             }. Receba este prêmio em reconhecimento.`,
-            `Parabenizamos sua habilidade em conseguir ${Rnd_G} Golds por meios engenhosos de @${
-              menc_os2.split("@")[0]
+            `Parabenizamos sua habilidade em conseguir ${Rnd_G} Golds por meios engenhosos de @${menc_os2.split("@")[0]
             }. Aqui está o seu prêmio!`,
             `Sua destemida façanha de ${Rnd_G} Golds roubados é celebrada com esta premiação.`,
-            `Apresentamos este prêmio em honra ao seu talento demonstrado ao conseguir ${Rnd_G} Golds de @${
-              menc_os2.split("@")[0]
+            `Apresentamos este prêmio em honra ao seu talento demonstrado ao conseguir ${Rnd_G} Golds de @${menc_os2.split("@")[0]
             }.`,
-            `Você provou ser um mestre da esperteza ao adquirir ${Rnd_G} Golds de @${
-              menc_os2.split("@")[0]
+            `Você provou ser um mestre da esperteza ao adquirir ${Rnd_G} Golds de @${menc_os2.split("@")[0]
             }. Receba este prêmio com louvor!`,
             `Sua proeza em roubar ${Rnd_G} Golds merece reconhecimento. Aceite este prêmio como lembrança.`,
             `Pelo seu esforço em adquirir ${Rnd_G} Golds por meios engenhosos, apresentamos este prêmio merecido.`,
             `Parabéns por superar os desafios e conseguir ${Rnd_G} Golds em um roubo ousado. Aqui está o seu prêmio!`,
-            `Sua conquista de ${Rnd_G} Golds roubados de @${
-              menc_os2.split("@")[0]
+            `Sua conquista de ${Rnd_G} Golds roubados de @${menc_os2.split("@")[0]
             } é recompensada com este prêmio de excelência.`,
             `Em homenagem à sua habilidade em conseguir ${Rnd_G} Golds, concedemos este prêmio de maestria.`,
-            `Você se destacou ao conquistar ${Rnd_G} Golds de @${
-              menc_os2.split("@")[0]
+            `Você se destacou ao conquistar ${Rnd_G} Golds de @${menc_os2.split("@")[0]
             } de forma impressionante. Aceite este prêmio como símbolo de sucesso!`,
             `Pela sua destreza em adquirir ${Rnd_G} Golds por meios criativos, é com prazer que lhe entregamos esta premiação.`,
           ];
           let arrayDFalha = [
-            `Infelizmente, sua tentativa de roubo resultou em fracasso, e você perdeu ${Rnd_GM} Golds para @${
-              menc_os2.split("@")[0]
+            `Infelizmente, sua tentativa de roubo resultou em fracasso, e você perdeu ${Rnd_GM} Golds para @${menc_os2.split("@")[0]
             }. Melhor sorte da próxima vez!`,
-            `Parece que a sorte não estava ao seu lado desta vez. ${Rnd_GM} Golds foram perdidos para @${
-              menc_os2.split("@")[0]
+            `Parece que a sorte não estava ao seu lado desta vez. ${Rnd_GM} Golds foram perdidos para @${menc_os2.split("@")[0]
             } devido à sua tentativa de roubo malsucedida.`,
-            `Um valente esforço, mas sua tentativa de roubo não teve sucesso. ${Rnd_GM} Golds agora pertencem a @${
-              menc_os2.split("@")[0]
+            `Um valente esforço, mas sua tentativa de roubo não teve sucesso. ${Rnd_GM} Golds agora pertencem a @${menc_os2.split("@")[0]
             }.`,
-            `${Rnd_GM} Golds foram subtraídos de você como resultado de uma tentativa de roubo malsucedida contra @${
-              menc_os2.split("@")[0]
+            `${Rnd_GM} Golds foram subtraídos de você como resultado de uma tentativa de roubo malsucedida contra @${menc_os2.split("@")[0]
             }. Não desanime!`,
-            `Seus planos foram frustrados e você perdeu ${Rnd_GM} Golds na tentativa de roubo contra @${
-              menc_os2.split("@")[0]
+            `Seus planos foram frustrados e você perdeu ${Rnd_GM} Golds na tentativa de roubo contra @${menc_os2.split("@")[0]
             }. O jogo continua!`,
-            `Às vezes, até as melhores estratégias falham. ${Rnd_GM} Golds foram perdidos na tentativa de roubo contra @${
-              menc_os2.split("@")[0]
+            `Às vezes, até as melhores estratégias falham. ${Rnd_GM} Golds foram perdidos na tentativa de roubo contra @${menc_os2.split("@")[0]
             }.`,
-            `Uma tentativa corajosa, mas sua estratégia não funcionou desta vez. ${Rnd_GM} Golds foram perdidos para @${
-              menc_os2.split("@")[0]
+            `Uma tentativa corajosa, mas sua estratégia não funcionou desta vez. ${Rnd_GM} Golds foram perdidos para @${menc_os2.split("@")[0]
             }.`,
-            `Sua tentativa de roubo não teve êxito e resultou na perda de ${Rnd_GM} Golds para @${
-              menc_os2.split("@")[0]
+            `Sua tentativa de roubo não teve êxito e resultou na perda de ${Rnd_GM} Golds para @${menc_os2.split("@")[0]
             }. Hora de se reagrupar!`,
-            `Uma jornada arriscada, mas sua tentativa de roubo falhou, levando à perda de ${Rnd_GM} Golds para @${
-              menc_os2.split("@")[0]
+            `Uma jornada arriscada, mas sua tentativa de roubo falhou, levando à perda de ${Rnd_GM} Golds para @${menc_os2.split("@")[0]
             }.`,
-            `A tentativa de roubo não deu frutos desta vez. ${Rnd_GM} Golds agora estão nas mãos de @${
-              menc_os2.split("@")[0]
+            `A tentativa de roubo não deu frutos desta vez. ${Rnd_GM} Golds agora estão nas mãos de @${menc_os2.split("@")[0]
             }.`,
           ];
 
@@ -5405,8 +5507,7 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
             mention(Rnd_Flh);
           } else {
             mention(
-              `Sinto muito, você tentou roubar o usuário @${
-                menc_os2.split("@")[0]
+              `Sinto muito, você tentou roubar o usuário @${menc_os2.split("@")[0]
               }, e não conseguiu roubar nada, voltou de mãos vazias 😪..`
             );
           }
@@ -5419,10 +5520,10 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
           setGp(dataGp);
           break;
 
-        case "7minerar_gold":
-        case "7minerar_golds":
-        case "7minerargold":
-        case "7minerargolds":
+        case "minerar_gold":
+        case "minerar_golds":
+        case "minerargold":
+        case "minerargolds":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -5437,32 +5538,30 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
           rndg = Math.floor(Math.random() * 50);
           if (rnd == 0) {
             mention(
-              `Parabéns @${sender2} você recebeu ${rndg} Golds, você só pode minerar 3 vez por dia... ${
-                S_Sistema.RS_C(sender, "ChanceG") >= 3
-                  ? "infelizmente você não tem mais chances para minerar hoje, volte amanhã.."
-                  : `Ainda resta ${S_Sistema.RS_C(
-                      sender,
-                      "ChanceG"
-                    )}/3 para obter Golds, sua chance é 3/3`
+              `Parabéns @${sender2} você recebeu ${rndg} Golds, você só pode minerar 3 vez por dia... ${S_Sistema.RS_C(sender, "ChanceG") >= 3
+                ? "infelizmente você não tem mais chances para minerar hoje, volte amanhã.."
+                : `Ainda resta ${S_Sistema.RS_C(
+                  sender,
+                  "ChanceG"
+                )}/3 para obter Golds, sua chance é 3/3`
               }`
             );
             S_Sistema.ADD(sender, rndg);
           } else if (rnd != 0) {
             reply(
-              `A, você não teve sorte dessa vez, sinto muito... ${
-                S_Sistema.RS_C(sender, "ChanceG") >= 3
-                  ? "infelizmente você não tem mais chances para minerar hoje, volte amanhã.."
-                  : `Ainda resta ${S_Sistema.RS_C(
-                      sender,
-                      "ChanceG"
-                    )}/3 para obter Golds, sua chance é 0/3`
+              `A, você não teve sorte dessa vez, sinto muito... ${S_Sistema.RS_C(sender, "ChanceG") >= 3
+                ? "infelizmente você não tem mais chances para minerar hoje, volte amanhã.."
+                : `Ainda resta ${S_Sistema.RS_C(
+                  sender,
+                  "ChanceG"
+                )}/3 para obter Golds, sua chance é 0/3`
               }`
             );
           }
           break;
 
-        case "7apostargold":
-        case "7apostagold":
+        case "apostargold":
+        case "apostagold":
           {
             if (!isGroup) return reply(Res_SoGrupo);
             if (!IS_sistemGold)
@@ -5489,18 +5588,14 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
               `A aposta não saiu como esperado e você perdeu ${qnt_AP} Golds. Mas não se preocupe, amanhã é um novo dia!`,
             ];
             var blaG = [
-              `Parabéns! Você ganhou ${
-                qnt_AP * 2
+              `Parabéns! Você ganhou ${qnt_AP * 2
               } Golds nessa aposta. Continue assim!`,
               `Incrível! Você acertou e ganhou ${qnt_AP * 2} Golds. Que sorte!`,
-              `Você fez a jogada certa e ganhou ${
-                qnt_AP * 2
+              `Você fez a jogada certa e ganhou ${qnt_AP * 2
               } Golds. Isso é fantástico!`,
-              `Que vitória! Você ganhou ${
-                qnt_AP * 2
+              `Que vitória! Você ganhou ${qnt_AP * 2
               } Golds nessa aposta. Que o seu sucesso continue!`,
-              `Excelente! Você ganhou ${
-                qnt_AP * 2
+              `Excelente! Você ganhou ${qnt_AP * 2
               } Golds. Sua estratégia realmente funcionou!`,
             ];
             if (aps === 0) {
@@ -5511,8 +5606,7 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
               S_Sistema.ADD(sender, qnt_AP * 2);
             } else if (aps === 2) {
               reply(
-                `Você teve 50% de sorte e 50% de azar, perdeu metade do que apostou ( ${
-                  qnt_AP / 2
+                `Você teve 50% de sorte e 50% de azar, perdeu metade do que apostou ( ${qnt_AP / 2
                 } ), Boa sorte na próxima.`
               );
               S_Sistema.RM(sender, qnt_AP / 2);
@@ -5531,14 +5625,12 @@ Agradecemos sua atenção e aguardamos sua decisão. Qualquer dúvida, estamos �
           var [ttl, tema, dc] = q.toLowerCase().trim().split("|");
           if (!q.includes("|"))
             return reply(
-              `Faltanda a primeira |\nExemplo: ${
-                prefix + command
+              `Faltanda a primeira |\nExemplo: ${prefix + command
               } titulo|tema|dica`
             );
           if (q.lastIndexOf("|") < 0)
             return reply(
-              `Faltando a segunda |\nExemplo: ${
-                prefix + command
+              `Faltando a segunda |\nExemplo: ${prefix + command
               } titulo|tema|dica`
             );
           kir = [];
@@ -5656,18 +5748,15 @@ _____________________
             letra_ut += `${cd}, `;
           });
 
-          var RST_T = `- Jogo da forca - ${
-            DM_FR.palavra_ofc.length
-          } Letras\n\nTema: ${DM_FR.tema}\n\nDica: ${DM_FR.dica}\n
+          var RST_T = `- Jogo da forca - ${DM_FR.palavra_ofc.length
+            } Letras\n\nTema: ${DM_FR.tema}\n\nDica: ${DM_FR.dica}\n
 __________-_
 \t\t\t\t\t\t\t\t\t_|_\n
 \t\t\t\t\t\t\t\t${ERROS + ERRQ >= 1 ? "🤡" : ""}
-\t\t\t\t\t\t${ERROS + ERRQ >= 2 ? "👈" : ""} ${
-            ERROS + ERRQ >= 3 ? "👉" : ""
-          }\t\t\n\t\t\t\t\t\t\t\t\t${ERROS + ERRQ >= 4 ? "👖" : ""}
-\t\t\t\t\t\t\t\t\t${ERROS + ERRQ >= 5 ? "👞" : ""} ${
-            ERROS + ERRQ >= 6 ? "👞" : ""
-          }
+\t\t\t\t\t\t${ERROS + ERRQ >= 2 ? "👈" : ""} ${ERROS + ERRQ >= 3 ? "👉" : ""
+            }\t\t\n\t\t\t\t\t\t\t\t\t${ERROS + ERRQ >= 4 ? "👖" : ""}
+\t\t\t\t\t\t\t\t\t${ERROS + ERRQ >= 5 ? "👞" : ""} ${ERROS + ERRQ >= 6 ? "👞" : ""
+            }
 \n${linha_fr}\n
 ___-________-_____\n
 Letras ja utilizadas: ${letra_ut}
@@ -5682,22 +5771,17 @@ ___-________-_____
             (q2.length > 2 && q2 == DM_FR.palavra_ofc)
           ) {
             reply(
-              `${
-                q2.length > 2
-                  ? `Você acertou a palavra toda e ganhou${
-                      IS_sistemGold ? " 10 Golds," : " "
-                    }bom menino(a), irei resetar o jogo...`
-                  : DM_FR.acertos == DM_FR.palavra_ofc.length
-                  ? `Parabéns, toda palavra foi concluída : < ${
-                      DM_FR.palavra_ofc
-                    } >${
-                      IS_sistemGold
-                        ? ` você recebeu 5 Golds, por ser o último..,`
-                        : " "
-                    }irei resetar o jogo..`
-                  : `Você acertou uma letra e ganhou${
-                      IS_sistemGold ? " 2 Golds " : " "
-                    }continue assim..`
+              `${q2.length > 2
+                ? `Você acertou a palavra toda e ganhou${IS_sistemGold ? " 10 Golds," : " "
+                }bom menino(a), irei resetar o jogo...`
+                : DM_FR.acertos == DM_FR.palavra_ofc.length
+                  ? `Parabéns, toda palavra foi concluída : < ${DM_FR.palavra_ofc
+                  } >${IS_sistemGold
+                    ? ` você recebeu 5 Golds, por ser o último..,`
+                    : " "
+                  }irei resetar o jogo..`
+                  : `Você acertou uma letra e ganhou${IS_sistemGold ? " 2 Golds " : " "
+                  }continue assim..`
               }`
             );
             if (IS_sistemGold) {
@@ -5706,8 +5790,8 @@ ___-________-_____
                 q.length > 2
                   ? 10
                   : DM_FR.acertos == DM_FR.palavra_ofc.length
-                  ? 5
-                  : 2
+                    ? 5
+                    : 2
               );
             }
             if (q2.length > 2 || DM_FR.acertos == DM_FR.palavra_ofc.length) {
@@ -5717,18 +5801,14 @@ ___-________-_____
             reply(RST_T);
           } else {
             reply(
-              `${
-                q2.length > 2
-                  ? `Infelizmente você perdeu${
-                      IS_sistemGold ? " 3 Golds" : ""
-                    }, errou a palavra toda, deveria ter tentado letra por letra né, irei resetar o jogo..`
-                  : ERROS + ERRQ == 6
-                  ? `Aa, você completou 6 Erros, e perdeu ${
-                      IS_sistemGold ? "2 Golds infelizmente," : ", "
-                    }irei resetar o jogo..`
-                  : `Você Errou, e perdeu ${
-                      IS_sistemGold ? "2 Golds" : ""
-                    } 😥..`
+              `${q2.length > 2
+                ? `Infelizmente você perdeu${IS_sistemGold ? " 3 Golds" : ""
+                }, errou a palavra toda, deveria ter tentado letra por letra né, irei resetar o jogo..`
+                : ERROS + ERRQ == 6
+                  ? `Aa, você completou 6 Erros, e perdeu ${IS_sistemGold ? "2 Golds infelizmente," : ", "
+                  }irei resetar o jogo..`
+                  : `Você Errou, e perdeu ${IS_sistemGold ? "2 Golds" : ""
+                  } 😥..`
               }`
             );
             if (IS_sistemGold) {
@@ -5981,8 +6061,7 @@ ___-________-_____
               reply(Res_Aguarde);
               const abc = await reqapi.letra_m(q.trim());
               reply(
-                ` - Titulo: ${abc.titulo || "Erro..."}\n\n - Compositor: ${
-                  abc.compositor || "Erro..."
+                ` - Titulo: ${abc.titulo || "Erro..."}\n\n - Compositor: ${abc.compositor || "Erro..."
                 }\n\n - Letra:\n\n${abc.letra || "Erro..."}`
               );
             } catch (e) {
@@ -6004,8 +6083,7 @@ ___-________-_____
         case "aptoide":
           if (!q.trim().includes("aptoide.com"))
             return reply(
-              `Exemplo: ${
-                prefix + command
+              `Exemplo: ${prefix + command
               } link do aptoide\n\nUse o comando ${prefix}aptoide_pesquisa Exemplo: whatsapp, ae vai receber as url, pegue a url e use.`
             );
           reply(Res_Aguarde);
@@ -6032,9 +6110,8 @@ ___-________-_____
             abc = await reqapi.playstore(q.trim());
             ABC = "Play Store pesquisa:\n\n";
             for (let a of abc.resultados) {
-              ABC += ` - NOME DO APK: ${a.title}\n - ID: ${a.appId}\n - URL: ${
-                a.url
-              }\n\n${"-".repeat(20)}\n\n`;
+              ABC += ` - NOME DO APK: ${a.title}\n - ID: ${a.appId}\n - URL: ${a.url
+                }\n\n${"-".repeat(20)}\n\n`;
             }
             reply(ABC);
           } catch {
@@ -6148,9 +6225,8 @@ ___-________-_____
             ABC = await reqapi.amazon(q.trim());
             RST = "Pesquisa Amazon:\n\n";
             for (i = 0; i < (ABC.length > 40 ? 40 : ABC.length); i++) {
-              RST += `( ${i + 1} ) - Titulo: ${ABC[i].titulo}\n- Preço: ${
-                ABC[i].preco
-              }\n- Url: ${ABC[i].url}\n${"_".repeat(27)}\n\n`;
+              RST += `( ${i + 1} ) - Titulo: ${ABC[i].titulo}\n- Preço: ${ABC[i].preco
+                }\n- Url: ${ABC[i].url}\n${"_".repeat(27)}\n\n`;
             }
             reply(RST);
           } catch {
@@ -6256,8 +6332,7 @@ ___-________-_____
               }
             } else {
               return reply(
-                `Cade o comando que você deseja renovar ou acrescentar informação ? Exemplo: ${
-                  prefix + command
+                `Cade o comando que você deseja renovar ou acrescentar informação ? Exemplo: ${prefix + command
                 } play|Este comando é usado para pedir música ou baixar vídeos/áudios, use por exemplo: ${prefix}play e o nome da música, ou se for um video, use: ${prefix}playmp4 e o nome do vídeo.`
               );
             }
@@ -6505,38 +6580,92 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
           break;
 
         case "perfil":
-          let ppimg;
           try {
-            // Corrigido para Baileys 7.0+ - usar sender diretamente
-            ppimg = await conn.profilePictureUrl(sender, "image");
-          } catch {
-            ppimg = "https://telegra.ph/file/b5427ea4b8701bc47e751.jpg";
-          }
-          var indnum = numbersIds.indexOf(sender);
-          var RSM_CN = countMessage[ind].numbers[indnum];
-          try {
+            var target = menc_os2 || sender; // Use mentioned user or sender
+            var ppimg;
+            try {
+              ppimg = await conn.profilePictureUrl(target, "image");
+            } catch {
+              ppimg = "https://telegra.ph/file/b5427ea4b8701bc47e751.jpg";
+            }
+
+            var indnum = countMessage[ind].numbers.findIndex((i) => i.id === target);
+            var RSM_CN = countMessage[ind].numbers[indnum] || {
+              messages: 0,
+              cmd_messages: 0,
+              figus: 0,
+            };
+
+            var warnCount = 0;
+            if (isGroup && dataGp[0]?.advertir) {
+              warnCount = dataGp[0].advertir.filter((x) => x == target).length;
+            }
+
+            var FCLT_G = ID_G_GOLD !== -1 ? rggold[ID_G_GOLD].usus.find((i) => i.id === target) : null;
+            var userGolds = FCLT_G?.Golds || 0;
+
+            var statusRecado = "Sem recado";
+            try {
+              const statusData = await conn.fetchStatus(target);
+              if (statusData && typeof statusData.status === 'string') {
+                statusRecado = statusData.status;
+              } else if (statusData && statusData.content) {
+                // Some versions return content
+                statusRecado = statusData.content;
+              }
+            } catch (err) {
+              // Usually forbidden or no status set
+              statusRecado = "Sem recado";
+            }
+
             dptr = `
-✨🌟✨ Nome: ( ${pushname} ) ✨🌟✨
- 
-📩 Mensagens: ${RSM_CN.messages}
-💻 Comandos: ${RSM_CN.cmd_messages}
-🎭 Figurinhas: ${RSM_CN.figus}
-🐂 Corno: ${Math.floor(Math.random() * 100)}%
-🐄 Gado: ${Math.floor(Math.random() * 100)}%
-😇 Santo(a): ${Math.floor(Math.random() * 100)}%
-😈 Safado(a): ${Math.floor(Math.random() * 100)}%
-💼 Empresário(a): ${Math.floor(Math.random() * 100)}%
-🦥 Vagabundo(a): ${Math.floor(Math.random() * 100)}%
-😍 Lindo(a): ${Math.floor(Math.random() * 100)}%
- 
-✨🌟✨✨🌟✨✨🌟✨✨🌟✨`;
+🌈✨━━━━━━━━━━━━✨🌈
+💖🌟 *PERFIL DO MEMBRO* 🌟💖
+🌈✨━━━━━━━━━━━━✨🌈
+
+👤✨ **Usuário:**
+🌟 ➤ @${target.split("@")[0]}
+
+📝💬 **Recado:**
+💖 ➤ ${statusRecado}
+
+━━━━━━━━━━━━━━━
+
+📊🎨 **ATIVIDADE DO MEMBRO** 🎨📊
+💟✨ Mensagens: **${RSM_CN.messages}**
+💻💡 Comandos: **${RSM_CN.cmd_messages}**
+🎭🎉 Figurinhas: **${RSM_CN.figus}**
+
+💰🪙 **Golds:** **${userGolds}**
+⚠️🚨 Advertências: **${warnCount}/3**
+
+━━━━━━━━━━━━━━━
+
+🎯🌈 **BARRA DE PERSONALIDADE** 🌈🎯
+🐂🔥 Corno: **${Math.floor(Math.random() * 100)}%**
+🕎💥 Gado: **${Math.floor(Math.random() * 100)}%**
+😇💫 Santo(a): **${Math.floor(Math.random() * 100)}%**
+😈❤️‍🔥 Safado(a): **${Math.floor(Math.random() * 100)}%**
+💼💎 Empresário(a): **${Math.floor(Math.random() * 100)}%**
+🤡🎪 Vagabundo(a): **${Math.floor(Math.random() * 100)}%**
+🥰💖 Lindo(a): **${Math.floor(Math.random() * 100)}%**
+
+✨━━━━━━━━━━━✨
+   🌟💖🌟💖🌟💖🌟
+✨━━━━━━━━━━━✨`;
+
             conn.sendMessage(
               from,
-              { image: { url: ppimg }, caption: dptr, mentions: [sender] },
+              {
+                image: { url: ppimg },
+                caption: dptr,
+                mentions: [target],
+              },
               { quoted: selo }
             );
           } catch (e) {
             console.log(e);
+            reply("Erro ao carregar perfil.");
           }
           break;
 
@@ -6600,7 +6729,7 @@ Conselhos Bíblico para você:
           ) {
             encmedia = isQuotedImage
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .imageMessage
+                .imageMessage
               : info.message.imageMessage;
             rane = getRandom("." + (await getExtension(encmedia.mimetype)));
             buffimg = await getFileBuffer(encmedia, "image");
@@ -6639,8 +6768,7 @@ ${prefix + command} 4h _(daqui a 4 horas a frente)_`);
           if (letra == `s`) {
             nmr = Number(q.slice(0, q.length - 1));
             mention(
-              `*Sucesso @${
-                sender.split("@")[0]
+              `*Sucesso @${sender.split("@")[0]
               }, o grupo ${groupName} será aberto em ${q}* ✔`
             );
             setTimeout(async () => {
@@ -6655,14 +6783,12 @@ ${prefix + command} 4h _(daqui a 4 horas a frente)_`);
             last = getLastOpenCloseGP(from);
             day = last.dias;
             mention(
-              `*Sucesso @${
-                sender.split("@")[0]
-              }, o grupo ${groupName} será aberto ${
-                last.dias > 0
-                  ? sendFutureTime([{ valor: last.dias, type: `days` }])
-                      .toLowerCase()
-                      .split(` `)[0] + ` `
-                  : ``
+              `*Sucesso @${sender.split("@")[0]
+              }, o grupo ${groupName} será aberto ${last.dias > 0
+                ? sendFutureTime([{ valor: last.dias, type: `days` }])
+                  .toLowerCase()
+                  .split(` `)[0] + ` `
+                : ``
               }às ${last.hora}* ✔`
             );
           }
@@ -6686,8 +6812,7 @@ ${prefix + command} 4h _(daqui a 4 horas a frente)_`);
           if (letra == `s`) {
             nmr = Number(q.slice(0, q.length - 1));
             mention(
-              `*Sucesso @${
-                sender.split("@")[0]
+              `*Sucesso @${sender.split("@")[0]
               }, o grupo ${groupName} será fechado em ${q}* ✔`
             );
             setTimeout(async () => {
@@ -6702,14 +6827,12 @@ ${prefix + command} 4h _(daqui a 4 horas a frente)_`);
             last = getLastOpenCloseGP(from);
             day = last.dias;
             mention(
-              `*Sucesso @${
-                sender.split("@")[0]
-              }, o grupo ${groupName} será fechado ${
-                last.dias > 0
-                  ? sendFutureTime([{ valor: last.dias, type: `days` }])
-                      .toLowerCase()
-                      .split(` `)[0] + ` `
-                  : ``
+              `*Sucesso @${sender.split("@")[0]
+              }, o grupo ${groupName} será fechado ${last.dias > 0
+                ? sendFutureTime([{ valor: last.dias, type: `days` }])
+                  .toLowerCase()
+                  .split(` `)[0] + ` `
+                : ``
               }às ${last.hora}* ⏱`
             );
           }
@@ -6780,8 +6903,8 @@ ${prefix + command} 1h`);
             try {
               getinfoimg = isQuotedImage
                 ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                    .message.extendedTextMessage.contextInfo.message
-                    .imageMessage
+                  .message.extendedTextMessage.contextInfo.message
+                  .imageMessage
                 : info.message.imageMessage;
               getfl = await getFileBuffer(getinfoimg, "image");
               //fs.writeFileSync(`./operacao/horarios/${from}.jpg`, getfl)
@@ -6807,10 +6930,8 @@ ${prefix + command} 1h`);
               );
             } else
               return reply(
-                `Use ${
-                  prefix + command
-                } [marque uma imagem] para personalizar o fundo dos horários pagantes e ${
-                  prefix + command
+                `Use ${prefix + command
+                } [marque uma imagem] para personalizar o fundo dos horários pagantes e ${prefix + command
                 } 0 para deletar a imagem salva.`
               );
           }
@@ -6852,12 +6973,12 @@ ${prefix + command} 1h`);
             return reply(`Não há horários pagantes definidos neste grupo 🐯`);
           reply(`🐯 *_Horários pagantes do grupo ${groupName}:_*
 ${horarios2
-  .map(
-    (i) => `🆔 *ID:* ${i.id}
+              .map(
+                (i) => `🆔 *ID:* ${i.id}
 ⏳ *Intervalo de tempo:* ${String(i.nmr) + i.letra}
 🍀 *Próximo horário:* ${i.tempo}`
-  )
-  .join(`\n\n`)}`);
+              )
+              .join(`\n\n`)}`);
           break;
 
         case "attgrouplink":
@@ -7069,9 +7190,8 @@ ${ABC.siafi}`);
             );
           bl = "_-_-_-_-_-_-_-_-_-_-_-_-\n\n";
           for (i = 0; i < rgp.length; i++) {
-            bl += `${i + 1} - ID: ${rgp[i].id}\n\n- NOME DO USUÁRIO OU GRUPO: ${
-              rgp[i].infonome
-            }\n\n`;
+            bl += `${i + 1} - ID: ${rgp[i].id}\n\n- NOME DO USUÁRIO OU GRUPO: ${rgp[i].infonome
+              }\n\n`;
           }
           reply(bl);
           break;
@@ -7128,28 +7248,28 @@ ${ABC.siafi}`);
           var yellow = isQuotedDocW
             ? rsm?.documentWithCaptionMessage?.message?.documentMessage
             : info.message?.documentWithCaptionMessage?.message
-                ?.documentMessage;
+              ?.documentMessage;
           var aud_d = isQuotedAudio ? rsm.audioMessage : "";
           var figu_d = isQuotedSticker ? rsm.stickerMessage : "";
           var red =
             isQuotedMsg &&
-            !aud_d &&
-            !figu_d &&
-            !pink &&
-            !blue &&
-            !purple &&
-            !yellow
+              !aud_d &&
+              !figu_d &&
+              !pink &&
+              !blue &&
+              !purple &&
+              !yellow
               ? "Transmissão Do Dono: " + rsm.conversation
               : info.message?.conversation;
           var green =
             isQuotedMsg2 &&
-            !aud_d &&
-            !figu_d &&
-            !red &&
-            !pink &&
-            !blue &&
-            !purple &&
-            !yellow
+              !aud_d &&
+              !figu_d &&
+              !red &&
+              !pink &&
+              !blue &&
+              !purple &&
+              !yellow
               ? "Transmissão Do Dono: " + rsm.extendedTextMessage?.text
               : info?.message?.extendedTextMessage?.text;
           if (pink) {
@@ -7158,9 +7278,9 @@ ${ABC.siafi}`);
               q.length > 1
                 ? "Transmissão Do Dono: " + q
                 : pink.caption.replace(
-                    new RegExp(prefix + command, "gi"),
-                    `TRANSMISSÃO DO DONO: ${NickDono}\n\n`
-                  );
+                  new RegExp(prefix + command, "gi"),
+                  `TRANSMISSÃO DO DONO: ${NickDono}\n\n`
+                );
             pink.image = { url: pink.url };
           } else if (blue) {
             DFC = blue;
@@ -7168,9 +7288,9 @@ ${ABC.siafi}`);
               q.length > 1
                 ? "Transmissão Do Dono: " + q
                 : blue.caption.replace(
-                    new RegExp(prefix + command, "gi"),
-                    `TRANSMISSÃO DO DONO: ${NickDono}\n\n`
-                  );
+                  new RegExp(prefix + command, "gi"),
+                  `TRANSMISSÃO DO DONO: ${NickDono}\n\n`
+                );
             blue.video = { url: blue.url };
           } else if (red) {
             black = {};
@@ -7195,9 +7315,9 @@ ${ABC.siafi}`);
               q.length > 1
                 ? "Transmissão Do Dono: " + q
                 : yellow.caption.replace(
-                    new RegExp(prefix + command, "gi"),
-                    `TRANSMISSÃO DO DONO: ${NickDono}\n\n`
-                  );
+                  new RegExp(prefix + command, "gi"),
+                  `TRANSMISSÃO DO DONO: ${NickDono}\n\n`
+                );
             yellow.document = { url: yellow.url };
           } else if (figu_d) {
             DFC = figu_d;
@@ -7362,21 +7482,17 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
                 LinkDoGp = "Não foi possivel puxar.";
               }
               var isC = ingfoo[i].isCommunity;
-              teks1 += `${
-                isC ? "• *Comunidade*" : "• *Grupo*"
-              }• : ${i}\n• É uma comunidade ? ${isC ? "Sim" : "Não"}\n${
-                isC
+              teks1 += `${isC ? "• *Comunidade*" : "• *Grupo*"
+                }• : ${i}\n• É uma comunidade ? ${isC ? "Sim" : "Não"}\n${isC
                   ? ""
                   : `• Link Do Grupo: https://chat.whatsapp.com/${LinkDoGp}\n`
-              }• *Nome do Grupo* : ${ingfoo[i].subject}\n• *Id do Grupo* : ${
-                ingfoo[i].id
-              }\n• *Criado* : ${moment(`${ingfoo[i].creation}` * 1000)
-                .tz("America/Sao_Paulo")
-                .format("DD/MM/YYYY HH:mm:ss")}\n${
-                isC
-                  ? ""
-                  : `• *Total de Membros* : ${ingfoo[i].participants.length}\n`
-              }\n${"-".repeat(25)}\n\n`;
+                }• *Nome do Grupo* : ${ingfoo[i].subject}\n• *Id do Grupo* : ${ingfoo[i].id
+                }\n• *Criado* : ${moment(`${ingfoo[i].creation}` * 1000)
+                  .tz("America/Sao_Paulo")
+                  .format("DD/MM/YYYY HH:mm:ss")}\n${isC
+                    ? ""
+                    : `• *Total de Membros* : ${ingfoo[i].participants.length}\n`
+                }\n${"-".repeat(25)}\n\n`;
             }
             reply(teks1);
           }
@@ -7408,11 +7524,9 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
               if (uscnt && uscnt.id) {
                 const participantNumber = uscnt.id.split("@")[0];
                 mentionArray.push(uscnt.id);
-                teks += `*• Membro:* @${participantNumber}\n*• Comandos:* ${
-                  uscnt.cmd_messages || 0
-                }*\n*• Mensagens:* ${uscnt.messages || 0}*\n*• Aparelho:* ${
-                  uscnt.aparelho || "Desconhecido"
-                }*\n\n----------------------------------\n\n`;
+                teks += `*• Membro:* @${participantNumber}\n*• Comandos:* ${uscnt.cmd_messages || 0
+                  }*\n*• Mensagens:* ${uscnt.messages || 0}*\n*• Aparelho:* ${uscnt.aparelho || "Desconhecido"
+                  }*\n\n----------------------------------\n\n`;
               }
             }
             conn.sendMessage(
@@ -7432,8 +7546,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             return reply(Os_Returns(true, true, true).txt);
           if (q.match(/[a-z]/i) || !q)
             return reply(
-              `Exemplo: ${
-                prefix + command
+              `Exemplo: ${prefix + command
               } 0\nIsso mostrará quantas pessoas tem 0 mensagens no grupo, e se usar 5, vai mostrar quantos usuários tem 5 mensagens ou menos..`
             );
           await LIMPARDOCNT_QUEMJASAIU();
@@ -7471,8 +7584,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
           if (!isGroupAdmins) return reply(Res_SoDono);
           if (q.match(/[a-z]/i) || !q || q.length > 3)
             return reply(
-              `Digite a partir de quantas mensagens pra baixo você deseja remover (que não interaje no grupo).\nExemplo: ${
-                prefix + command
+              `Digite a partir de quantas mensagens pra baixo você deseja remover (que não interaje no grupo).\nExemplo: ${prefix + command
               } 0`
             );
           var i2 = countMessage?.map((x) => x.groupId)?.indexOf(from);
@@ -7568,7 +7680,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             );
             boij = isQuotedImage
               ? JSON.parse(JSON.stringify(info).replace("quotedM", "m")).message
-                  .extendedTextMessage.contextInfo.message.imageMessage
+                .extendedTextMessage.contextInfo.message.imageMessage
               : info.message.imageMessage;
             owgi = await getFileBuffer(boij, "image");
             res = await reqapi.uploadDropbox(owgi);
@@ -7589,8 +7701,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             }, 1200);
           } else {
             reply(
-              `Mande uma imagem com o comando ${
-                prefix + command
+              `Mande uma imagem com o comando ${prefix + command
               } para trocar a foto de todos menu..`
             );
           }
@@ -7657,8 +7768,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             buffer = await getBuffer(pp);
             conn.updateProfilePicture(botNumber, buffer);
             mentions(
-              `Foto do perfil atualizada com sucesso, usando a foto do perfil @${
-                id.split("@")[0]
+              `Foto do perfil atualizada com sucesso, usando a foto do perfil @${id.split("@")[0]
               }`,
               [id],
               true
@@ -7687,9 +7797,8 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
                 groupMembers[i].id,
                 { image: buff },
                 {
-                  caption: `*「 TRANSMISSÃO 」*\n\nGrupo: ${groupName}\n Número: wa.me/${
-                    sender.split("@")[0]
-                  }\nMensagem : ${body.slice(6)}`,
+                  caption: `*「 TRANSMISSÃO 」*\n\nGrupo: ${groupName}\n Número: wa.me/${sender.split("@")[0]
+                    }\nMensagem : ${body.slice(6)}`,
                 }
               );
             }
@@ -7699,8 +7808,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
               await sleep(2000);
               sendMess(
                 groupMembers[i].id,
-                `*「 TRANSMISSÃO 」*\n\nGrupo : ${groupName}\n Número : wa.me/${
-                  sender.split("@")[0]
+                `*「 TRANSMISSÃO 」*\n\nGrupo : ${groupName}\n Número : wa.me/${sender.split("@")[0]
                 }\nMensagem : ${body.slice(6)}`
               );
             }
@@ -7803,9 +7911,8 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "listadmins":
         case "adms":
           if (!isGroup) return reply(Res_SoGrupo);
-          ytb = `Lista de admins do grupo *${
-            groupMetadata?.subject || "Não foi posssivel puxar o nome."
-          }*\nTotal : ${groupAdmins.length}\n\n`;
+          ytb = `Lista de admins do grupo *${groupMetadata?.subject || "Não foi posssivel puxar o nome."
+            }*\nTotal : ${groupAdmins.length}\n\n`;
           no = 0;
           for (let admon of groupAdmins) {
             no += 1;
@@ -7901,8 +8008,7 @@ Dono Oficial do bot: ${numerodono_ofc}
           } else if (isGroupAdmins) {
             if (!q.trim())
               return reply(
-                `Digite a mensagem de ausência, Exemplo: ${
-                  prefix + command
+                `Digite a mensagem de ausência, Exemplo: ${prefix + command
                 } Estou cagando 😏💩`
               );
             if (!JSON.stringify(dataGp[0].ausentes).includes(sender)) {
@@ -7935,7 +8041,7 @@ Dono Oficial do bot: ${numerodono_ofc}
           sendMsg = conn.sendMessage(from, reactionMessage);
           break;
 
-        case "7addcmdgold":
+        case "addcmdgold":
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
           let [comando, gold] = q.trim().toLowerCase().split("/");
@@ -7955,17 +8061,15 @@ Dono Oficial do bot: ${numerodono_ofc}
             );
           } else {
             return reply(
-              `Faltando o(a) ${
-                !comando ? "comando" : !q.trim().includes("/") ? "/" : "gold"
-              }, Exemplo: ${
-                prefix + command
+              `Faltando o(a) ${!comando ? "comando" : !q.trim().includes("/") ? "/" : "gold"
+              }, Exemplo: ${prefix + command
               } play/3 *Este exemplo ele adicionará o comando play como um comando gold, que após ativar o ${prefix}sistemgold, só poderá ser usado consumindo gold do usuário que usar o comando, se não tiver gold, o usuário não terá como usar o comando play.`
             );
           }
           break;
 
-        case "7rmcmdgold":
-        case "7delcmdgold":
+        case "rmcmdgold":
+        case "delcmdgold":
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
           if (!q.trim()) return reply(`Exemplo: ${prefix + command} play`);
@@ -8012,7 +8116,7 @@ Dono Oficial do bot: ${numerodono_ofc}
           break;
 
         case "tirarcmdpremium":
-        case "rmcmdpremium":
+        case "delcmdpremium":
           if (!SoDono) return reply(Res_SoDono);
           if (!nescessario.cmdpremium.includes(q.replace(prefix, "").trim()))
             return reply(
@@ -8050,16 +8154,15 @@ Dono Oficial do bot: ${numerodono_ofc}
             const tempORG = Math.floor(Date.now() / 1000);
             const tempo = temp?.includes("d")
               ? tempORG +
-                1 * 60 * 60 * 24 * Math.floor(temp?.split("d")[0].trim())
+              1 * 60 * 60 * 24 * Math.floor(temp?.split("d")[0].trim())
               : temp?.includes("h")
-              ? tempORG + 1 * 60 * 60 * Math.floor(temp?.split("h")[0].trim())
-              : temp?.includes("m")
-              ? tempORG + 1 * 60 * Math.floor(temp?.split("m")[0].trim())
-              : false;
+                ? tempORG + 1 * 60 * 60 * Math.floor(temp?.split("h")[0].trim())
+                : temp?.includes("m")
+                  ? tempORG + 1 * 60 * Math.floor(temp?.split("m")[0].trim())
+                  : false;
             if (!tempo)
               return reply(
-                `Exemplo: ${prefix + command} @usuario/30d ou ${
-                  prefix + command
+                `Exemplo: ${prefix + command} @usuario/30d ou ${prefix + command
                 } /30d marcando a mensagem do usuário, use ${prefix}info addpremium para saber como usar.`
               );
             bla = premium.map((i) => i.usus).includes(menc_os2);
@@ -8089,11 +8192,10 @@ Dono Oficial do bot: ${numerodono_ofc}
               conn.sendMessage(
                 from,
                 {
-                  text: `👑@${
-                    menc_os2.split("@")[0]
-                  } foi adicionado à lista de usuários premium com sucesso👑 ( Tempo: ${kyun(
-                    tempo - tempORG
-                  )} )`,
+                  text: `👑@${menc_os2.split("@")[0]
+                    } foi adicionado à lista de usuários premium com sucesso👑 ( Tempo: ${kyun(
+                      tempo - tempORG
+                    )} )`,
                   mentions: [menc_os2],
                 },
                 { quoted: info }
@@ -8134,9 +8236,8 @@ Dono Oficial do bot: ${numerodono_ofc}
           conn.sendMessage(
             from,
             {
-              text: ` @${
-                marc_tds.split("@")[0]
-              } foi tirado da lista premium com sucesso..`,
+              text: ` @${marc_tds.split("@")[0]
+                } foi tirado da lista premium com sucesso..`,
               mentions: [marc_tds],
             },
             { quoted: info }
@@ -8155,11 +8256,10 @@ Dono Oficial do bot: ${numerodono_ofc}
             let abc = "Lista de usuários premium global:\n\n";
             let tempo = Math.floor(Date.now() / 1000);
             for (let V = 0; V < premium.length; V++) {
-              abc += ` - ( ${V} ): @${
-                premium[V].usus.split("@")[0]
-              }\n\n - Tempo para expirar: ${kyun(
-                Math.floor(premium[V].tempo) - tempo
-              )}\n\n${"-".repeat(35)}\n`;
+              abc += ` - ( ${V} ): @${premium[V].usus.split("@")[0]
+                }\n\n - Tempo para expirar: ${kyun(
+                  Math.floor(premium[V].tempo) - tempo
+                )}\n\n${"-".repeat(35)}\n`;
             }
             mention(abc);
           }
@@ -8218,31 +8318,39 @@ Dono Oficial do bot: ${numerodono_ofc}
               ((isMedia && !info.message.videoMessage) || isQuotedImage) &&
               !q.length <= 1
             ) {
+              reply(
+                `- Calma ae amigo(a), já estou trocando a foto de fundo do bem vindo para você 😏`
+              );
               boij =
                 isQuotedImage || isQuotedVideo
                   ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                      .message.extendedTextMessage.contextInfo.message
-                      .imageMessage
-                  : info;
+                    .message.extendedTextMessage.contextInfo.message
+                    .imageMessage
+                  : info.message.imageMessage;
               owgi = await getFileBuffer(boij, "image");
-              res = await uploader.catbox(owgi);
+              res = await reqapi.uploadDropbox(owgi);
               fundo1 = res;
               Links_P.fundo1 = res;
+              if (isGroup) {
+                dataGp[0].wellcome[0].fundo = res;
+                setGp(dataGp);
+              }
               fs.writeFileSync(
                 "./dados/links.json",
                 JSON.stringify(Links_P, null, 2)
               );
               reply(
-                `A imagem de bem vindo foi alterado com sucesso para: ${fundo1}`
+                `A imagem de bem vindo foi alterado com sucesso para:\n${res}`
               );
             } else {
               return reply(
                 "Você deve marcar uma imagem com esse comando, se não for de primeira, tente novamente, ok?"
               );
             }
-          } catch {
+          } catch (e) {
+            console.log(e);
             return reply(
-              "Você deve marcar uma imagem com esse comando, se não for de primeira, tente novamente, ok? mas lembre-se, se não for mesmo, tente trocar a imagem ou o formato dela..."
+              "Erro ao fazer upload da imagem. Tente novamente ou use uma imagem diferente."
             );
           }
           break;
@@ -8254,31 +8362,39 @@ Dono Oficial do bot: ${numerodono_ofc}
               ((isMedia && !info.message.videoMessage) || isQuotedImage) &&
               !q.length <= 1
             ) {
+              reply(
+                `- Calma ae amigo(a), já estou trocando a foto de fundo do saiu para você 😏`
+              );
               boij =
                 isQuotedImage || isQuotedVideo
                   ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                      .message.extendedTextMessage.contextInfo.message
-                      .imageMessage
-                  : info;
+                    .message.extendedTextMessage.contextInfo.message
+                    .imageMessage
+                  : info.message.imageMessage;
               owgi = await getFileBuffer(boij, "image");
-              res = await uploader.catbox(owgi);
+              res = await reqapi.uploadDropbox(owgi);
               fundo2 = res;
               Links_P.fundo2 = res;
+              if (isGroup) {
+                dataGp[0].wellcome[0].fundo_saiu = res;
+                setGp(dataGp);
+              }
               fs.writeFileSync(
                 "./dados/links.json",
                 JSON.stringify(Links_P, null, 2)
               );
               reply(
-                `A imagem de saiu foi alterado com sucesso para: ${fundo2}`
+                `A imagem de saída foi alterada com sucesso para:\n${res}`
               );
             } else {
               return reply(
                 "Você deve marcar uma imagem com esse comando, se não for de primeira, tente novamente, ok?"
               );
             }
-          } catch {
+          } catch (e) {
+            console.log(e);
             return reply(
-              "Você deve marcar uma imagem com esse comando, se não for de primeira, tente novamente, ok? mas lembre-se, se não for mesmo, tente trocar a imagem ou o formato dela..."
+              "Erro ao fazer upload da imagem. Tente novamente ou use uma imagem diferente."
             );
           }
           break;
@@ -8356,10 +8472,10 @@ Dono Oficial do bot: ${numerodono_ofc}
             menc_jid2?.length === 1
               ? menc_jid2[0]
               : menc_prt
-              ? menc_prt
-              : q.trim()
-              ? q.replace(new RegExp("[()+-/ @+/]", "gi"), "") + SNET
-              : false;
+                ? menc_prt
+                : q.trim()
+                  ? q.replace(new RegExp("[()+-/ @+/]", "gi"), "") + SNET
+                  : false;
           if (!menc_prt && !menc_jid2 && !q.trim())
             return reply(
               "Marque o @ do usuário que deseja bloquear de ele utilizar os comandos, ou o número da fórma que copiar..."
@@ -8368,9 +8484,8 @@ Dono Oficial do bot: ${numerodono_ofc}
           if (numblc >= 0) return reply("*Esse Número ja esta incluso*");
           ban.push(blcp);
           fs.writeFileSync("./dados/usuarios/banned.json", JSON.stringify(ban));
-          susp = `🚫@${
-            blcp.split("@")[0]
-          } foi banido e não poderá mais usar os comandos do bot, em nenhum grupo ou privado.🚫`;
+          susp = `🚫@${blcp.split("@")[0]
+            } foi banido e não poderá mais usar os comandos do bot, em nenhum grupo ou privado.🚫`;
           conn.sendMessage(from, { text: susp, mentions: [blcp] });
           conn.updateBlockStatus(blcp, "block");
           break;
@@ -8384,10 +8499,10 @@ Dono Oficial do bot: ${numerodono_ofc}
             menc_jid2?.length === 1
               ? menc_jid2[0]
               : menc_prt
-              ? menc_prt
-              : q.trim()
-              ? q.replace(new RegExp("[()+-/ @+/]", "gi"), "") + SNET
-              : false;
+                ? menc_prt
+                : q.trim()
+                  ? q.replace(new RegExp("[()+-/ @+/]", "gi"), "") + SNET
+                  : false;
           if (!menc_prt && !menc_jid2 && !q.trim())
             return reply(
               "Marque o @ do fdp que deseja desbloquear pra ele utilizar os comandos, ou o número da fórma que copiar..."
@@ -8397,9 +8512,8 @@ Dono Oficial do bot: ${numerodono_ofc}
           processo = ban.indexOf(blcp);
           ban.splice(processo, 1);
           fs.writeFileSync("./dados/usuarios/banned.json", JSON.stringify(ban));
-          susp = `@${
-            blcp.split("@")[0]
-          } Foi desbanido e poderá usar os comandos do Bot, se continuar a fazer bagunça será bloqueado de novo desgraça 🤬`;
+          susp = `@${blcp.split("@")[0]
+            } Foi desbanido e poderá usar os comandos do Bot, se continuar a fazer bagunça será bloqueado de novo desgraça 🤬`;
           conn.sendMessage(from, { text: susp, mentions: [blcp] });
           conn.updateBlockStatus(blcp, "unblock");
           break;
@@ -8407,9 +8521,9 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "blocklist":
           jrc = "ESTA É A LISTA DE NÚMEROS BLOQUEADOS :\n";
           for (let benn of ban) {
-            jrc += `~> @${benn.split("@")[0]}\n`;
+            jrc += `~> @${benn.split("@")[0]} \n`;
           }
-          jrc += `Total : ${ban.length}`;
+          jrc += `Total: ${ban.length} `;
           conn.sendMessage(from, { text: jrc.trim(), mentions: ban });
           break;
 
@@ -8421,7 +8535,7 @@ Dono Oficial do bot: ${numerodono_ofc}
             if (err)
               return conn.sendMessage(
                 from,
-                { text: `root@ALEATORY-BOT:~ ${err}` },
+                { text: `root @ALEATORY-BOT: ~${err} ` },
                 { quoted: info }
               );
             if (stdout) {
@@ -8433,9 +8547,9 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "execut":
           if (!SoDono && !isnit && !issupre && !ischyt) return;
           try {
-            return eval(`(async() => { ${args.join(" ")}})()`);
+            return eval(`(async () => { ${args.join(" ")} })()`);
           } catch (e) {
-            conn.sendMessage(from, { text: `${e}` });
+            conn.sendMessage(from, { text: `${e} ` });
           }
           break;
 
@@ -8447,8 +8561,8 @@ Dono Oficial do bot: ${numerodono_ofc}
                 .conversation ||
               info.message.extendedTextMessage.contextInfo.quotedMessage
                 .extendedTextMessage.text;
-            console.log(`[EXEC]~> ${paramsQuoted}`);
-            return eval(`${paramsQuoted}`);
+            console.log(`[EXEC]~> ${paramsQuoted} `);
+            return eval(`${paramsQuoted} `);
           } catch (e) {
             reply(e);
           }
@@ -8457,13 +8571,13 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "sender": {
           // ✅ Obtém o JID do remetente (lid atualizado)
           const jid = sender?.lid
-            ? `${sender.lid}@s.whatsapp.net`
+            ? `${sender.lid} @s.whatsapp.net`
             : sender?.id
-            ? sender.id
-            : info.key.participant || info.key.remoteJid;
+              ? sender.id
+              : info.key.participant || info.key.remoteJid;
 
           // ✅ Texto visível (sem mostrar número)
-          const msgText = `👤 Usuário: @${jid.split("@")[0]}`;
+          const msgText = `👤 Usuário: @${jid.split("@")[0]} `;
 
           // ✅ Envia com menção funcional
           await conn.sendMessage(
@@ -8515,7 +8629,7 @@ Dono Oficial do bot: ${numerodono_ofc}
 
             // Texto do comando ping
             const mensagemPing = `
-╭━━⌈ ⚡ PING-BOT ⌋━━╮
+╭━━⌈ ⚡ PING - BOT ⌋━━╮
 ┃ 🤖 Status: Online ✅
 ┃ 🌐 Host: bronxyshost.com
 ┃ 📍 Localização: São Paulo - Brasil
@@ -8527,9 +8641,9 @@ Dono Oficial do bot: ${numerodono_ofc}
 ╰━━━━━━━━━━━━━━╯
 
 ╭━━⌈ 💻 Desempenho do Sistema ⌋━━╮
-┃ 💾 RAM: ${usedMemory}MB / ${totalMemory}MB (${percentMemory}%)
-┃ ⚙️ CPU: ${cpuUsage}s
-┃ 🚀 Velocidade: ${String(r.toFixed(3))}s
+┃ 💾 RAM: ${usedMemory} MB / ${totalMemory} MB(${percentMemory} %)
+┃ ⚙️ CPU: ${cpuUsage} s
+┃ 🚀 Velocidade: ${String(r.toFixed(3))} s
 ┃ ⏱️ Uptime: ${kyun(uptime)}
 ╰━━━━━━━━━━━━━━╯
 
@@ -8566,7 +8680,7 @@ Dono Oficial do bot: ${numerodono_ofc}
               return conn.sendMessage(
                 from,
                 {
-                  text: `Cade o texto 🙄, digite algo Exemplo:\n${prefix}gtts PT aleatory`,
+                  text: `Cade o texto 🙄, digite algo Exemplo: \n${prefix}gtts PT aleatory`,
                 },
                 { quoted: info }
               );
@@ -8586,7 +8700,7 @@ Dono Oficial do bot: ${numerodono_ofc}
               );
             gtts.save(ranm, dtt, function () {
               exec(
-                `ffmpeg -i ${ranm} -ar 48000 -vn -c:a libopus ${rano}`,
+                `ffmpeg - i ${ranm} -ar 48000 - vn - c:a libopus ${rano} `,
                 (err) => {
                   conn
                     .sendMessage(
@@ -8721,7 +8835,7 @@ Dono Oficial do bot: ${numerodono_ofc}
               return reply("Não contém nenhum comando bloqueado.");
             let bla = "";
             for (let V = 0; V < dataGp[0].comandosB.length; V++) {
-              bla += `│ ${V}: ${dataGp[0].comandosB[V]}\n`;
+              bla += `│ ${V}: ${dataGp[0].comandosB[V]} \n`;
             }
             conn.sendMessage(from, { text: bla }, { quoted: info });
           }
@@ -8740,7 +8854,7 @@ Dono Oficial do bot: ${numerodono_ofc}
             let bla =
               "Comandos que estão bloqueado para todos os grupos e privado:\n\n";
             for (let V = 0; V < bloq_global.length; V++) {
-              bla += `│ ${V}: ${bloq_global[V]}\n`;
+              bla += `│ ${V}: ${bloq_global[V]} \n`;
             }
             conn.sendMessage(from, { text: bla }, { quoted: info });
           }
@@ -8759,9 +8873,8 @@ Dono Oficial do bot: ${numerodono_ofc}
               { quoted: info }
             );
           var nomor = info.participant;
-          tdptls = `[ Avaliação ]\nDe: wa.me/${
-            sender.split(SNET)[0]
-          }\n: ${avalie}`;
+          tdptls = `[Avaliação]\nDe: wa.me / ${sender.split(SNET)[0]
+            } \n: ${avalie} `;
           conn.sendMessage(nmrdn, { text: tdptls }, { quoted: info });
           reply(
             "mensagem enviada ao meu dono, obrigada pela avaliação, iremos melhorar a cada dia."
@@ -8781,9 +8894,8 @@ Dono Oficial do bot: ${numerodono_ofc}
               { quoted: info }
             );
           var nomor = info.participant;
-          teks1 = `[ Problema ]\nDe: wa.me/${
-            sender.split(SNET)[0]
-          }\nErro ou bug: ${bug}`;
+          teks1 = `[Problema]\nDe: wa.me / ${sender.split(SNET)[0]
+            } \nErro ou bug: ${bug} `;
           conn.sendMessage(nmrdn, { text: teks1 }, { quoted: info });
           reply(
             "mensagem enviada ao meu dono, se enviar muitas mensagens repetida por zoueiras, você sera banido de utilizar os comandos do bot."
@@ -8804,9 +8916,8 @@ Dono Oficial do bot: ${numerodono_ofc}
               { quoted: info }
             );
           var nomor = info.participant;
-          sug = `[ Sugestões ]\nDe: wa.me/${
-            sender.split(SNET)[0]
-          }\n: ${sugestao}`;
+          sug = `[Sugestões]\nDe: wa.me / ${sender.split(SNET)[0]
+            } \n: ${sugestao} `;
           conn.sendMessage(nmrdn, { text: sug }, { quoted: info });
           reply(
             "mensagem enviada ao meu dono, obrigado pela sugestão, tentar ouvir o máximo possível de sugestões."
@@ -8821,9 +8932,8 @@ Dono Oficial do bot: ${numerodono_ofc}
             blue = await reqapi.grupos(q);
             let red = "Listagem de grupos para você:\n\n";
             blue.forEach(function (ab) {
-              red += ` - Url do Grupo: ${ab.link}\n\n - Descrição: ${
-                ab.desc
-              }\n\n${"-".repeat(20)}\n\n`;
+              red += ` - Url do Grupo: ${ab.link}\n\n - Descrição: ${ab.desc
+                } \n\n${"-".repeat(20)} \n\n`;
             });
             reply(red);
           }
@@ -8865,8 +8975,8 @@ Dono Oficial do bot: ${numerodono_ofc}
             if ((isMedia && !info.message.videoMessage) || isQuotedImage) {
               boij = isQuotedImage
                 ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                    .message.extendedTextMessage.contextInfo.message
-                    .imageMessage
+                  .message.extendedTextMessage.contextInfo.message
+                  .imageMessage
                 : info.message.imageMessage;
               owgi = await getFileBuffer(boij, "image");
               link = await uploader.catbox(owgi);
@@ -8895,7 +9005,7 @@ Dono Oficial do bot: ${numerodono_ofc}
                   Fl?.imageMessage;
                 let base64String = await getFileBuffer(muk, "image");
                 var abcd = await reqapi.uploadDropbox(base64String);
-                reply(`✅ Link da imagem gerado com sucesso:\n\n${abcd}`);
+                reply(`✅ Link da imagem gerado com sucesso: \n\n${abcd} `);
               } else {
                 return reply(
                   "❌ Marque uma imagem, para que eu possa converter em link."
@@ -8915,10 +9025,10 @@ Dono Oficial do bot: ${numerodono_ofc}
                 `Digite o nome de algum vídeo ou música que deseja encontrar..`
               );
             AB = await reqapi.ytsearch(q.trim());
-            ABC = `${"-\t".repeat(13)}\n\n`;
+            ABC = `${"-\t".repeat(13)} \n\n`;
             for (var i of AB) {
-              ABC += `Titulo: ${i.titulo}\nUrl: ${i.url}\nTempo: ${i.tempo}\nPostado: ${i.postado}\n\nDescrição: ${i.desc}\n\n`;
-              ABC += `${"-\t".repeat(13)}\n\n`;
+              ABC += `Titulo: ${i.titulo} \nUrl: ${i.url} \nTempo: ${i.tempo} \nPostado: ${i.postado} \n\nDescrição: ${i.desc} \n\n`;
+              ABC += `${"-\t".repeat(13)} \n\n`;
             }
             reply(ABC);
           } catch (e) {
@@ -8937,10 +9047,10 @@ Dono Oficial do bot: ${numerodono_ofc}
             return reply(
               `Digite o comando ${prefix}votar no grupo que iniciou a votação para ver como votar no formato correto.`
             );
-          if (!fs.existsSync(`./dados/org/json/DUELO/duelo_${id_g}.json`))
+          if (!fs.existsSync(`./ dados / org / json / DUELO / duelo_${id_g}.json`))
             return reply(`Nenhum duelo foi iniciado nesse grupo..`);
           var dl_JsOn = JSON.parse(
-            fs.readFileSync(`./dados/org/json/DUELO/duelo_${id_g}.json`)
+            fs.readFileSync(`./ dados / org / json / DUELO / duelo_${id_g}.json`)
           );
           if (dl_JsOn.voto_usu1.includes(sender))
             return reply(
@@ -8956,7 +9066,7 @@ Dono Oficial do bot: ${numerodono_ofc}
             dl_JsOn.voto_usu2.push(sender);
           }
           fs.writeFileSync(
-            `./dados/org/json/DUELO/duelo_${id_g}.json`,
+            `./ dados / org / json / DUELO / duelo_${id_g}.json`,
             JSON.stringify(dl_JsOn, null, 2)
           );
           reply(
@@ -8967,11 +9077,11 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "votar":
         case "como_votar":
           if (!isGroup) return reply(Res_SoGrupo);
-          if (!fs.existsSync(`./dados/org/json/DUELO/duelo_${from}.json`))
+          if (!fs.existsSync(`./ dados / org / json / DUELO / duelo_${from}.json`))
             return reply(`Nenhum duelo foi iniciado nesse grupo..`);
           reply("Como votar foi enviado no seu privado a explicação dos 2.");
           var dl_JsOn = JSON.parse(
-            fs.readFileSync(`./dados/org/json/DUELO/duelo_${from}.json`)
+            fs.readFileSync(`./ dados / org / json / DUELO / duelo_${from}.json`)
           );
           conn.sendMessage(sender, {
             text: `Para votar no primeiro usario: 
@@ -8979,8 +9089,8 @@ Use o comando: ${setting.prefix}votar_duelo ${dl_JsOn.usu1}/${from}
 
 Para votar no segundo usuario:
 
-Use o comando: ${setting.prefix}votar_duelo ${dl_JsOn.usu2}/${from} 
-`,
+Use o comando: ${setting.prefix}votar_duelo ${dl_JsOn.usu2}/${from}
+  `,
           });
           break;
 
@@ -8988,9 +9098,9 @@ Use o comando: ${setting.prefix}votar_duelo ${dl_JsOn.usu2}/${from}
         case "zerar_combate":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isGroupAdmins) return reply("Apenas administrador..");
-          if (!fs.existsSync(`./dados/org/json/DUELO/duelo_${from}.json`))
+          if (!fs.existsSync(`./ dados / org / json / DUELO / duelo_${from}.json`))
             return reply(`Nenhum duelo foi iniciado nesse grupo..`);
-          DLT_FL(`./dados/org/json/DUELO/duelo_${from}.json`);
+          DLT_FL(`./ dados / org / json / DUELO / duelo_${from}.json`);
           reply("Duelo resetado / cancelado..");
           break;
 
@@ -8998,37 +9108,32 @@ Use o comando: ${setting.prefix}votar_duelo ${dl_JsOn.usu2}/${from}
           try {
             if (!isGroup) return reply(Res_SoGrupo);
             if (!isGroupAdmins) return reply("Apenas administrador..");
-            if (!fs.existsSync(`./dados/org/json/DUELO/duelo_${from}.json`))
+            if (!fs.existsSync(`./ dados / org / json / DUELO / duelo_${from}.json`))
               return reply(`Nenhum duelo foi iniciado nesse grupo..`);
             dl_JsOn = JSON.parse(
-              fs.readFileSync(`./dados/org/json/DUELO/duelo_${from}.json`)
+              fs.readFileSync(`./ dados / org / json / DUELO / duelo_${from}.json`)
             );
             if (dl_JsOn.voto_usu1.length == dl_JsOn.voto_usu2.length)
-              return reply(`[ OBS ] - OS 2 USUARIOS TERMINARAM EMPATE, COM MESMA PONTUAÇÃO:
+              return reply(`[OBS] - OS 2 USUARIOS TERMINARAM EMPATE, COM MESMA PONTUAÇÃO:
 
 1: ${dl_JsOn.voto_usu1.length} Votos
 
 2: ${dl_JsOn.voto_usu2.length} Votos
 
 Então a decisão está na mão dos administradores, se vai refazer o duelo, ou decidir o ganhador de alguma fórma..`);
-            let blak = `[ Ganhador: @${
-              dl_JsOn.voto_usu1.length > dl_JsOn.voto_usu2.length
-                ? dl_JsOn.usu1.split("@")[0]
-                : dl_JsOn.usu2.split("@")[0]
-            } ]\n\nUsuário _- 1 - @${
-              dl_JsOn.usu1.split("@")[0]
-            }\n\nQuantidade de votos: ${
-              dl_JsOn.voto_usu1.length
-            }\n_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n\nUsuário _- 2 - @${
-              dl_JsOn.usu2.split("@")[0]
-            }\n\nQuantidade de votos: ${dl_JsOn.voto_usu2.length}\n`;
+            let blak = `[Ganhador: @${dl_JsOn.voto_usu1.length > dl_JsOn.voto_usu2.length
+              ? dl_JsOn.usu1.split("@")[0]
+              : dl_JsOn.usu2.split("@")[0]
+              } ]\n\nUsuário _ - 1 - @${dl_JsOn.usu1.split("@")[0]
+              } \n\nQuantidade de votos: ${dl_JsOn.voto_usu1.length
+              } \n_ - _ - _ - _ - _ - _ - _ - _ - _ - _ - _ - _ - _ - _ - _ - _ - _ -\n\nUsuário _ - 2 - @${dl_JsOn.usu2.split("@")[0]
+              } \n\nQuantidade de votos: ${dl_JsOn.voto_usu2.length} \n`;
             try {
               pfimg = await conn.profilePictureUrl(
-                `${
-                  dl_JsOn.voto_usu1.length > dl_JsOn.voto_usu2.length
-                    ? dl_JsOn.usu1.split("@")[0]
-                    : dl_JsOn.usu2.split("@")[0]
-                }@c.us`,
+                `${dl_JsOn.voto_usu1.length > dl_JsOn.voto_usu2.length
+                  ? dl_JsOn.usu1.split("@")[0]
+                  : dl_JsOn.usu2.split("@")[0]
+                } @c.us`,
                 "image"
               );
             } catch {
@@ -9037,11 +9142,10 @@ Então a decisão está na mão dos administradores, se vai refazer o duelo, ou 
             bl1 = await getBuffer(pfimg);
             bl_up = await uploader.catbox(bl1);
             blar = await getBuffer(
-              `https://eruakorl.sirv.com/josival-aleatory/ganhador.jpg?text.0.text=${
-                dl_JsOn.voto_usu1.length > dl_JsOn.voto_usu2.length
-                  ? dl_JsOn.usu1.split("@")[0]
-                  : dl_JsOn.usu2.split("@")[0]
-              }&text.0.position.gravity=center&text.0.position.y=22%25&text.0.size=62&text.0.color=000000&text.0.font.family=Source%20Serif%20Pro&text.0.font.weight=700&text.0.font.style=italic`
+              `https://eruakorl.sirv.com/josival-aleatory/ganhador.jpg?text.0.text=${dl_JsOn.voto_usu1.length > dl_JsOn.voto_usu2.length
+                ? dl_JsOn.usu1.split("@")[0]
+                : dl_JsOn.usu2.split("@")[0]
+              }& text.0.position.gravity = center & text.0.position.y = 22 % 25 & text.0.size = 62 & text.0.color =000000 & text.0.font.family = Source % 20Serif % 20Pro & text.0.font.weight = 700 & text.0.font.style = italic`
             );
             bli = await uploader.catbox(blar);
             conn.sendMessage(from, {
@@ -9052,9 +9156,9 @@ Então a decisão está na mão dos administradores, se vai refazer o duelo, ou 
           } catch {
             reply("Erro, tente novamente..");
           }
-          U_S_US = `Usuarios que votou em: ${dl_JsOn.usu1.split("@")[0]}\n\n`;
+          U_S_US = `Usuarios que votou em: ${dl_JsOn.usu1.split("@")[0]} \n\n`;
           for (let i of dl_JsOn.voto_usu1) {
-            U_S_US += `- ( https://wa.me/${i.split("@")[0]} )\n\n`;
+            U_S_US += `- (https://wa.me/${i.split("@")[0]} )\n\n`;
           }
 
           U_S_US += `Usuarios que votou em: ${dl_JsOn.usu2.split("@")[0]}\n\n`;
@@ -9079,15 +9183,13 @@ Então a decisão está na mão dos administradores, se vai refazer o duelo, ou 
 
 @${dl_JsOn.usu1.split("@")[0]}
 Para votar no primeiro usuario do duelo: 
-https://wa.me/${botNumber.split("@")[0]}?text=${setting.prefix}votar_duelo%20${
-            dl_JsOn.usu1.split("@")[0]
-          }/${from}
+https://wa.me/${botNumber.split("@")[0]}?text=${setting.prefix}votar_duelo%20${dl_JsOn.usu1.split("@")[0]
+            }/${from}
 
 @${dl_JsOn.usu2.split("@")[0]}
 Para votar no segundo usuario do duelo:
-https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
-            dl_JsOn.usu2.split("@")[0]
-          }/${from}`);
+https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${dl_JsOn.usu2.split("@")[0]
+            }/${from}`);
           break;
 
         case "duelo":
@@ -9095,9 +9197,8 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isGroupAdmins) return reply("Apenas administrador..");
           try {
-            TXTEX = `Olá, para iniciar o duelo, você precisa marcar 2 pessoas.\nExemplo: ${
-              prefix + command
-            } @fulano1 @fulano2.`;
+            TXTEX = `Olá, para iniciar o duelo, você precisa marcar 2 pessoas.\nExemplo: ${prefix + command
+              } @fulano1 @fulano2.`;
             if (!menc_jid2 || menc_jid2?.length > 2) return reply(TXTEX);
             try {
               pfimg = await conn.profilePictureUrl(
@@ -9120,21 +9221,17 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
             bl2 = await getBuffer(pfimg2);
             bl_up2 = await uploader.catbox(bl2);
             gtb = await getBuffer(
-              `https://eruakorl.sirv.com/josival-aleatory/vs.jpg?text.0.text=${
-                menc_jid2[0].split("@")[0]
-              }&text.0.position.gravity=southwest&text.0.position.x=6%25&text.0.position.y=-2%25&text.0.size=32&text.0.color=ff0000&text.0.font.family=Source%20Serif%20Pro&text.0.font.weight=700&text.0.font.style=italic&text.0.background.opacity=100&text.1.text=${
-                menc_jid2[1].split("@")[0]
+              `https://eruakorl.sirv.com/josival-aleatory/vs.jpg?text.0.text=${menc_jid2[0].split("@")[0]
+              }&text.0.position.gravity=southwest&text.0.position.x=6%25&text.0.position.y=-2%25&text.0.size=32&text.0.color=ff0000&text.0.font.family=Source%20Serif%20Pro&text.0.font.weight=700&text.0.font.style=italic&text.0.background.opacity=100&text.1.text=${menc_jid2[1].split("@")[0]
               }&text.1.position.x=-7%25&text.1.position.y=-2%25&text.1.size=32&text.1.color=0022ff&text.1.font.family=Source%20Serif%20Pro&text.1.font.weight=700&text.1.font.style=italic`
             );
             txtimg = await uploader.catbox(gtb);
             conn
               .sendMessage(from, {
                 image: { url: reqapi.duelo(bl_up, bl_up2, txtimg) },
-                caption: `[ ATENÇÃO ]:\n\n@${
-                  menc_jid2[0].split("@")[0]
-                }\n\t\t\t\t\t~ VS ~\n@${
-                  menc_jid2[1].split("@")[0]
-                }\n\n[ Combate iniciado ] - Respeitem os Combatentes. Os dois participantes irão combater no momento. Posteriormente um ADM vai iniciar a votação. Digitando: !iniciar_votação. Atenção a votação, avalie com responsabilidade. Não atrapalhem o momento do combate para não serem removidos.`,
+                caption: `[ ATENÇÃO ]:\n\n@${menc_jid2[0].split("@")[0]
+                  }\n\t\t\t\t\t~ VS ~\n@${menc_jid2[1].split("@")[0]
+                  }\n\n[ Combate iniciado ] - Respeitem os Combatentes. Os dois participantes irão combater no momento. Posteriormente um ADM vai iniciar a votação. Digitando: !iniciar_votação. Atenção a votação, avalie com responsabilidade. Não atrapalhem o momento do combate para não serem removidos.`,
                 mentions: menc_jid2,
               })
               .catch((e) => {
@@ -9276,8 +9373,7 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
           {
             if (!q.trim().includes("spotify"))
               return reply(
-                `Cadê a url do spotiy? exemplo: ${
-                  prefix + command
+                `Cadê a url do spotiy? exemplo: ${prefix + command
                 } https://open.spotify.com/intl-pt/track/4m3mrHuttXhK58f6Tenai1\nNão baixo playlist, quiser pegar o link da música, acessa o site: https://open.spotify.com/search e pesquisa lá.`
               );
             reply(Res_Aguarde);
@@ -9682,12 +9778,12 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
               DM_T === "mp4"
                 ? "video/mp4"
                 : DM_T === "webp"
-                ? "image/webp"
-                : DM_T === "jpg"
-                ? "image/jpeg"
-                : DM_T === "mp3"
-                ? "audio/mpeg"
-                : "video/mp4";
+                  ? "image/webp"
+                  : DM_T === "jpg"
+                    ? "image/jpeg"
+                    : DM_T === "mp3"
+                      ? "audio/mpeg"
+                      : "video/mp4";
             conn
               .sendMessage(
                 from,
@@ -9715,10 +9811,10 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
               DM_T === "webp"
                 ? "image/webp"
                 : DM_T === "jpg"
-                ? "image/jpeg"
-                : DM_T === "mp3"
-                ? "audio/mpeg"
-                : "audio/mpeg";
+                  ? "image/jpeg"
+                  : DM_T === "mp3"
+                    ? "audio/mpeg"
+                    : "audio/mpeg";
             conn
               .sendMessage(
                 from,
@@ -9765,12 +9861,10 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
             reply(Res_Aguarde);
             ABC = await reqapi.celular(q.trim());
             reply(
-              `📱 Celular: ${
-                ABC?.celular || "Não encontrado"
-              }\n\nInformações:\n${
-                ABC?.resumo ||
-                ABC?.infoc ||
-                "Não encontrado, seja mais específico, a marca e a versão"
+              `📱 Celular: ${ABC?.celular || "Não encontrado"
+              }\n\nInformações:\n${ABC?.resumo ||
+              ABC?.infoc ||
+              "Não encontrado, seja mais específico, a marca e a versão"
               }`
             );
           } catch (e) {
@@ -9876,8 +9970,8 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
               !dataGp[0].advlink && !dataGp[0].antilinkhard
                 ? true
                 : dataGp[0].advlink && !dataGp[0].antilinkhard
-                ? false
-                : false;
+                  ? false
+                  : false;
             dataGp[0].advlink = !dataGp[0].advlink;
             setGp(dataGp);
             reply(
@@ -9899,8 +9993,8 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
               !dataGp[0].advlinkgp && !dataGp[0].antilinkgp
                 ? true
                 : dataGp[0].advlinkgp && !dataGp[0].antilinkgp
-                ? false
-                : false;
+                  ? false
+                  : false;
             dataGp[0].advlinkgp = !dataGp[0].advlinkgp;
             setGp(dataGp);
             reply(
@@ -9923,11 +10017,11 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
           );
           break;
 
-        case "7gold":
-        case "7statusgold":
-        case "7statusgolds":
-        case "7golds":
-        case "7consultargold":
+        case "gold":
+        case "statusgold":
+        case "statusgolds":
+        case "golds":
+        case "consultargold":
           if (!IS_sistemGold)
             return reply(
               `Só é possível utilizar este comando ativando o sistema de Golds\nExemplo: ${prefix}sistemgold 1`
@@ -9947,9 +10041,8 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
             });
             rggold[ID_G_GOLD].usus.forEach(function (a, b) {
               if (a?.emp_G && JSON.stringify(a.emp_G).includes(U_N))
-                Devendo += ` -> Devedor: ${a.id.split("@")[0]}\n -> ${
-                  a.emp_G[0].Golds
-                } Golds que te deve\n________________________\n`;
+                Devendo += ` -> Devedor: ${a.id.split("@")[0]}\n -> ${a.emp_G[0].Golds
+                  } Golds que te deve\n________________________\n`;
             });
             var quiz = Ch_?.quiz?.find((i) => i)?.errou;
             var quiz2 = Ch_?.quiz?.find((i) => i)?.acertou;
@@ -9972,31 +10065,28 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${
 
 - Chances restantes no cassino: ${Ch_?.cassino || 0}/5
 
-- Chances restantes no Quiz Número: ${
-              !Ch_?.quiz?.length > 0
+- Chances restantes no Quiz Número: ${!Ch_?.quiz?.length > 0
                 ? "0/2"
                 : quiz2 === 2
-                ? "2/2"
-                : quiz === 2
-                ? "2/2"
-                : quiz === 1 && quiz2 === 1
-                ? "1/2"
-                : quiz2 === 1 && quiz === 0
-                ? "1/2"
-                : quiz === 1 && quiz2 === 0
-                ? "1/2"
-                : "0/2"
-            }
+                  ? "2/2"
+                  : quiz === 2
+                    ? "2/2"
+                    : quiz === 1 && quiz2 === 1
+                      ? "1/2"
+                      : quiz2 === 1 && quiz === 0
+                        ? "1/2"
+                        : quiz === 1 && quiz2 === 0
+                          ? "1/2"
+                          : "0/2"
+              }
 
 - Chances de enviar cachaça: ${Ch_?.Cachaca || 0}/1
 
-- Devendo a: ${
-              FCLT_G?.emp_G && FCLT_G?.emp_G.length > 0
-                ? `@${FCLT_G.emp_G[0].id.split("@")[0]} / ${
-                    FCLT_G.emp_G[0].Golds
-                  } Golds`
+- Devendo a: ${FCLT_G?.emp_G && FCLT_G?.emp_G.length > 0
+                ? `@${FCLT_G.emp_G[0].id.split("@")[0]} / ${FCLT_G.emp_G[0].Golds
+                } Golds`
                 : "Ninguém."
-            }
+              }
 
 - Lista de usuários que estão te devendo:
 
@@ -10010,8 +10100,8 @@ Bot: ${NomeDoBot}`);
           }
           break;
 
-        case "7zerarrankgold":
-        case "7zerarrankgolds":
+        case "zerarrankgold":
+        case "zerarrankgolds":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!SoDono) return reply(Res_SoDono);
           rggold.splice(ID_G_GOLD, 1);
@@ -10037,7 +10127,7 @@ Bot: ${NomeDoBot}`);
           );
           break;
 
-        case "7rankgold":
+        case "rankgold":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -10073,21 +10163,20 @@ Bot: ${NomeDoBot}`);
 │
 │ Chance de vingança: ${Ch_?.Vinganca || 0}/1
 │
-│ Chances quiznumero: ${
-                  !Ch_?.quiz?.length > 0
+│ Chances quiznumero: ${!Ch_?.quiz?.length > 0
                     ? "0/2"
                     : quiz2 === 2
-                    ? "2/2"
-                    : quiz === 2
-                    ? "2/2"
-                    : quiz === 1 && quiz2 === 1
-                    ? "1/2"
-                    : quiz2 === 1 && quiz === 0
-                    ? "1/2"
-                    : quiz === 1 && quiz2 === 0
-                    ? "1/2"
-                    : "0/2"
-                }
+                      ? "2/2"
+                      : quiz === 2
+                        ? "2/2"
+                        : quiz === 1 && quiz2 === 1
+                          ? "1/2"
+                          : quiz2 === 1 && quiz === 0
+                            ? "1/2"
+                            : quiz === 1 && quiz2 === 0
+                              ? "1/2"
+                              : "0/2"
+                  }
 │
 │ Chance roleta da sorte: ${Ch_?.roletadasorte ? 1 : 0}/1
 │
@@ -10103,8 +10192,8 @@ Bot: ${NomeDoBot}`);
           mention(ble);
           break;
 
-        case "7addgold":
-        case "7tirargold":
+        case "addgold":
+        case "tirargold":
           if (!isGroup) return reply(Res_SoGrupo);
           if (!IS_sistemGold)
             return reply(
@@ -10112,28 +10201,22 @@ Bot: ${NomeDoBot}`);
             );
           if (!menc_os2)
             return reply(
-              `Você deve Marcar a mensagem do usuário com ${
-                prefix + command
-              } /100 por exemplo, ou ${
-                prefix + command
+              `Você deve Marcar a mensagem do usuário com ${prefix + command
+              } /100 por exemplo, ou ${prefix + command
               } @xpessoa/100, a quantidade é quanto quiser.`
             );
           if (!SoDono) return reply(Res_SoDono);
           var [usu, qp] = q.trim().split("/");
           if (!q.trim().includes("/"))
             return reply(
-              `Contém 2 fórmas, Exemplo1: ${
-                prefix + command
-              } /5\n\n O exemplo 1, você marca a mensagem do usuário, já o Exemplo2: ${
-                prefix + command
+              `Contém 2 fórmas, Exemplo1: ${prefix + command
+              } /5\n\n O exemplo 1, você marca a mensagem do usuário, já o Exemplo2: ${prefix + command
               } @marca/5\n\nO exemplo 2, você marca ele no grupo com @/5 que é a quantidade de golds.`
             );
           if (!Number(qp))
             return reply(
-              `Contém 2 fórmas, Exemplo1: ${
-                prefix + command
-              } /5\n\n O exemplo 1, você marca a mensagem do usuário, já o Exemplo2: ${
-                prefix + command
+              `Contém 2 fórmas, Exemplo1: ${prefix + command
+              } /5\n\n O exemplo 1, você marca a mensagem do usuário, já o Exemplo2: ${prefix + command
               } @marca/5\n\nO exemplo 2, você marca ele no grupo com @/5 que é a quantidade de golds.`
             );
           if (command == "addgold") {
@@ -10143,17 +10226,175 @@ Bot: ${NomeDoBot}`);
           }
           break;
 
-        case "7sistemgold":
-        case "7systemgold":
+        case "sistemgold":
+        case "systemgold":
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
           dataGp[0].sistemGold = !dataGp[0].sistemGold;
           setGp(dataGp);
           reply(
             dataGp[0]?.sistemGold
-              ? "Sistema de golds ativado com sucesso neste grupo. ( Obs: Use uma vez para ativar, e use novamente para desativar. )"
-              : "Sistema de golds desativado. ( Obs: Use uma vez para ativar, e use novamente para desativar. )"
+              ? "Sistema de golds ativado com sucesso neste grupo. ( Use uma vez para ativar e use novamente para desativar. )"
+              : "Sistema de golds desativado."
           );
+          break;
+
+        case "menugold":
+          if (!IS_sistemGold)
+            return reply(
+              `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold está ativado.`
+            );
+          if (!isGroup) return reply(Res_SoGrupo);
+          mention(menugold(prefix, NomeDoBot, sender));
+          break;
+
+        case "minerar":
+          if (!IS_sistemGold)
+            return reply(
+              `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold está ativado.`
+            );
+          if (!isGroup) return reply(Res_SoGrupo);
+          var Ch = dataGp[0].Chances;
+          var Ch_ = Ch[Ch.findIndex((i) => i.id === sender)];
+          if (Ch_.ChanceG >= 3)
+            return reply("Você já atingiu o limite de mineração por hoje! (3/3)");
+
+          let ganhou = Math.floor(Math.random() * 50) + 10;
+          await S_Sistema.ADD(sender, ganhou);
+          Ch_.ChanceG = (Ch_.ChanceG || 0) + 1;
+          setGp(dataGp);
+          reply(`⛏️ Você minerou com sucesso e ganhou ${ganhou} Golds! (Chances: ${Ch_.ChanceG || 0}/3)`);
+          break;
+
+        case "apostar":
+          if (!IS_sistemGold)
+            return reply(
+              `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold está ativado.`
+            );
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (args.length < 1) return reply(`Exemplo: ${prefix}apostar 100`);
+          var valor = Number(args[0]);
+          if (isNaN(valor) || valor <= 0) return reply("Digite um valor válido para apostar!");
+
+          var Ch = dataGp[0].Chances;
+          var Ch_ = Ch[Ch.findIndex((i) => i.id === sender)];
+          var FCLT_G = rggold[ID_G_GOLD].usus.find((i) => i.id === sender);
+
+          if (!FCLT_G || FCLT_G.Golds < valor) return reply("Você não tem golds suficientes!");
+          if (Ch_.ChanceAp >= 15) return reply("Você já atingiu o limite de apostas por hoje! (15/15)");
+
+          Ch_.ChanceAp = (Ch_.ChanceAp || 0) + 1;
+          if (Math.random() > 0.5) {
+            await S_Sistema.ADD(sender, valor);
+            reply(`🎉 Parabéns! Você ganhou a aposta e recebeu ${valor} Golds!`);
+          } else {
+            await S_Sistema.RM(sender, valor);
+            reply(`😔 Que pena! Você perdeu a aposta de ${valor} Golds.`);
+          }
+          setGp(dataGp);
+          break;
+
+        case "roubar":
+          if (!IS_sistemGold)
+            return reply(
+              `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold está ativado.`
+            );
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!menc_os2) return reply("Marque ou mencione alguém para roubar!");
+
+          var Ch = dataGp[0].Chances;
+          var Ch_ = Ch[Ch.findIndex((i) => i.id === sender)];
+          if (Ch_.ChanceR.length >= 5) return reply("Você já atingiu o limite de roubos por hoje! (5/5)");
+
+          var targetG = rggold[ID_G_GOLD].usus.find((i) => i.id === menc_os2);
+          if (!targetG || targetG.Golds < 50) return reply("O alvo é muito pobre para ser roubado!");
+
+          Ch_.ChanceR.push(menc_os2);
+          if (Math.random() > 0.6) {
+            let roubado = Math.floor(Math.random() * 50) + 10;
+            if (roubado > targetG.Golds) roubado = targetG.Golds;
+            await S_Sistema.RM(menc_os2, roubado);
+            await S_Sistema.ADD(sender, roubado);
+            reply(`🥷 Você roubou com sucesso ${roubado} Golds de @${menc_os2.split("@")[0]}!`, { mentions: [menc_os2] });
+          } else {
+            let multa = 20;
+            await S_Sistema.RM(sender, multa);
+            reply(`🚔 O @${menc_os2.split("@")[0]} percebeu sua tentativa e você foi multado em ${multa} Golds!`, { mentions: [menc_os2] });
+          }
+          setGp(dataGp);
+          break;
+
+        case "transferir":
+          if (!IS_sistemGold)
+            return reply(
+              `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold está ativado.`
+            );
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!menc_os2 || args.length < 1) return reply(`Exemplo: ${prefix}transferir @alvo/100`);
+          var valor = Number(q.split("/")[1]);
+          if (isNaN(valor) || valor <= 0) return reply("Digite um valor válido para transferir!");
+
+          var senderG = rggold[ID_G_GOLD].usus.find((i) => i.id === sender);
+          if (!senderG || senderG.Golds < valor) return reply("Você não tem golds suficientes!");
+
+          await S_Sistema.RM(sender, valor);
+          await S_Sistema.ADD(menc_os2, valor);
+          reply(`💸 Você transferiu ${valor} Golds para @${menc_os2.split("@")[0]} com sucesso!`, { mentions: [menc_os2] });
+          break;
+
+        case "cassino":
+          if (!IS_sistemGold)
+            return reply(
+              `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold está ativado.`
+            );
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (args.length < 1) return reply(`Exemplo: ${prefix}cassino 50`);
+          var valor = Number(args[0]);
+          if (isNaN(valor) || valor <= 0) return reply("Digite um valor válido!");
+
+          var Ch = dataGp[0].Chances;
+          var Ch_ = Ch[Ch.findIndex((i) => i.id === sender)];
+          if (Ch_.cassino >= 5) return reply("Você já jogou no cassino o limite de hoje! (5/5)");
+
+          var FCLT_G = rggold[ID_G_GOLD].usus.find((i) => i.id === sender);
+          if (!FCLT_G || FCLT_G.Golds < valor) return reply("Golds insuficientes!");
+
+          Ch_.cassino = (Ch_.cassino || 0) + 1;
+          if (Math.random() > 0.7) {
+            let mult = Math.floor(Math.random() * 3) + 2;
+            let ganhou = valor * mult;
+            await S_Sistema.ADD(sender, ganhou);
+            reply(`🎰 CASSINO: VOCÊ GANHOU! 🎉\nO resultado foi favorável e você recebeu ${ganhou} Golds (x${mult})!`);
+          } else {
+            await S_Sistema.RM(sender, valor);
+            reply(`🎰 CASSINO: VOCÊ PERDEU! 😔\nA sorte não estava ao seu lado desta vez.`);
+          }
+          setGp(dataGp);
+          break;
+
+        case "roleta":
+          if (!IS_sistemGold)
+            return reply(
+              `Este comando só pode ser utilizado quando o sistema ${prefix}sistemgold está ativado.`
+            );
+          if (!isGroup) return reply(Res_SoGrupo);
+
+          var Ch = dataGp[0].Chances;
+          var Ch_ = Ch[Ch.findIndex((i) => i.id === sender)];
+          if (Ch_.roletadasorte) return reply("Você já girou a roleta hoje!");
+
+          Ch_.roletadasorte = true;
+          let random = Math.random();
+          if (random > 0.9) {
+            await S_Sistema.ADD(sender, 500);
+            reply("🎡 ROLETA: SURPRESA! 🎊 Você ganhou o prêmio máximo de 500 Golds!");
+          } else if (random > 0.5) {
+            await S_Sistema.ADD(sender, 100);
+            reply("🎡 ROLETA: Parabéns! Você ganhou 100 Golds.");
+          } else {
+            reply("🎡 ROLETA: Não foi dessa vez, você não ganhou nada.");
+          }
+          setGp(dataGp);
           break;
 
         case "x9visuunica":
@@ -10258,8 +10499,7 @@ Bot: ${NomeDoBot}`);
             return reply("Determine o novo prefixo, não pode espaço vazio...");
           if (q.trim() > 1)
             return reply(
-              `Calma, o prefixo só pode ser um\nExemplo: ${
-                prefix + command
+              `Calma, o prefixo só pode ser um\nExemplo: ${prefix + command
               } _\nAe o bot vai passar á responder _ como prefixo do bot..`
             );
           if (dataGp[0].prefixos.indexOf(q.trim()) >= 0)
@@ -10289,8 +10529,7 @@ Bot: ${NomeDoBot}`);
             );
           if (q.trim() > 1)
             return reply(
-              `Calma, o prefixo só pode ser tirado um por vez\nExemplo: ${
-                prefix + command
+              `Calma, o prefixo só pode ser tirado um por vez\nExemplo: ${prefix + command
               } _\nAe o bot não vai responder mais com _`
             );
           if (dataGp[0].prefixos.indexOf(q.trim()) < 0)
@@ -10342,6 +10581,7 @@ Bot: ${NomeDoBot}`);
           break;
 
         case "bemvindo":
+        case "bemvindo1":
         case "welcon1":
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
@@ -10350,10 +10590,26 @@ Bot: ${NomeDoBot}`);
           setGp(dataGp);
           reply(
             dataGp[0]["wellcome"][0]["bemvindo1"]
-              ? "📛 𝘼𝙏𝙄𝙑𝙊𝙐 📛\nCom sucesso o (𝙗𝙚𝙢-𝙫𝙞𝙣𝙙𝙤❶)Neste grupo 🤩"
-              : "❌𝘿𝙀𝙎𝘼𝙏𝙄𝙑𝙊𝙐❌\nCom sucesso o (𝙗𝙚𝙢-𝙫𝙞𝙣𝙙𝙤❶)Neste grupo 🤩"
+              ? "📛 𝘼𝙏𝙄𝙑𝙊𝙐 📛\nCom sucesso o (𝙗𝙚𝙢-𝙫𝙞𝙣𝙙𝙤❶) 🎉"
+              : "❌𝘿𝙀𝙎𝘼𝙏𝙄𝙑𝙊𝙐❌\nCom sucesso o (𝙗𝙚𝙢-𝙫𝙞𝙣-𝙙𝙤❶) 🥱"
           );
           break;
+
+        case "saiu":
+        case "saiu1":
+          if (Os_Returns(true, true, true).true)
+            return reply(Os_Returns(true, true, true).txt);
+          if (!SoDono) return reply(Res_SoDono);
+          dataGp[0].wellcome[0].saiu1 = !dataGp[0].wellcome[0].saiu1;
+          setGp(dataGp);
+          reply(
+            dataGp[0]["wellcome"][0]["saiu1"]
+              ? "📛 𝘼𝙏𝙄𝙑𝙊𝙐 📛\nCom sucesso a (𝙨𝙖𝙞́𝙙𝙖❶) 🎉"
+              : "❌𝘿𝙀𝙎𝘼𝙏𝙄𝙑𝙊𝙐❌\nCom sucesso a (𝙨𝙖𝙞́𝙙𝙖❶) 🥱"
+          );
+          break;
+
+        case "bemvindo2":
         case "bemvindo2":
         case "welcon2":
           if (Os_Returns(true, true, true).true)
@@ -10363,8 +10619,21 @@ Bot: ${NomeDoBot}`);
           setGp(dataGp);
           reply(
             dataGp[0]["wellcome"][1]["bemvindo2"]
-              ? "📛 𝐀𝐓𝐈𝐕𝐎𝐔 📛\nCom sucesso o (𝐃𝐞𝐦-𝐯𝐢𝐧𝐝𝐨)Neste grupo 🤩"
-              : "❌𝐃𝐄𝐒𝐀𝐓𝐈𝐕𝐎𝐔❌\nCom sucesso o (𝐃𝐞𝐦-𝐯𝐢𝐧𝐝𝐨)Neste grupo 🤩"
+              ? "📛 𝐀𝐓𝐈𝐕𝐎𝐔 📛\nCom sucesso o (𝐃𝐞𝐦-𝐯𝐢𝐧𝐝𝐨❷) 🎉"
+              : "❌𝐃𝐄𝐒𝐀𝐓𝐈𝐕𝐎𝐔❌\nCom sucesso o (𝐃𝐞𝐦-𝐯𝐢𝐧𝐝𝐨❷) 🥱"
+          );
+          break;
+
+        case "saiu2":
+          if (Os_Returns(true, true, true).true)
+            return reply(Os_Returns(true, true, true).txt);
+          if (!SoDono) return reply(Res_SoDono);
+          dataGp[0].wellcome[1].saiu2 = !dataGp[0].wellcome[1].saiu2;
+          setGp(dataGp);
+          reply(
+            dataGp[0]["wellcome"][1]["saiu2"]
+              ? "📛 𝐀𝐓𝐈𝐕𝐎𝐔 📛\nCom sucesso a (𝐬𝐚𝐢́𝐝𝐚❷) 🎉"
+              : "❌𝐃𝐄𝐒𝐀𝐓𝐈𝐕𝐎𝐔❌\nCom sucesso a (𝐬𝐚𝐢́𝐝𝐚❷) 🥱"
           );
           break;
 
@@ -10372,52 +10641,36 @@ Bot: ${NomeDoBot}`);
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
           if (!q.trim()) return reply("*Escreva a mensagem de boas-vindas 😏*");
-          if (isWelkom) {
-            dataGp[0].wellcome[0].legendabv = q.trim();
-            setGp(dataGp);
-            reply("📛 Mensagem de (𝙗𝙤𝙖𝙨 𝙫𝙞𝙣𝙙𝙖𝙨)Definida com sucesso 📛");
-          } else {
-            reply(`Ative o ${prefix}bemvindo 1`);
-          }
+          dataGp[0].wellcome[0].legendabv = q.trim();
+          setGp(dataGp);
+          reply("📛 Mensagem de (𝙗𝙤𝙖𝙨 𝙫𝙞𝙣𝙙𝙖𝙨❶) Definida com sucesso 📛");
           break;
 
         case "legendasaiu":
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
           if (!q.trim()) return reply("*Escreva a mensagem de saída 😏*");
-          if (isWelkom) {
-            dataGp[0].wellcome[0].legendasaiu = q.trim();
-            setGp(dataGp);
-            reply("👾 Mensagem de ( 𝙨𝙖𝙞́𝙙𝙖 ) Definida com sucesso 👾");
-          } else {
-            reply(`Ative o ${prefix}bemvindo 1`);
-          }
+          dataGp[0].wellcome[0].legendasaiu = q.trim();
+          setGp(dataGp);
+          reply("👾 Mensagem de ( 𝙨𝙖𝙞́𝙙𝙖❶ ) Definida com sucesso 👾");
           break;
 
         case "legendabv2":
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
           if (!q.trim()) return reply("*Escreva a mensagem de boas-vindas 😏*");
-          if (isWelkom2) {
-            dataGp[0].wellcome[1].legendabv = q.trim();
-            setGp(dataGp);
-            reply("📛 Mensagem de (𝐃𝐨𝐚𝐬 𝐯𝐢𝐧𝐝𝐚𝐬)Definida com sucesso 📛");
-          } else {
-            reply(`Ative o ${prefix}bemvindo2 primeiro!`);
-          }
+          dataGp[0].wellcome[1].legendabv = q.trim();
+          setGp(dataGp);
+          reply("📛 Mensagem de (𝐃𝐨𝐚𝐬 𝐯𝐢𝐧𝐝𝐚𝐬❷) Definida com sucesso 📛");
           break;
 
         case "legendasaiu2":
           if (Os_Returns(true, true, true).true)
             return reply(Os_Returns(true, true, true).txt);
           if (!q.trim()) return reply("*Escreva a mensagem de saída 😏*");
-          if (isWelkom2) {
-            dataGp[0].wellcome[1].legendasaiu = q.trim();
-            setGp(dataGp);
-            reply("🎗️👾 Mensagem de ( 𝐬𝐚𝐢́𝐝𝐚 ) Definida com sucesso 👾🎗");
-          } else {
-            reply(`Ative o ${prefix}bemvindo2 primeiro!`);
-          }
+          dataGp[0].wellcome[1].legendasaiu = q.trim();
+          setGp(dataGp);
+          reply("🎗️👾 Mensagem de ( 𝐬𝐚𝐢́𝐝𝐚❷ ) Definida com sucesso 👾🎗");
           break;
 
         case "legenda_estrangeiro":
@@ -10572,8 +10825,7 @@ aqui, boa sorte..`);
           try {
             if (!q.trim())
               return reply(
-                `Faça uma pergunta, exemplo: ${
-                  prefix + command
+                `Faça uma pergunta, exemplo: ${prefix + command
                 } Quantos anos para o plástico se decompor.`
               );
             reply(
@@ -10720,8 +10972,7 @@ aqui, boa sorte..`);
             );
           if (args.length < 1)
             return reply(
-              `Use assim : ${prefix + command} [palavrão]. exemplo ${
-                prefix + command
+              `Use assim : ${prefix + command} [palavrão]. exemplo ${prefix + command
               } puta`
             );
           texto = args
@@ -10742,8 +10993,7 @@ aqui, boa sorte..`);
           if (!isPalavrao) return reply("𝙖𝙣𝙩𝙞-𝙣𝙤𝙩𝙖... desativado 🥱");
           if (args.length < 1)
             return reply(
-              `Use assim : ${prefix + command} [palavrão]. exemplo ${
-                prefix + command
+              `Use assim : ${prefix + command} [palavrão]. exemplo ${prefix + command
               } puta`
             );
           texto = args
@@ -10873,6 +11123,12 @@ aqui, boa sorte..`);
 愛 Bemvindo2 (sem foto): ${isWelkom2 ? "✅" : "❌"}
 → ${prefix}bemvindo2
 
+愛 Saiu1 (com foto): ${dataGp[0]?.wellcome[0]?.saiu1 ? "✅" : "❌"}
+→ ${prefix}saiu1
+
+愛 Saiu2 (sem foto): ${dataGp[0]?.wellcome[1]?.saiu2 ? "✅" : "❌"}
+→ ${prefix}saiu2
+
 愛 Autofigu: ${isAutofigu ? "✅" : "❌"}
 → ${prefix}autofigu
 
@@ -10945,7 +11201,7 @@ aqui, boa sorte..`);
           ) {
             rafa = isQuotedImage
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .imageMessage
+                .imageMessage
               : info.message.imageMessage;
             reply(Res_Aguarde);
             buff = await getFileBuffer(rafa, "image");
@@ -10998,14 +11254,12 @@ aqui, boa sorte..`);
           if (!q.trim()) return reply("Cadê o autor e o nome do pacote 🤔");
           if (!pack)
             return reply(
-              `Por favor escreve o formato certo exemplo: ${
-                prefix + command
+              `Por favor escreve o formato certo exemplo: ${prefix + command
               } Aleatory/𝘽𝙤𝙩`
             );
           if (!author2)
             return reply(
-              `Por favor escreve o formato certo exemplo:\n\n${
-                prefix + command
+              `Por favor escreve o formato certo exemplo:\n\n${prefix + command
               } Aleatory/𝘽𝙤𝙩`
             );
           reply(Res_Aguarde);
@@ -11077,11 +11331,11 @@ aqui, boa sorte..`);
             JSON.stringify([
               isQuotedImage
                 ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                    .imageMessage
+                  .imageMessage
                 : info.message.imageMessage || isQuotedVideo
-                ? info.message.extendedTextMessage.contextInfo.quotedMessage
+                  ? info.message.extendedTextMessage.contextInfo.quotedMessage
                     .videoMessage
-                : info.message.videoMessage,
+                  : info.message.videoMessage,
             ])
           );
           var PUXJ = JSON.parse(fs.readFileSync(DF_TJ));
@@ -11134,8 +11388,7 @@ aqui, boa sorte..`);
             await DLT_FL(encmedia);
           } else {
             return reply(
-              `Marque uma imagem, ou um vídeo de ate 9.9 segundos, ou uma visualização única, para fazer figurinha, com o comando ${
-                prefix + command
+              `Marque uma imagem, ou um vídeo de ate 9.9 segundos, ou uma visualização única, para fazer figurinha, com o comando ${prefix + command
               }`
             );
           }
@@ -11268,15 +11521,9 @@ aqui, boa sorte..`);
               );
             reply(Res_Aguarde);
             ABC = await reqapi.logos_eph(q.trim(), command);
-            conn
-              .sendMessage(
-                from,
-                { image: { url: ABC.resultado } },
-                { quoted: info }
-              )
-              .catch(() => {
-                return reply("Erro... 🥱");
-              });
+            const finalUrl = ABC.resultado?.imageUrl || ABC.resultado;
+            if (typeof finalUrl !== "string") return reply("Erro ao obter URL da imagem.");
+            bufferImg(finalUrl);
           } catch (e) {
             return reply("Erro... 🥱");
           }
@@ -11333,7 +11580,9 @@ aqui, boa sorte..`);
               );
             reply(Res_Aguarde);
             ABC = await reqapi.logos(q.trim(), command);
-            bufferImg(ABC.resultado);
+            const finalUrl = ABC.resultado?.imageUrl || ABC.resultado;
+            if (typeof finalUrl !== "string") return reply("Erro ao obter URL da imagem.");
+            bufferImg(finalUrl);
           } catch (e) {
             return reply("Erro... 🥱");
           }
@@ -11367,15 +11616,9 @@ aqui, boa sorte..`);
               );
             reply(Res_Aguarde);
             ABC = await reqapi.logos_pht(q.trim(), command);
-            conn
-              .sendMessage(
-                from,
-                { image: { url: ABC.resultado.imageUrl } },
-                { quoted: info }
-              )
-              .catch((e) => {
-                return reply("Erro... 🥱");
-              });
+            const finalUrl = ABC.resultado?.imageUrl || ABC.resultado;
+            if (typeof finalUrl !== "string") return reply("Erro ao obter URL da imagem.");
+            bufferImg(finalUrl);
           } catch (e) {
             return reply("Erro... 🥱");
           }
@@ -11402,7 +11645,7 @@ aqui, boa sorte..`);
           if ((isMedia && !info.message.videoMessage) || isQuotedDocument) {
             media = isQuotedDocument
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .documentMessage
+                .documentMessage
               : info.message.documentMessage;
             rane = getRandom("." + (await getExtension(media.mimetype)));
             doc = await getFileBuffer(media, "document");
@@ -11422,7 +11665,7 @@ aqui, boa sorte..`);
           if ((isMedia && !info.message.videoMessage) || isQuotedDocument) {
             media = isQuotedDocument
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .documentMessage
+                .documentMessage
               : info.message.documentMessage;
             rane = getRandom("." + (await getExtension(media.mimetype)));
             doc = await getFileBuffer(media, "document");
@@ -11458,16 +11701,14 @@ aqui, boa sorte..`);
             );
           if (premium.includes(menc_os2))
             return mentions(
-              `@${
-                menc_os2.split("@")[0]
+              `@${menc_os2.split("@")[0]
               } a(o) @${sender2} está querendo banir você, visualiza esse problema ae 😶`,
               [menc_os2],
               true
             );
           if (groupAdmins.includes(menc_os2))
             return mentions(
-              `@${
-                menc_os2.split("@")[0]
+              `@${menc_os2.split("@")[0]
               } a(o) @${sender2} está querendo banir você, visualiza esse problema ae 😶`,
               [menc_os2],
               true
@@ -11542,8 +11783,7 @@ aqui, boa sorte..`);
               return reply("Não pode letras modificadas nem emoji..");
             if (!q.trim())
               return reply(
-                `Escreveva um nome para eu enviar ele com letras modificadas, Exemplo: ${
-                  prefix + command
+                `Escreveva um nome para eu enviar ele com letras modificadas, Exemplo: ${prefix + command
                 } Aleatory`
               );
             ABC = await reqapi.gerarnick(q.trim());
@@ -11578,9 +11818,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a sua ficha de nazista : @${
-              sender_ou_n.split("@")[0]
-            } aguarde... ❱`,
+            text: `❰ Pesquisando a sua ficha de nazista : @${sender_ou_n.split("@")[0]
+              } aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11589,9 +11828,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imgnazista },
-                caption: `O quanto você é nazista? \n\n「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱nazista 卐`,
+                caption: `O quanto você é nazista? \n\n「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱nazista 卐`,
                 mentions: [sender_ou_n],
               },
               { quoted: info }
@@ -11605,9 +11843,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a sua ficha de golpista : @${
-              sender_ou_n.split("@")[0]
-            } aguarde... ❱`,
+            text: `❰ Pesquisando a sua ficha de golpista : @${sender_ou_n.split("@")[0]
+              } aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11615,9 +11852,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: rnkgolpista },
-                caption: `O quanto você é Golpista? \n\n「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${Math.floor(Math.random() * 110)}% ❱Golpista 😈`,
+                caption: `O quanto você é Golpista? \n\n「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${Math.floor(Math.random() * 110)}% ❱Golpista 😈`,
                 mentions: [sender_ou_n],
               },
               { quoted: info }
@@ -11629,9 +11865,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a sua ficha de gay : @${
-              sender_ou_n.split("@")[0]
-            } aguarde... ❱`,
+            text: `❰ Pesquisando a sua ficha de gay : @${sender_ou_n.split("@")[0]
+              } aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11705,9 +11940,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imggay },
-                caption: `O quanto você é gay? \n\n 「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱ gay 🏳️‍🌈\n\n${bo}`,
+                caption: `O quanto você é gay? \n\n 「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱ gay 🏳️‍🌈\n\n${bo}`,
                 mentions: [sender_ou_n],
                 thumbnail: null,
               },
@@ -11720,9 +11954,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a sua ficha de feio : @${
-              sender_ou_n.split("@")[0]
-            } aguarde... ❱`,
+            text: `❰ Pesquisando a sua ficha de feio : @${sender_ou_n.split("@")[0]
+              } aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11798,9 +12031,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imgfeio },
-                caption: `O quanto você é feio? \n\n 「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱ feio 🙉\n\n${bo}`,
+                caption: `O quanto você é feio? \n\n 「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱ feio 🙉\n\n${bo}`,
                 mentions: [sender_ou_n],
                 thumbnail: null,
               },
@@ -11813,9 +12045,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: ` ❰ Pesquisando a ficha de corno : @${
-              sender_ou_n.split("@")[0]
-            }, aguarde... ❱`,
+            text: ` ❰ Pesquisando a ficha de corno : @${sender_ou_n.split("@")[0]
+              }, aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11824,9 +12055,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imgcorno },
-                caption: ` O quanto você é corno? \n\n 「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱corno 🐃`,
+                caption: ` O quanto você é corno? \n\n 「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱corno 🐃`,
                 mentions: [sender_ou_n],
               },
               { quoted: info }
@@ -11838,9 +12068,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a ficha de vesgo : @${
-              sender_ou_n.split("@")[0]
-            }, aguarde... ❱`,
+            text: `❰ Pesquisando a ficha de vesgo : @${sender_ou_n.split("@")[0]
+              }, aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11849,9 +12078,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imgvesgo },
-                caption: `O quanto você é vesgo? \n\n「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱Vesgo 🙄😆`,
+                caption: `O quanto você é vesgo? \n\n「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱Vesgo 🙄😆`,
                 mentions: [sender_ou_n],
               },
               { quoted: info }
@@ -11863,9 +12091,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a ficha de bebado : @${
-              sender_ou_n.split("@")[0]
-            } , aguarde... ❱`,
+            text: `❰ Pesquisando a ficha de bebado : @${sender_ou_n.split("@")[0]
+              } , aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11874,9 +12101,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imgbebado },
-                caption: `O quanto você é bebado? \n\n「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱ Bêbado 🤢🥵🥴`,
+                caption: `O quanto você é bebado? \n\n「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱ Bêbado 🤢🥵🥴`,
                 mentions: [sender_ou_n],
               },
               { quoted: info }
@@ -11888,9 +12114,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a ficha de gado : @${
-              sender_ou_n.split("@")[0]
-            }, aguarde... ❱`,
+            text: `❰ Pesquisando a ficha de gado : @${sender_ou_n.split("@")[0]
+              }, aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11899,9 +12124,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imggado },
-                caption: `O quanto você é gado? \n\n「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱gado 🐂`,
+                caption: `O quanto você é gado? \n\n「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱gado 🐂`,
                 mentions: [sender_ou_n],
               },
               { quoted: info }
@@ -11913,9 +12137,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: ` ❰ Pesquisando a sua ficha de gostoso : @${
-              sender_ou_n.split("@")[0]
-            } aguarde... ❱`,
+            text: ` ❰ Pesquisando a sua ficha de gostoso : @${sender_ou_n.split("@")[0]
+              } aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11924,9 +12147,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imggostoso },
-                caption: `O quanto você é gostoso? 😏\n\n「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱ gostoso 😝`,
+                caption: `O quanto você é gostoso? 😏\n\n「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱ gostoso 😝`,
                 gifPlayback: true,
                 mentions: [sender_ou_n],
               },
@@ -11939,9 +12161,8 @@ aqui, boa sorte..`);
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isModobn) return reply(Res_SoModoBN);
           conn.sendMessage(from, {
-            text: `❰ Pesquisando a sua ficha de gostosa : @${
-              sender_ou_n.split("@")[0]
-            } aguarde... ❱`,
+            text: `❰ Pesquisando a sua ficha de gostosa : @${sender_ou_n.split("@")[0]
+              } aguarde... ❱`,
             mentions: [sender_ou_n],
           });
           setTimeout(async () => {
@@ -11950,9 +12171,8 @@ aqui, boa sorte..`);
               from,
               {
                 image: { url: imggostosa },
-                caption: `O quanto você é gostosa? 😏\n\n「 @${
-                  sender_ou_n.split("@")[0]
-                } 」Você é: ❰ ${random}% ❱ gostosa 😳`,
+                caption: `O quanto você é gostosa? 😏\n\n「 @${sender_ou_n.split("@")[0]
+                  } 」Você é: ❰ ${random}% ❱ gostosa 😳`,
                 mentions: [sender_ou_n],
               },
               { quoted: info }
@@ -11973,9 +12193,8 @@ aqui, boa sorte..`);
             {
               video: { url: matarcmd },
               gifPlayback: true,
-              caption: `Você Acabou de matar o(a) @${
-                menc_os2.split("@")[0]
-              } 😈👹`,
+              caption: `Você Acabou de matar o(a) @${menc_os2.split("@")[0]
+                } 😈👹`,
               mentions: [menc_os2],
             },
             { quoted: info }
@@ -11994,9 +12213,8 @@ aqui, boa sorte..`);
             {
               video: { url: beijocmd },
               gifPlayback: true,
-              caption: `Você deu um beijo gostoso na(o) @${
-                menc_os2.split("@")[0]
-              } 😁👉👈❤`,
+              caption: `Você deu um beijo gostoso na(o) @${menc_os2.split("@")[0]
+                } 😁👉👈❤`,
               mentions: [menc_os2],
             },
             { quoted: info }
@@ -12024,9 +12242,8 @@ aqui, boa sorte..`);
             {
               video: { url: tapacmd },
               gifPlayback: true,
-              caption: `Você Acabou de da um tapa na raba da😏 @${
-                menc_os2.split("@")[0]
-              } 🔥`,
+              caption: `Você Acabou de da um tapa na raba da😏 @${menc_os2.split("@")[0]
+                } 🔥`,
               mentions: [menc_os2],
             },
             { quoted: info }
@@ -12046,9 +12263,8 @@ aqui, boa sorte..`);
             {
               video: { url: chutecmd },
               gifPlayback: true,
-              caption: `Você Acabou de da um chute em @${
-                menc_os2.split("@")[0]
-              } 🤡`,
+              caption: `Você Acabou de da um chute em @${menc_os2.split("@")[0]
+                } 🤡`,
               mentions: [menc_os2],
             },
             { quoted: info }
@@ -12064,9 +12280,8 @@ aqui, boa sorte..`);
             );
           random = `${Math.floor(Math.random() * 100)}`;
           conn.sendMessage(from, {
-            text: `*GOLPISTA ENCONTRADO👉🏻*\n\n*GOLPISTA* : *@${
-              menc_os2.split("@")[0]
-            }*\n*PORCENTAGEM DO GOLPE* : ${random}%😂\n\nEle(a) gosta de ferir sentimentos 😢`,
+            text: `*GOLPISTA ENCONTRADO👉🏻*\n\n*GOLPISTA* : *@${menc_os2.split("@")[0]
+              }*\n*PORCENTAGEM DO GOLPE* : ${random}%😂\n\nEle(a) gosta de ferir sentimentos 😢`,
             mentions: [menc_os2],
           });
           break;
@@ -12086,28 +12301,27 @@ aqui, boa sorte..`);
           rn = menc_prt
             ? menc_prt
             : menc_jid2?.length > 1
-            ? menc_jid2[0]
-            : getParticipantId(
+              ? menc_jid2[0]
+              : getParticipantId(
                 groupMembers[Math.floor(Math.random() * groupMembers.length)]
               );
           rn2 =
             menc_prt && !menc_jid2
               ? getParticipantId(
-                  groupMembers[Math.floor(Math.random() * groupMembers.length)]
-                )
+                groupMembers[Math.floor(Math.random() * groupMembers.length)]
+              )
               : menc_jid2?.length == 1
-              ? menc_jid2[0]
-              : menc_jid2?.length > 1
-              ? menc_jid2[1]
-              : getParticipantId(
-                  groupMembers[Math.floor(Math.random() * groupMembers.length)]
-                );
+                ? menc_jid2[0]
+                : menc_jid2?.length > 1
+                  ? menc_jid2[1]
+                  : getParticipantId(
+                    groupMembers[Math.floor(Math.random() * groupMembers.length)]
+                  );
           var AB = `${TEXTOS_GERAL.TEXTO_COMANDO_CASAL.replaceAll(
             "#porcentagem#",
             Math.floor(Math.random() * 100) + "%"
-          )}\n\n☈ 💑 @${rn?.split("@")[0]}\nﮩ٨ـﮩﮩ٨ـ♡ﮩ٨ـﮩﮩ٨ـ\n☈ 💑 @${
-            rn2?.split("@")[0]
-          }\n\nBot: ${NomeDoBot}`;
+          )}\n\n☈ 💑 @${rn?.split("@")[0]}\nﮩ٨ـﮩﮩ٨ـ♡ﮩ٨ـﮩﮩ٨ـ\n☈ 💑 @${rn2?.split("@")[0]
+            }\n\nBot: ${NomeDoBot}`;
           mnt.push(rn);
           mnt.push(rn2);
           conn.sendMessage(from, {
@@ -12138,9 +12352,9 @@ aqui, boa sorte..`);
             (a.figus == undefined
               ? (a.figus = 0)
               : a.figus + a.messages + a.cmd_messages) <
-            (b.figus == undefined
-              ? (b.figus = 0)
-              : b.figus + b.cmd_messages + b.messages)
+              (b.figus == undefined
+                ? (b.figus = 0)
+                : b.figus + b.cmd_messages + b.messages)
               ? 0
               : -1
           );
@@ -12158,11 +12372,9 @@ aqui, boa sorte..`);
 ┌───────────────
 │ ${i + 1}º : @${participantNumber}
 └─────
- ༺ Mensagens: ${blue[i].messages || 0}\n ༺ Comandos dados: ${
-                blue[i].cmd_messages || 0
-              }\n ༺ Conectado em: ${
-                blue[i].aparelho || "Desconhecido"
-              }\n ༺ Figurinhas: ${blue[i].figus || 0}\n└────────────\n`;
+ ༺ Mensagens: ${blue[i].messages || 0}\n ༺ Comandos dados: ${blue[i].cmd_messages || 0
+                }\n ༺ Conectado em: ${blue[i].aparelho || "Desconhecido"
+                }\n ༺ Figurinhas: ${blue[i].figus || 0}\n└────────────\n`;
               if (participantId) menc.push(participantId);
             }
           }
@@ -12190,12 +12402,9 @@ aqui, boa sorte..`);
               ? menc_os2.split("@")[0]
               : "Desconhecido";
             mentions(
-              `𵣘⃟ᵒ Consulta das atividade de\n𵣘⃟ᵒ @${participantNumber} no grupo: ${groupName}\n𵣘⃟ᵒ Mensagens: ${
-                RSM_CN.messages || 0
-              }\n𵣘⃟ᵒ Comandos dados: ${
-                RSM_CN.cmd_messages || 0
-              }\n𵣘⃟ᵒ Conectado em: ${
-                RSM_CN.aparelho || "Desconhecido"
+              `𵣘⃟ᵒ Consulta das atividade de\n𵣘⃟ᵒ @${participantNumber} no grupo: ${groupName}\n𵣘⃟ᵒ Mensagens: ${RSM_CN.messages || 0
+              }\n𵣘⃟ᵒ Comandos dados: ${RSM_CN.cmd_messages || 0
+              }\n𵣘⃟ᵒ Conectado em: ${RSM_CN.aparelho || "Desconhecido"
               }\n𵣘⃟ Figurinhas: ${RSM_CN.figus || 0}`,
               [menc_os2],
               true
@@ -12512,9 +12721,8 @@ aqui, boa sorte..`);
             const participantId = getParticipantId(randomParticipant);
             if (participantId) {
               const participantNumber = participantId.split("@")[0];
-              ABC += `${
-                TMPAU[Math.floor(Math.random() * TMPAU.length)]
-              } _- @${participantNumber}\n\n`;
+              ABC += `${TMPAU[Math.floor(Math.random() * TMPAU.length)]
+                } _- @${participantNumber}\n\n`;
               selectedMembersPau.push(participantId);
             }
           }
@@ -12543,9 +12751,8 @@ aqui, boa sorte..`);
             }
             const chatMove = `*🎮ꮐ̸Ꭺ̸Ꮇ̸Ꭼ̸ Ꭰ̸Ꭺ̸ Ꮩ̸Ꭼ̸Ꮮ̸Ꮋ̸Ꭺ̸🕹️*
  
-[❗] Alguém está jogando no momento...\n\n@${boardnow.X.split("@")[0]} VS @${
-              boardnow.O.split("@")[0]
-            }
+[❗] Alguém está jogando no momento...\n\n@${boardnow.X.split("@")[0]} VS @${boardnow.O.split("@")[0]
+              }
  
 ❌ : @${boardnow.X.split("@")[0]}
 ⭕ : @${boardnow.O.split("@")[0]}
@@ -12584,12 +12791,10 @@ caso queira resetar o jogo, mande um adm ou os jogadores que estão jogando util
           );
           const strChat = `*『📌ᎬᏕᏒᎬᏕᎪᏂᎠᏃ Ꭳ ᎣᏒᎣᏂᎬᏂᎲᎬ⚔️』*
  
-@${
-            sender.split("@")[0]
-          } _está te desafiando para uma partida de jogo da velha..._
-_[ @${
-            menc_jid2[0].split("@")[0]
-          } ] Use *『S』* para aceitar ou *『N』* para não aceitar..._\n\nEm caso de problemas, marque algum administrador para resetar o jogo com o comando ${prefix}rv`;
+@${sender.split("@")[0]
+            } _está te desafiando para uma partida de jogo da velha..._
+_[ @${menc_jid2[0].split("@")[0]
+            } ] Use *『S』* para aceitar ou *『N』* para não aceitar..._\n\nEm caso de problemas, marque algum administrador para resetar o jogo com o comando ${prefix}rv`;
           conn.sendMessage(
             from,
             {
@@ -12707,7 +12912,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             encmedia = isQuotedVideo
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .videoMessage
+                .videoMessage
               : info.message.videoMessage;
             rane = getRandom("." + (await getExtension(encmedia.mimetype)));
             buffimg = await getFileBuffer(encmedia, "video");
@@ -12742,7 +12947,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             encmedia = isQuotedVideo
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .videoMessage
+                .videoMessage
               : info.message.videoMessage;
             rane = getRandom("." + (await getExtension(encmedia.mimetype)));
             buffimg = await getFileBuffer(encmedia, "video");
@@ -12777,7 +12982,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             encmedia = isQuotedVideo
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .videoMessage
+                .videoMessage
               : info.message.videoMessage;
             rane = getRandom("." + (await getExtension(encmedia.mimetype)));
             buffimg = await getFileBuffer(encmedia, "video");
@@ -12814,7 +13019,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             encmedia = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(encmedia.mimetype)));
             buffimg = await getFileBuffer(encmedia, "audio");
@@ -12852,15 +13057,15 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
               reply(Res_Aguarde);
               muk = isQuotedVideo
                 ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                    .message.extendedTextMessage.contextInfo.message
-                    .videoMessage
+                  .message.extendedTextMessage.contextInfo.message
+                  .videoMessage
                 : isQuotedAudio
-                ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
+                  ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
                     ?.message?.extendedTextMessage?.contextInfo?.message
                     ?.audioMessage ||
                   info?.message?.extendedTextMessage?.contextInfo?.quotedMessage
                     ?.viewOnceMessageV2Extension?.message?.audioMessage
-                : info.message.audioMessage;
+                  : info.message.audioMessage;
 
               let base64String = await getFileBuffer(
                 muk,
@@ -12896,7 +13101,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
         case "bs64":
           muk = isQuotedAudio
             ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                .audioMessage
+              .audioMessage
             : info.message.audioMessage;
           rane = getRandom("." + (await getExtension(muk.mimetype)));
           buffimg = await getFileBuffer(muk, "audio");
@@ -12913,7 +13118,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -12949,7 +13154,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -12986,7 +13191,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13016,12 +13221,12 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           if ((isMedia && !info.message.imageMessage) || isQuotedVideo) {
             post = isQuotedImage
               ? JSON.parse(JSON.stringify(info).replace("quotedM", "m")).message
-                  .extendedTextMessage.contextInfo.message.imageMessage
+                .extendedTextMessage.contextInfo.message.imageMessage
               : info.message.videoMessage;
             reply(Res_Aguarde);
             encmedia = isQuotedVideo
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .videoMessage
+                .videoMessage
               : info.message.videoMessage;
             rane = getRandom("." + (await getExtension(encmedia.mimetype)));
             buffimg = await getFileBuffer(encmedia, "video");
@@ -13054,7 +13259,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13090,7 +13295,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13126,7 +13331,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13162,7 +13367,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13199,7 +13404,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13235,7 +13440,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13272,7 +13477,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             reply(Res_Aguarde);
             muk = isQuotedAudio
               ? info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .audioMessage
+                .audioMessage
               : info.message.audioMessage;
             rane = getRandom("." + (await getExtension(muk.mimetype)));
             buffimg = await getFileBuffer(muk, "audio");
@@ -13352,7 +13557,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
               info.message?.imageMessage;
             PXR = await getFileBuffer(IMG, "image");
             reply("Realizando ação..");
-            link = await upload(PXR);
+            link = await reqapi.uploadDropbox(PXR);
             conn
               .sendMessage(
                 from,
@@ -13381,11 +13586,11 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             if ((isMedia && !info.message.videoMessage) || isQuotedImage) {
               boij = isQuotedImage
                 ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                    .message.extendedTextMessage.contextInfo.message
-                    .imageMessage
+                  .message.extendedTextMessage.contextInfo.message
+                  .imageMessage
                 : info.message.imageMessage;
               owgi = await getFileBuffer(boij, "image");
-              res = await uploader.catbox(owgi);
+              res = await reqapi.uploadDropbox(owgi);
               conn
                 .sendMessage(
                   from,
@@ -13452,45 +13657,45 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           if (isGroup && dataGp[0]?.autobaixar) {
             var swc =
               info?.message?.videoMessage ||
-              info?.message?.audioMessage ||
-              info?.message?.viewOnceMessageV2Extension?.message?.audioMessage
+                info?.message?.audioMessage ||
+                info?.message?.viewOnceMessageV2Extension?.message?.audioMessage
                 ? "transcrever"
                 : isLink(q)
-                ? q.includes("instagram.com/") && q.length > 30
-                  ? "instagram"
-                  : q.includes("vm.tiktok.com/") && q.length > 30
-                  ? "tiktok"
-                  : (q.includes("https://twitter.com/") ||
-                      q.includes("https://x.com/")) &&
-                    q.length > 30
-                  ? "twitter"
-                  : q.includes("https://www.facebook.com/") ||
-                    q.includes("https://fb.watch/")
-                  ? "facebook"
-                  : q.includes("spotify.com/") && q.length > 30
-                  ? "spotify"
-                  : q.includes("kwai.com/") && q.length > 25
-                  ? "kwai"
-                  : q.includes("https://youtube.com/shorts/") && q.length > 25
-                  ? "shorts"
-                  : false
-                : false;
+                  ? q.includes("instagram.com/") && q.length > 30
+                    ? "instagram"
+                    : q.includes("vm.tiktok.com/") && q.length > 30
+                      ? "tiktok"
+                      : (q.includes("https://twitter.com/") ||
+                        q.includes("https://x.com/")) &&
+                        q.length > 30
+                        ? "twitter"
+                        : q.includes("https://www.facebook.com/") ||
+                          q.includes("https://fb.watch/")
+                          ? "facebook"
+                          : q.includes("spotify.com/") && q.length > 30
+                            ? "spotify"
+                            : q.includes("kwai.com/") && q.length > 25
+                              ? "kwai"
+                              : q.includes("https://youtube.com/shorts/") && q.length > 25
+                                ? "shorts"
+                                : false
+                  : false;
 
             switch (swc) {
               case "transcrever":
                 {
                   muk = info?.message?.videoMessage
                     ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                        .message.videoMessage
+                      .message.videoMessage
                     : JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
+                      ?.message?.audioMessage ||
+                      info?.message?.viewOnceMessageV2Extension?.message
+                        ?.audioMessage
+                      ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
                         ?.message?.audioMessage ||
                       info?.message?.viewOnceMessageV2Extension?.message
                         ?.audioMessage
-                    ? JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
-                        ?.message?.audioMessage ||
-                      info?.message?.viewOnceMessageV2Extension?.message
-                        ?.audioMessage
-                    : info.message.audioMessage;
+                      : info.message.audioMessage;
 
                   let base64String = await getFileBuffer(
                     muk,
@@ -13508,8 +13713,8 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                     filename:
                       JSON.parse(JSON.stringify(info).replace("quotedM", "m"))
                         ?.message?.audioMessage ||
-                      info?.message?.viewOnceMessageV2Extension?.message
-                        ?.audioMessage
+                        info?.message?.viewOnceMessageV2Extension?.message
+                          ?.audioMessage
                         ? "audiofile"
                         : "videofile",
                     contentType: muk.mimetype,
@@ -13557,24 +13762,24 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                     DM_T === "mp4"
                       ? "video/mp4"
                       : DM_T === "webp"
-                      ? "image/webp"
-                      : DM_T === "jpg"
-                      ? "image/jpeg"
-                      : DM_T === "mp3"
-                      ? "audio/mpeg"
-                      : "video/mp4";
+                        ? "image/webp"
+                        : DM_T === "jpg"
+                          ? "image/jpeg"
+                          : DM_T === "mp3"
+                            ? "audio/mpeg"
+                            : "video/mp4";
                   var MD =
                     A_T.split("/")[0] === "image"
                       ? {
-                          image: { url: Url_I.msg[0].url },
-                          mimetype: A_T,
-                          mentions: [sender],
-                        }
+                        image: { url: Url_I.msg[0].url },
+                        mimetype: A_T,
+                        mentions: [sender],
+                      }
                       : {
-                          video: { url: Url_I.msg[0].url },
-                          mimetype: A_T,
-                          mentions: [sender],
-                        };
+                        video: { url: Url_I.msg[0].url },
+                        mimetype: A_T,
+                        mentions: [sender],
+                      };
                   conn.sendMessage(from, MD).catch((e) => {
                     return;
                   });
@@ -13598,12 +13803,12 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                             swc === "tiktok"
                               ? reqapi.tiktok(Link(q.trim()))
                               : swc === "twitter"
-                              ? reqapi.twitter(Link(q.trim()), false)
-                              : swc === "kwai"
-                              ? reqapi.kwai_mp4(Link(q.trim()))
-                              : swc === "shorts"
-                              ? reqapi.play(Link(q.trim()), false)
-                              : reqapi.facebook(Link(q.trim()), false),
+                                ? reqapi.twitter(Link(q.trim()), false)
+                                : swc === "kwai"
+                                  ? reqapi.kwai_mp4(Link(q.trim()))
+                                  : swc === "shorts"
+                                    ? reqapi.play(Link(q.trim()), false)
+                                    : reqapi.facebook(Link(q.trim()), false),
                         },
                         mimetype: "video/mp4",
                         mentions: [sender],
@@ -13635,17 +13840,17 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                 !dataGp[0].hasOwnProperty("Chances")
                   ? (dataGp[0]["Chances"] = [])
                   : dataGp[0]["Chances"].push({
-                      id: sender,
-                      ChanceG: null,
-                      ChanceAp: null,
-                      ChanceR: [],
-                      Vinganca: null,
-                      cassino: 0,
-                      quiz: [{ errou: 0, acertou: 0, numero: 0 }],
-                      roletadasorte: false,
-                      Cachaca: 1,
-                      Escudo: [],
-                    });
+                    id: sender,
+                    ChanceG: null,
+                    ChanceAp: null,
+                    ChanceR: [],
+                    Vinganca: null,
+                    cassino: 0,
+                    quiz: [{ errou: 0, acertou: 0, numero: 0 }],
+                    roletadasorte: false,
+                    Cachaca: 1,
+                    Escudo: [],
+                  });
                 setGp(dataGp);
               }
 

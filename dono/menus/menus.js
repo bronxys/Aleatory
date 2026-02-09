@@ -1,131 +1,134 @@
 const menu = (prefix, NomeDoBot, sender) => {
   return `
-╭━━⌈ 💠 𝗠𝗘𝗡𝗨 𝗣𝗥𝗜𝗡𝗖𝗜𝗣𝗔𝗟 💠 ⌋━━╮
-┃ 👤 Usuário: @${sender.split("@")[0]}
-┃ 🤖 Bot: ${NomeDoBot}
-┃ 💡 Dica: use ${prefix}info [comando]
-╰━━━━━━━━━━━━━━━━━━╯
+╭━━〔 💧 *MENU PRINCIPAL* 🔥 〕━━╮
+┃ Usuário: @${sender.split("@")[0]}
+┃ Bot: ${NomeDoBot}
+┃ Dica: ${prefix}info [comando]
+╰━━━━━━━━━━━━━━━━━━━╯
 
-┌─「 ⚙️ 𝗖𝗢𝗡𝗙𝗜𝗚 𝗕𝗔́𝗦𝗜𝗖𝗔𝗦 」
-│ 𒁂〆 ${prefix}ping
-│ 𒁂〆 ${prefix}bronxys
-│ 𒁂〆 ${prefix}configurar-bot
-│ 𒁂〆 ${prefix}tutorial
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 ⚙️ *CONFIGURAÇÕES* 〕'ㇱ
+么〆 ${prefix}ping
+么〆 ${prefix}bronxys
+么〆 ${prefix}configurar-bot
+么〆 ${prefix}tutorial
 
-┌─「 💻 𝗠𝗘𝗡𝗨𝗦 𝗗𝗜𝗩𝗘𝗥𝗦𝗢𝗦 」
-│ 𒁂〆 ${prefix}menudono
-│ 𒁂〆 ${prefix}menuadm
-│ 𒁂〆 ${prefix}menupremium
-│ 𒁂〆 ${prefix}efeitosimg
-│ 𒁂〆 ${prefix}logos
-│ 𒁂〆 ${prefix}brincadeiras
-│ 𒁂〆 ${prefix}menugold
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 💻 *MENUS* 〕'ㇱ
+么〆 ${prefix}menudono
+么〆 ${prefix}menuadm
+么〆 ${prefix}menupremium
+么〆 ${prefix}menugold
+么〆 ${prefix}efeitos
+么〆 ${prefix}logos
+么〆 ${prefix}brincadeiras
 
-┌─「 👥 𝗠𝗘𝗠𝗕𝗥𝗢𝗦 」
-│ 𒁂〆 ${prefix}infobot
-│ 𒁂〆 ${prefix}bug
-│ 𒁂〆 ${prefix}sugestao
-│ 𒁂〆 ${prefix}avalie
-│ 𒁂〆 ${prefix}reagir
-│ 𒁂〆 ${prefix}adms
-│ 𒁂〆 ${prefix}convite
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 👥 *MEMBROS* 〕'ㇱ
+么〆 ${prefix}infobot
+么〆 ${prefix}bug
+么〆 ${prefix}sugestao
+么〆 ${prefix}avalie
+么〆 ${prefix}reagir
+么〆 ${prefix}adms
+么〆 ${prefix}convite
+么〆 ${prefix}perfil
+么〆 ${prefix}listadv
 
-┌─「 📥 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗦 」
-│ 𒁂〆 ${prefix}transcrever (áudio)
-│ 𒁂〆 ${prefix}play / playdoc
-│ 𒁂〆 ${prefix}play_video
-│ 𒁂〆 ${prefix}tiktok
-│ 𒁂〆 ${prefix}instagram
-│ 𒁂〆 ${prefix}facebook
-│ 𒁂〆 ${prefix}face_audio
-│ 𒁂〆 ${prefix}tiktok_audio
-│ 𒁂〆 ${prefix}insta_video
-│ 𒁂〆 ${prefix}insta_audio
-│ 𒁂〆 ${prefix}ytmp4
-│ 𒁂〆 ${prefix}ytmp3
-│ 𒁂〆 ${prefix}twitter_audio
-│ 𒁂〆 ${prefix}twitter
-│ 𒁂〆 ${prefix}playstore
-│ 𒁂〆 ${prefix}ytsearch
-│ 𒁂〆 ${prefix}tiktok / insta / face / X
-│ 𒁂〆 ${prefix}spotify / kwai / threads / sound
-│ 𒁂〆 ${prefix}amazon (ex: celular A13)
-│ 𒁂〆 ${prefix}grupos (ex: Naruto)
-│ 𒁂〆 ${prefix}mediafire
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 📥 *DOWNLOADS* 〕'ㇱ
+么〆 ${prefix}transcrever (áudio)
+么〆 ${prefix}play / playdoc
+么〆 ${prefix}play_video
+么〆 ${prefix}tiktok
+么〆 ${prefix}instagram
+么〆 ${prefix}facebook
+么〆 ${prefix}face_audio
+么〆 ${prefix}tiktok_audio
+么〆 ${prefix}insta_video
+么〆 ${prefix}insta_audio
+么〆 ${prefix}ytmp4
+么〆 ${prefix}ytmp3
+么〆 ${prefix}twitter
+么〆 ${prefix}twitter_audio
+么〆 ${prefix}playstore
+么〆 ${prefix}ytsearch
+么〆 ${prefix}tiktok / insta / face / X
+么〆 ${prefix}spotify / kwai / threads / sound
+么〆 ${prefix}amazon (ex: celular A13)
+么〆 ${prefix}grupos (ex: Naruto)
+么〆 ${prefix}mediafire
 
-┌─「 📚 𝗜𝗡𝗙𝗢𝗥𝗠𝗔𝗖̧𝗢̃𝗘𝗦 」
-│ 𒁂〆 ${prefix}ping
-│ 𒁂〆 ${prefix}gitdobot
-│ 𒁂〆 ${prefix}rankativo
-│ 𒁂〆 ${prefix}rankinativos
-│ 𒁂〆 ${prefix}atividades
-│ 𒁂〆 ${prefix}perfil
-│ 𒁂〆 ${prefix}moedas
-│ 𒁂〆 ${prefix}esporte_noticias
-│ 𒁂〆 ${prefix}celular (ex: Xiaomi)
-│ 𒁂〆 ${prefix}letramusica (ex: sad)
-│ 𒁂〆 ${prefix}blocklist
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 📚 *INFORMAÇÕES* 〕'ㇱ
+么〆 ${prefix}ping
+么〆 ${prefix}gitdobot
+么〆 ${prefix}rankativo
+么〆 ${prefix}rankinativos
+么〆 ${prefix}atividades
+么〆 ${prefix}perfil
+么〆 ${prefix}moedas
+么〆 ${prefix}esporte_noticias
+么〆 ${prefix}celular (ex: Xiaomi)
+么〆 ${prefix}letramusica (ex: sad)
+么〆 ${prefix}blocklist
 
-┌─「 🎮 𝗝𝗢𝗚𝗢𝗦 」
-│ 𒁂〆 ${prefix}sistemgold
-│ 𒁂〆 ${prefix}iniciar_forca
-│ 𒁂〆 ${prefix}jogodavelha (@)
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 🎮 *JOGOS* 〕'ㇱ
+么〆 ${prefix}sistemgold
+么〆 ${prefix}iniciar_forca
+么〆 ${prefix}jogodavelha (@)
 
-┌─「 🎭 𝗙𝗜𝗚𝗨𝗥𝗜𝗡𝗛𝗔𝗦 」
-│ 𒁂〆 ${prefix}sticker
-│ 𒁂〆 ${prefix}fstiker
-│ 𒁂〆 ${prefix}attp (texto)
-│ 𒁂〆 ${prefix}sticker (foto)
-│ 𒁂〆 ${prefix}toimg / togif (figu)
-│ 𒁂〆 ${prefix}rename
-│ 𒁂〆 ${prefix}figurinhas (ex: 5)
-│ 𒁂〆 ${prefix}fig
-│ 𒁂〆 ${prefix}figmeme
-│ 𒁂〆 ${prefix}figanime
-│ 𒁂〆 ${prefix}figcoreana
-│ 𒁂〆 ${prefix}figraiva
-│ 𒁂〆 ${prefix}figemoji
-│ 𒁂〆 ${prefix}figroblox
-│ 𒁂〆 ${prefix}figengracada
-│ 𒁂〆 ${prefix}figdesenho
-│ 𒁂〆 ${prefix}sfundo
-│ 𒁂〆 ${prefix}roubar
-│ 𒁂〆 ${prefix}emojimix
-│ 𒁂〆 ${prefix}emoji
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 🎭 *FIGURINHAS* 〕'ㇱ
+么〆 ${prefix}sticker
+么〆 ${prefix}fstiker
+么〆 ${prefix}attp (texto)
+么〆 ${prefix}sticker (foto)
+么〆 ${prefix}toimg / togif (figu)
+么〆 ${prefix}rename
+么〆 ${prefix}figurinhas (ex: 5)
+么〆 ${prefix}fig
+么〆 ${prefix}figmeme
+么〆 ${prefix}figanime
+么〆 ${prefix}figcoreana
+么〆 ${prefix}figraiva
+么〆 ${prefix}figemoji
+么〆 ${prefix}figroblox
+么〆 ${prefix}figengracada
+么〆 ${prefix}figdesenho
+么〆 ${prefix}sfundo
+么〆 ${prefix}roubar
+么〆 ${prefix}emojimix
+么〆 ${prefix}emoji
 
-┌─「 ⚡ 𝗖𝗢𝗠𝗔𝗡𝗗𝗢𝗦 𝗕𝗔́𝗦𝗜𝗖𝗢𝗦 」
-│ 𒁂〆 ${prefix}gtts (linguagem+texto)
-│ 𒁂〆 ${prefix}tagme
-│ 𒁂〆 ${prefix}placaloli
-│ 𒁂〆 ${prefix}tabela
-│ 𒁂〆 ${prefix}simi
-│ 𒁂〆 ${prefix}perfil / fazernick
-│ 𒁂〆 ${prefix}metadinha
-│ 𒁂〆 ${prefix}tomp3
-│ 𒁂〆 ${prefix}notas
-│ 𒁂〆 ${prefix}rvvisu
-│ 𒁂〆 ${prefix}pergunta
-│ 𒁂〆 ${prefix}crimg
-│ 𒁂〆 ${prefix}roubar
-│ 𒁂〆 ${prefix}minha
-│ 𒁂〆 ${prefix}signo
-│ 𒁂〆 ${prefix}letra
-│ 𒁂〆 ${prefix}aptoide_pesquisa
-│ 𒁂〆 ${prefix}pesquisar
-│ 𒁂〆 ${prefix}limpar
-│ 𒁂〆 ${prefix}revelar
-└──────────────────
+┄┄┄┄┄┄┄┄┄┄
+'ㇱ〔 ⚡ *COMANDOS BÁSICOS* 〕'ㇱ
+么〆 ${prefix}gtts (linguagem+texto)
+么〆 ${prefix}tagme
+么〆 ${prefix}placaloli
+么〆 ${prefix}tabela
+么〆 ${prefix}simi
+么〆 ${prefix}perfil / fazernick
+么〆 ${prefix}metadinha
+么〆 ${prefix}tomp3
+么〆 ${prefix}notas
+么〆 ${prefix}rvvisu
+么〆 ${prefix}pergunta
+么〆 ${prefix}crimg
+么〆 ${prefix}roubar
+么〆 ${prefix}minha
+么〆 ${prefix}signo
+么〆 ${prefix}letra
+么〆 ${prefix}aptoide_pesquisa
+么〆 ${prefix}pesquisar
+么〆 ${prefix}limpar
+么〆 ${prefix}revelar
 
-╭──────────────────╮
-│ 💻 ${NomeDoBot} — seu assistente inteligente!
-╰──────────────────╯`;
+╭────────────────╮
+> ${NomeDoBot} • ONLINE ✅
+╰────────────────╯
+`;
 };
 
 // MENU DE ADMINISTRADORES
@@ -137,101 +140,106 @@ const adms = (prefix, sender) => {
 ╰━━━━━━━━━━━━━━━━━━╯
 
 ┌─「 ⚙️ 𝗖𝗢𝗡𝗙𝗜𝗚 𝗚𝗘𝗥𝗔𝗜𝗦 」
-│ 𒁂〆 ${prefix}autobaixar
-│ 𒁂〆 ${prefix}x9
-│ 𒁂〆 ${prefix}autofigu
-│ 𒁂〆 ${prefix}antilink
-│ 𒁂〆 ${prefix}antiaudio
-│ 𒁂〆 ${prefix}antiloc
-│ 𒁂〆 ${prefix}antivideo
-│ 𒁂〆 ${prefix}antifake
-│ 𒁂〆 ${prefix}antilinkgp
-│ 𒁂〆 ${prefix}antisticker
-│ 𒁂〆 ${prefix}antiimg
-│ 𒁂〆 ${prefix}advlink
-│ 𒁂〆 ${prefix}advlinkgp
-│ 𒁂〆 ${prefix}simih
-│ 𒁂〆 ${prefix}sorteio
-│ 𒁂〆 ${prefix}sorteionumeros
-│ 𒁂〆 ${prefix}soadm
-│ 𒁂〆 ${prefix}sorte
-│ 𒁂〆 ${prefix}atividades
-│ 𒁂〆 ${prefix}multiprefixo
-│ 𒁂〆 ${prefix}prefixos
-│ 𒁂〆 ${prefix}add_prefixo
-│ 𒁂〆 ${prefix}tirar_prefixo
-│ 𒁂〆 ${prefix}duelo
-│ 𒁂〆 ${prefix}Bloqcmd
-│ 𒁂〆 ${prefix}so_adm
-│ 𒁂〆 ${prefix}mute
-│ 𒁂〆 ${prefix}desmute
-│ 𒁂〆 ${prefix}mutados
-│ 𒁂〆 ${prefix}blockcmd
-│ 𒁂〆 ${prefix}unblockcmd
-│ 𒁂〆 ${prefix}listblockcmd
-│ 𒁂〆 ${prefix}blockcmdg
-│ 𒁂〆 ${prefix}unblockcmdg
-│ 𒁂〆 ${prefix}listblockcmdg
-│ 𒁂〆 ${prefix}antinotafake
-│ 𒁂〆 ${prefix}addnota
-│ 𒁂〆 ${prefix}remover
-│ 𒁂〆 ${prefix}listanota
-│ 𒁂〆 ${prefix}antipalavrão
-│ 𒁂〆 ${prefix}addpalavra
-│ 𒁂〆 ${prefix}delpalavra
-│ 𒁂〆 ${prefix}listapalavrão
-│ 𒁂〆 ${prefix}addautoban
-│ 𒁂〆 ${prefix}apresentar
-│ 𒁂〆 ${prefix}digt
-│ 𒁂〆 ${prefix}papof
-│ 𒁂〆 ${prefix}limite
-│ 𒁂〆 ${prefix}limiteflood
-│ 𒁂〆 ${prefix}limitecaracteres
+│ ϟツ ${prefix}autobaixar
+│ ϟツ ${prefix}x9
+│ ϟツ ${prefix}autofigu
+│ ϟツ ${prefix}antilink
+│ ϟツ ${prefix}antiaudio
+│ ϟツ ${prefix}antiloc
+│ ϟツ ${prefix}antivideo
+│ ϟツ ${prefix}antifake
+│ ϟツ ${prefix}antilinkgp
+│ ϟツ ${prefix}antisticker
+│ ϟツ ${prefix}antiimg
+│ ϟツ ${prefix}advlink
+│ ϟツ ${prefix}advlinkgp
+│ ϟツ ${prefix}simih
+│ ϟツ ${prefix}sorteio
+│ ϟツ ${prefix}sorteionumeros
+│ ϟツ ${prefix}soadm
+│ ϟツ ${prefix}sorte
+│ ϟツ ${prefix}atividades
+│ ϟツ ${prefix}multiprefixo
+│ ϟツ ${prefix}prefixos
+│ ϟツ ${prefix}add_prefixo
+│ ϟツ ${prefix}tirar_prefixo
+│ ϟツ ${prefix}duelo
+│ ϟツ ${prefix}Bloqcmd
+│ ϟツ ${prefix}so_adm
+│ ϟツ ${prefix}mute
+│ ϟツ ${prefix}desmute
+│ ϟツ ${prefix}mutados
+│ ϟツ ${prefix}blockcmd
+│ ϟツ ${prefix}unblockcmd
+│ ϟツ ${prefix}listblockcmd
+│ ϟツ ${prefix}blockcmdg
+│ ϟツ ${prefix}unblockcmdg
+│ ϟツ ${prefix}listblockcmdg
+│ ϟツ ${prefix}antinotafake
+│ ϟツ ${prefix}addnota
+│ ϟツ ${prefix}remover
+│ ϟツ ${prefix}listanota
+│ ϟツ ${prefix}antipalavrão
+│ ϟツ ${prefix}addpalavra
+│ ϟツ ${prefix}delpalavra
+│ ϟツ ${prefix}listapalavrão
+│ ϟツ ${prefix}addautoban
+│ ϟツ ${prefix}apresentar
+│ ϟツ ${prefix}digt
+│ ϟツ ${prefix}papof
+│ ϟツ ${prefix}limite
+│ ϟツ ${prefix}limiteflood
+│ ϟツ ${prefix}limitecaracteres
 └──────────────────
 
 ┌─「 👥 𝗠𝗘𝗠𝗕𝗥𝗢𝗦 」
-│ 𒁂〆 ${prefix}listanegra
-│ 𒁂〆 ${prefix}tirardalista
-│ 𒁂〆 ${prefix}listban
-│ 𒁂〆 ${prefix}advertir
-│ 𒁂〆 ${prefix}band
-│ 𒁂〆 ${prefix}ban
-│ 𒁂〆 ${prefix}kick
-│ 𒁂〆 ${prefix}promover
-│ 𒁂〆 ${prefix}rebaixar
-│ 𒁂〆 ${prefix}d
+│ ϟツ ${prefix}listanegra
+│ ϟツ ${prefix}tirardalista
+│ ϟツ ${prefix}listban
+│ ϟツ ${prefix}advertir
+│ ϟツ ${prefix}listadv
+│ ϟツ ${prefix}band
+│ ϟツ ${prefix}ban
+│ ϟツ ${prefix}kick
+│ ϟツ ${prefix}promover
+│ ϟツ ${prefix}rebaixar
+│ ϟツ ${prefix}d
+│ ϟツ ${prefix}adv
+│ ϟツ ${prefix}listadv
+│ ϟツ ${prefix}deladv
+│ ϟツ ${prefix}deletar
 └──────────────────
 
 ┌─「 📋 𝗚𝗥𝗨𝗣𝗢 」
-│ 𒁂〆 ${prefix}grupo
-│ 𒁂〆 ${prefix}status
-│ 𒁂〆 ${prefix}linkgp
-│ 𒁂〆 ${prefix}grupoinfo
-│ 𒁂〆 ${prefix}descgp
-│ 𒁂〆 ${prefix}nomegp
-│ 𒁂〆 ${prefix}legenda_estrangeiro
-│ 𒁂〆 ${prefix}anotar
-│ 𒁂〆 ${prefix}rm_aviso
-│ 𒁂〆 ${prefix}rg_aviso
+│ ϟツ ${prefix}grupo
+│ ϟツ ${prefix}status
+│ ϟツ ${prefix}linkgp
+│ ϟツ ${prefix}grupoinfo
+│ ϟツ ${prefix}descgp
+│ ϟツ ${prefix}nomegp
+│ ϟツ ${prefix}legenda_estrangeiro
+│ ϟツ ${prefix}anotar
+│ ϟツ ${prefix}rm_aviso
+│ ϟツ ${prefix}rg_aviso
 └──────────────────
 
 ┌─「 🏷 𝗜𝗡𝗧𝗘𝗥𝗔𝗖̧𝗔̃𝗢 」
-│ 𒁂〆 ${prefix}Marcar
-│ 𒁂〆 ${prefix}Marcar2
-│ 𒁂〆 ${prefix}Hidetag
-│ 𒁂〆 ${prefix}Ausente
-│ 𒁂〆 ${prefix}voltei
+│ ϟツ ${prefix}Marcar
+│ ϟツ ${prefix}Marcar2
+│ ϟツ ${prefix}Hidetag
+│ ϟツ ${prefix}Ausente
+│ ϟツ ${prefix}voltei
 └──────────────────
 
 ┌─「 🚫 𝗔𝗡𝗧𝗜-𝗦𝗣𝗔𝗠 」
-│ 𒁂〆 ${prefix}limitarcomando
-│ 𒁂〆 ${prefix}antipalavra
-│ 𒁂〆 ${prefix}limpar
+│ ϟツ ${prefix}limitarcomando
+│ ϟツ ${prefix}antipalavra
+│ ϟツ ${prefix}limpar
 └──────────────────
 
 ┌─「 🗒 𝗔𝗡𝗢𝗧𝗔𝗖̧𝗢̃𝗘𝗦  」
-│ 𒁂〆 ${prefix}anotações
-│ 𒁂〆 ${prefix}tabelagp
+│ ϟツ ${prefix}anotações
+│ ϟツ ${prefix}tabelagp
 └──────────────────`;
 };
 
@@ -244,68 +252,76 @@ const menudono = (prefix, sender) => {
 ╰━━━━━━━━━━━━━━━━━━╯
 
 ┌─「 ⚙️ 𝗣𝗥𝗜𝗡𝗖𝗜𝗣𝗔𝗜𝗦 𝗖𝗢𝗡𝗙𝗜𝗚𝗦 」
-│ 𒁂〆 ${prefix}configurar-bot
-│ 𒁂〆 ${prefix}numero-dono
-│ 𒁂〆 ${prefix}nick-dono
-│ 𒁂〆 ${prefix}nome-bot
-│ 𒁂〆 ${prefix}fotomenu
-│ 𒁂〆 ${prefix}prefixo-bot
-│ 𒁂〆 ${prefix}reiniciar
-│ 𒁂〆 ${prefix}setprefixs
-│ 𒁂〆 ${prefix}boton
-│ 𒁂〆 ${prefix}botoff
-│ 𒁂〆 ${prefix}bangp
-│ 𒁂〆 ${prefix}unbangp
-│ 𒁂〆 ${prefix}tempocmd
-│ 𒁂〆 ${prefix}limitarcmd
+│ ϟツ ${prefix}configurar-bot
+│ ϟツ ${prefix}numero-dono
+│ ϟツ ${prefix}nick-dono
+│ ϟツ ${prefix}nome-bot
+│ ϟツ ${prefix}fotomenu
+│ ϟツ ${prefix}prefixo-bot
+│ ϟツ ${prefix}reiniciar
+│ ϟツ ${prefix}setprefixs
+│ ϟツ ${prefix}boton
+│ ϟツ ${prefix}botoff
+│ ϟツ ${prefix}bangp
+│ ϟツ ${prefix}unbangp
+│ ϟツ ${prefix}tempocmd
+│ ϟツ ${prefix}limitarcmd
 └──────────────────
 
 ┌─「 👑 𝗣𝗥𝗘𝗠𝗜𝗨𝗠/𝗚𝗟𝗢𝗕𝗔𝗟 」
-│ 𒁂〆 ${prefix}addgold
-│ 𒁂〆 ${prefix}cmdpremium
-│ 𒁂〆 ${prefix}addpremium
-│ 𒁂〆 ${prefix}listaaluguel
-│ 𒁂〆 ${prefix}aluguel_global
-│ 𒁂〆 ${prefix}renovar_aluguel
-│ 𒁂〆 ${prefix}rg_aluguel
-│ 𒁂〆 ${prefix}rm_aluguel
+│ ϟツ ${prefix}addgold
+│ ϟツ ${prefix}cmdpremium
+│ ϟツ ${prefix}addpremium
+│ ϟツ ${prefix}delpremium
+│ ϟツ ${prefix}listapremium
+│ ϟツ ${prefix}addcmdpremium
+│ ϟツ ${prefix}delcmdpremium
+│ ϟツ ${prefix}listaaluguel
+│ ϟツ ${prefix}aluguel_global
+│ ϟツ ${prefix}renovar_aluguel
+│ ϟツ ${prefix}rg_aluguel
+│ ϟツ ${prefix}rm_aluguel
 └──────────────────
 
 ┌─「 🧰 𝗙𝗨𝗡𝗖̧𝗢̃𝗘𝗦 𝗗𝗢 𝗦𝗜𝗦𝗧𝗘𝗠𝗔 」
-│ 𒁂〆 ${prefix}status
-│ 𒁂〆 ${prefix}bemvindo (foto)
-│ 𒁂〆 ${prefix}bemvindo2
-│ 𒁂〆 ${prefix}legendabv
-│ 𒁂〆 ${prefix}legendabv2
-│ 𒁂〆 ${prefix}legendasaiu (foto)
-│ 𒁂〆 ${prefix}legendasaiu2
-│ 𒁂〆 ${prefix}botoff
-│ 𒁂〆 ${prefix}antipv
-│ 𒁂〆 ${prefix}antipv2
-│ 𒁂〆 ${prefix}antipv3
-│ 𒁂〆 ${prefix}dononogrupo
-│ 𒁂〆 ${prefix}antiligar
-│ 𒁂〆 ${prefix}bcgp
-│ 𒁂〆 ${prefix}status
-│ 𒁂〆 ${prefix}visualizarmsg
-│ 𒁂〆 ${prefix}idgrupo
-│ 𒁂〆 ${prefix}bloquear
-│ 𒁂〆 ${prefix}desbloc
-│ 𒁂〆 ${prefix}blocklist
-│ 𒁂〆 ${prefix}clonar
-│ 𒁂〆 ${prefix}reviverqr
-│ 𒁂〆 ${prefix}sermembro
-│ 𒁂〆 ${prefix}seradm
-│ 𒁂〆 ${prefix}limitec
-│ 𒁂〆 ${prefix}mete
-│ 𒁂〆 ${prefix}convite
-│ 𒁂〆 ${prefix}entrar
-│ 𒁂〆 ${prefix}recusar
-│ 𒁂〆 ${prefix}idgrupo
-│ 𒁂〆 ${prefix}recolherlink
-│ 𒁂〆 ${prefix}listlinks
-│ 𒁂〆 ${prefix}recolherlinkgp
-│ 𒁂〆 ${prefix}zerarlinks
+│ ϟツ ${prefix}status
+│ ϟツ ${prefix}bemvindo (foto)
+│ ϟツ ${prefix}bemvindo2
+│ ϟツ ${prefix}saiu (foto)
+│ ϟツ ${prefix}saiu2 
+│ ϟツ ${prefix}legendabv (foto)
+│ ϟツ ${prefix}legendabv2
+│ ϟツ ${prefix}legendasaiu (foto)
+│ ϟツ ${prefix}legendasaiu2
+│ ϟツ ${prefix}fundobv
+│ ϟツ ${prefix}fundosaiu
+│ ϟツ ${prefix}botoff
+│ ϟツ ${prefix}antipv
+│ ϟツ ${prefix}antipv2
+│ ϟツ ${prefix}antipv3
+│ ϟツ ${prefix}dononogrupo
+│ ϟツ ${prefix}antiligar
+│ ϟツ ${prefix}bcgp
+│ ϟツ ${prefix}status
+│ ϟツ ${prefix}visualizarmsg
+│ ϟツ ${prefix}idgrupo
+│ ϟツ ${prefix}bloquear
+│ ϟツ ${prefix}desbloc
+│ ϟツ ${prefix}blocklist
+│ ϟツ ${prefix}clonar
+│ ϟツ ${prefix}reviverqr
+│ ϟツ ${prefix}sermembro
+│ ϟツ ${prefix}seradm
+│ ϟツ ${prefix}limitec
+│ ϟツ ${prefix}mete
+│ ϟツ ${prefix}convite
+│ ϟツ ${prefix}entrar
+│ ϟツ ${prefix}recusar
+│ ϟツ ${prefix}idgrupo
+│ ϟツ ${prefix}recolherlink
+│ ϟツ ${prefix}listlinks
+│ ϟツ ${prefix}recolherlinkgp
+│ ϟツ ${prefix}zerarlinks
 └──────────────────`;
 };
 
@@ -317,7 +333,7 @@ const menulogos = (prefix, sender) => {
 ╰━━━━━━━━━━━━━━━━━━╯
 
 🖋 Efeitos de Texto:
-  𒁂〆 ${prefix}logos1 (texto)
+  ϟツ ${prefix}logos1 (texto)
 ──────────────────`;
 };
 
@@ -329,13 +345,13 @@ const efeitos = (prefix, sender) => {
 ╰━━━━━━━━━━━━━━━━━━╯
 
 📸 Aplicar em imagens marcadas:
-  𒁂〆 ${prefix}legenda
-  𒁂〆 ${prefix}procurado
-  𒁂〆 ${prefix}preso
-  𒁂〆 ${prefix}lixo
-  𒁂〆 ${prefix}morto
-  𒁂〆 ${prefix}deletem
-  𒁂〆 ${prefix}lgbt
+  ϟツ ${prefix}legenda
+  ϟツ ${prefix}procurado
+  ϟツ ${prefix}preso
+  ϟツ ${prefix}lixo
+  ϟツ ${prefix}morto
+  ϟツ ${prefix}deletem
+  ϟツ ${prefix}lgbt
 ──────────────────`;
 };
 
@@ -347,22 +363,22 @@ const brincadeiras = (prefix, sender) => {
 ╰━━━━━━━━━━━━━━━━━━╯
 
 😂 Comandos com marcação:
-  𒁂〆 ${prefix}golpe (@)
-  𒁂〆 ${prefix}casal (@)
-  𒁂〆 ${prefix}gay (@)
-  𒁂〆 ${prefix}feio (@)
-  𒁂〆 ${prefix}beijo (@)
-  𒁂〆 ${prefix}tapa (@)
-  𒁂〆 ${prefix}chance (@) 
-  𒁂〆 ${prefix}matar (@)
+  ϟツ ${prefix}golpe (@)
+  ϟツ ${prefix}casal (@)
+  ϟツ ${prefix}gay (@)
+  ϟツ ${prefix}feio (@)
+  ϟツ ${prefix}beijo (@)
+  ϟツ ${prefix}tapa (@)
+  ϟツ ${prefix}chance (@) 
+  ϟツ ${prefix}matar (@)
 
 🏆 Ranks e Diversão:
-  𒁂〆 ${prefix}rankgay
-  𒁂〆 ${prefix}rankcorno
-  𒁂〆 ${prefix}rankgado
-  𒁂〆 ${prefix}rankgostoso
-  𒁂〆 ${prefix}rankgostosa
-  𒁂〆 ${prefix}rankotakus
+  ϟツ ${prefix}rankgay
+  ϟツ ${prefix}rankcorno
+  ϟツ ${prefix}rankgado
+  ϟツ ${prefix}rankgostoso
+  ϟツ ${prefix}rankgostosa
+  ϟツ ${prefix}rankotakus
 ──────────────────`;
 };
 
@@ -374,7 +390,7 @@ const menuprem = (prefix, sender) => {
 ╰━━━━━━━━━━━━━━━━━━╯
 
 🌟 Comandos Exclusivos:
-  𒁂〆 Consulte ${prefix}cmdpremium
+  ϟツ Consulte ${prefix}cmdpremium
 ──────────────────`;
 };
 
@@ -386,18 +402,42 @@ const alteradores = (prefix, sender) => {
 ╰━━━━━━━━━━━━━━━━━━╯
 
 🎥 Vídeo:
-  𒁂〆 ${prefix}videolento
-  𒁂〆 ${prefix}videorapido
-  𒁂〆 ${prefix}videocontrario
+  ϟツ ${prefix}videolento
+  ϟツ ${prefix}videorapido
+  ϟツ ${prefix}videocontrario
 
 🔊 Áudio:
-  𒁂〆 ${prefix}audiolento
-  𒁂〆 ${prefix}audiorapido
-  𒁂〆 ${prefix}grave
-  𒁂〆 ${prefix}bass
-  𒁂〆 ${prefix}vozmenino
-  𒁂〆 ${prefix}esquilo
+  ϟツ ${prefix}audiolento
+  ϟツ ${prefix}audiorapido
+  ϟツ ${prefix}grave
+  ϟツ ${prefix}bass
+  ϟツ ${prefix}vozmenino
+  ϟツ ${prefix}esquilo
 ──────────────────`;
+};
+
+// MENU GOLD
+const menugold = (prefix, sender) => {
+  return `
+╭━━⌈ 🪙 𝗦𝗜𝗦𝗧𝗘𝗠𝗔 𝗗𝗘 𝗚𝗢𝗟𝗗𝗦 🪙 ⌋━━╮
+┃ 👤 Usuário: @${sender.split("@")[0]}
+╰━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+🌟 Comandos de Gold:
+  ϟツ ${prefix}gold - Veja seu saldo
+  ϟツ ${prefix}rankgold - Veja os mais ricos
+  ϟツ ${prefix}transferir (@ + valor)
+  
+🎮 Jogos e Diversão:
+  ϟツ ${prefix}minerar - Ganhe golds minerando
+  ϟツ ${prefix}roubar (@) - Tente roubar golds
+  ϟツ ${prefix}apostar (valor) - Aposte seus golds
+  ϟツ ${prefix}cassino (valor) - Tente a sorte
+  ϟツ ${prefix}roleta - Gire a roleta
+
+⚙️ Configuração (ADMS):
+  ϟツ ${prefix}sistemgold - Ativa/Desativa
+─────────────────────────`;
 };
 
 module.exports = {
@@ -409,4 +449,5 @@ module.exports = {
   menuprem,
   brincadeiras,
   efeitos,
+  menugold,
 };
