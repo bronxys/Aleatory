@@ -1,54 +1,170 @@
+/**
+ * simi.js - Motor de chat local usando dados/simi.json
+ * O simih2 aprende as conversas dos membros dos grupos e
+ * depois usa essas respostas aleatoriamente para conversar.
+ */
+
 const fs = require("fs");
-const simih = JSON.parse(fs.readFileSync("./dados/simi.json"));
+const path = require("path");
 
-async function insert(type, info) {
-  let keyword =
-    type == "conversation"
-      ? info.message.conversation
-      : type == "extendedTextMessage"
-      ? info.message.extendedTextMessage.contextInfo.quotedMessage.conversation
-      : "";
-  if (keyword.length > 40) return;
-  if (keyword == "") return;
-  function check(key) {
-    let found = false;
-    Object.keys(simih).forEach((i) => {
-      if (simih[i].msg == key) found = i;
-    });
-    return found ? simih[found] : false;
-  }
-  const verify = await check(keyword.toLowerCase());
-  if (type == "conversation") {
-    if (verify) return;
-    simih.push({ msg: info.message.conversation.toLowerCase(), messages: [] });
-    fs.writeFileSync("./dados/simi.json", JSON.stringify(simih, null, 4));
-  } else if (type == "extendedTextMessage") {
-    if (verify) {
-      verify.messages.push(info.message.extendedTextMessage.text.toLowerCase());
-      fs.writeFileSync("./dados/simi.json", JSON.stringify(simih, null, 4));
-    } else {
-      simih.push({
-        msg: keyword.toLowerCase(),
-        messages: [info.message.extendedTextMessage.text.toLowerCase()],
-      });
-      fs.writeFileSync("./dados/simi.json", JSON.stringify(simih, null, 4));
+const SIMI_PATH = path.join(__dirname, "dados", "simi.json");
+
+// Cache em memória
+let simiDB = null;
+let insertCount = 0;
+const SAVE_INTERVAL = 10; // Salvar a cada 10 mensagens aprendidas
+
+function loadDB() {
+    if (simiDB) return simiDB;
+    try {
+        if (fs.existsSync(SIMI_PATH)) {
+            simiDB = JSON.parse(fs.readFileSync(SIMI_PATH, "utf-8"));
+        } else {
+            simiDB = [];
+        }
+    } catch (e) {
+        console.error("[SIMI] Erro ao carregar simi.json:", e.message);
+        simiDB = [];
     }
-  }
+    return simiDB;
 }
 
-async function response(key) {
-  let position = false;
-  Object.keys(simih).forEach((i) => {
-    if (simih[i].msg == key.toLowerCase()) position = i;
-  });
-  return position
-    ? simih[position].messages[
-        Math.floor(Math.random() * simih[position].messages.length)
-      ]
-    : false;
+function saveDB() {
+    try {
+        fs.writeFileSync(SIMI_PATH, JSON.stringify(simiDB, null, 4), "utf-8");
+    } catch (e) {
+        console.error("[SIMI] Erro ao salvar simi.json:", e.message);
+    }
 }
 
-module.exports = {
-  response,
-  insert,
-};
+// Salvar ao fechar o processo para não perder dados
+process.on("exit", () => {
+    if (simiDB && insertCount > 0) saveDB();
+});
+
+/**
+ * Histórico das últimas mensagens por grupo
+ */
+const lastMessages = {};
+
+/**
+ * Insere/aprende uma nova mensagem no banco de dados.
+ * Cada mensagem recebida é associada como resposta à mensagem anterior
+ * de outro membro no grupo (aprendizado por conversação).
+ */
+function insert(type, info) {
+    const from = info.key.remoteJid;
+    const sender = info.key.participant || info.key.remoteJid;
+
+    let text = "";
+    if (type === "conversation") {
+        text = info.message?.conversation || "";
+    } else if (type === "extendedTextMessage") {
+        text = info.message?.extendedTextMessage?.text || "";
+    }
+
+    // Ignorar mensagens muito curtas ou vazias
+    if (!text || text.trim().length < 2) return;
+    text = text.trim();
+
+    // Ignorar se parece ser um comando
+    if (text.startsWith("!") || text.startsWith("/") || text.startsWith(".") || text.startsWith("#")) return;
+
+    const db = loadDB();
+
+    // Se existe uma mensagem anterior neste grupo de OUTRO remetente,
+    // registrar esta mensagem como resposta para aquela
+    if (lastMessages[from] && lastMessages[from].sender !== sender) {
+        const prevText = lastMessages[from].text;
+        const prevNorm = prevText.toLowerCase().trim();
+
+        // Buscar se já existe entrada para a mensagem anterior
+        let entry = db.find(
+            (e) => e.msg && e.msg.toLowerCase().trim() === prevNorm
+        );
+
+        if (entry) {
+            // Adicionar resposta se ainda não existe (evitar duplicatas)
+            if (!entry.messages.includes(text)) {
+                entry.messages.push(text);
+                insertCount++;
+            }
+        } else {
+            // Criar nova entrada
+            db.push({ msg: prevText, messages: [text] });
+            insertCount++;
+        }
+
+        // Salvar periodicamente
+        if (insertCount >= SAVE_INTERVAL) {
+            saveDB();
+            insertCount = 0;
+        }
+    }
+
+    // Guardar esta mensagem como a última do grupo
+    lastMessages[from] = { text, sender, time: Date.now() };
+}
+
+/**
+ * Busca uma resposta para a mensagem no banco de dados local.
+ * 1. Busca exata
+ * 2. Busca parcial (mensagens que contêm o texto)
+ * 3. Busca por palavras-chave
+ */
+function response(text) {
+    if (!text || text.trim().length < 2) return null;
+
+    const db = loadDB();
+    const normalized = text.toLowerCase().trim();
+
+    // 1. Busca exata
+    let entry = db.find(
+        (e) =>
+            e.msg &&
+            e.messages &&
+            e.messages.length > 0 &&
+            e.msg.toLowerCase().trim() === normalized
+    );
+
+    if (entry) {
+        return entry.messages[Math.floor(Math.random() * entry.messages.length)];
+    }
+
+    // 2. Busca parcial — o input está contido na msg ou vice-versa
+    const partialMatches = db.filter(
+        (e) =>
+            e.msg &&
+            e.messages &&
+            e.messages.length > 0 &&
+            (e.msg.toLowerCase().trim().includes(normalized) ||
+                normalized.includes(e.msg.toLowerCase().trim())) &&
+            e.msg.trim().length >= 3
+    );
+
+    if (partialMatches.length > 0) {
+        const pick = partialMatches[Math.floor(Math.random() * partialMatches.length)];
+        return pick.messages[Math.floor(Math.random() * pick.messages.length)];
+    }
+
+    // 3. Busca por palavras-chave (se o texto tiver 2+ palavras)
+    const words = normalized.split(/\s+/).filter((w) => w.length > 2);
+    if (words.length >= 2) {
+        const keywordMatches = db.filter(
+            (e) =>
+                e.msg &&
+                e.messages &&
+                e.messages.length > 0 &&
+                words.some((w) => e.msg.toLowerCase().includes(w))
+        );
+
+        if (keywordMatches.length > 0) {
+            const pick = keywordMatches[Math.floor(Math.random() * keywordMatches.length)];
+            return pick.messages[Math.floor(Math.random() * pick.messages.length)];
+        }
+    }
+
+    return null;
+}
+
+module.exports = { insert, response, loadDB, saveDB };

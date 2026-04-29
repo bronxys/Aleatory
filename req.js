@@ -354,6 +354,34 @@ class api {
       throw "Erro no comando cep.";
     }
   }
+
+  async uploadDropbox(imageBuffer) {
+    try {
+      const FormData = require("form-data");
+      const formData = new FormData();
+      formData.append("file", imageBuffer, {
+        filename: `image_${Date.now()}.jpg`,
+        contentType: "image/jpeg",
+      });
+
+      const response = await fetch(
+        `${this.#base}/link_imagem?apikey=${this.#key}`,
+        {
+          method: "POST",
+          body: formData,
+          headers: formData.getHeaders(),
+        }
+      );
+
+      const result = await response.json();
+      if (result.link || result.url) {
+        return result.link || result.url;
+      }
+      throw "Erro ao fazer upload.";
+    } catch (error) {
+      throw `Erro no upload do Dropbox: ${error}`;
+    }
+  }
 }
 
 module.exports = api;

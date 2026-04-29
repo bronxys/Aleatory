@@ -26,21 +26,29 @@ const cor3 = corzinhas[Math.floor(Math.random() * (corzinhas.length))];
 const cor4 = corzinhas[Math.floor(Math.random() * (corzinhas.length))];	
 const cor5 = corzinhas[Math.floor(Math.random() * (corzinhas.length))];
 
-function convertSticker(base64, author, pack){
- return new Promise((resolve, reject) =>{
-axios('https://sticker-api-tpe3wet7da-uc.a.run.app/prepareWebp', {
-method: 'POST',
-headers: {
-Accept: 'application/json, text/plain, */*',
-'Content-Type': 'application/json;charset=utf-8',
-'User-Agent': 'axios/0.21.1',
-'Content-Length': 151330
-},
-data: `{"image": "${base64}","stickerMetadata":{"author":"${author}","pack":"${pack}","keepScale":true,"removebg":"HQ"},"sessionInfo":{"WA_VERSION":"2.2106.5","PAGE_UA":"WhatsApp/2.2037.6 Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36","WA_AUTOMATE_VERSION":"3.6.10 UPDATE AVAILABLE: 3.6.11","BROWSER_VERSION":"HeadlessChrome/88.0.4324.190","OS":"Windows Server 2016","START_TS":1614310326309,"NUM":"6247","LAUNCH_TIME_MS":7934,"PHONE_VERSION":"2.20.205.16"},"config":{"sessionId":"session","headless":true,"qrTimeout":20,"authTimeout":0,"cacheEnabled":false,"useChrome":true,"killProcessOnBrowserClose":true,"throwErrorOnTosBlock":false,"chromiumArgs":["--no-sandbox","--disable-setuid-sandbox","--aggressive-cache-discard","--disable-cache","--disable-application-cache","--disable-offline-load-stale-cache","--disk-cache-size=0"],"executablePath":"C:\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe","skipBrokenMethodsCheck":true,"stickerServerEndpoint":true}}`
-}).then(({data}) => {
-resolve(data.webpBase64);
-}).catch(reject);
-});
+async function convertSticker(base64, author, pack) {
+    try {
+        // Importar wa-sticker-formatter dinamicamente
+        const { Sticker } = require('wa-sticker-formatter');
+        
+        // Remover o prefixo data:image/jpeg;base64, se existir
+        const imageBuffer = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+        
+        // Criar sticker com metadados
+        const sticker = new Sticker(imageBuffer, {
+            pack: pack || 'Sticker',
+            author: author || 'Bot',
+            type: 'full',
+            quality: 100
+        });
+        
+        // Converter para buffer e retornar em base64
+        const buffer = await sticker.toBuffer();
+        return buffer.toString('base64');
+    } catch (error) {
+        console.error('Erro ao converter sticker:', error);
+        throw error;
+    }
 }
 
 exports.fetchJson = fetchJson = (url, options) => new Promise(async (resolve, reject) => {

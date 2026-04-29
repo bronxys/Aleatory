@@ -1,32 +1,65 @@
 const configbot = (prefixo) => {
-return `
-=== COMO PERSONALIZAR O BOT PARA SER O DONO ===
+   return `⚙️ *CONFIGURAR O BOT*
+━━━━━━━━━━━━━━━━━
 
-Primeiramente, ative o bot no termux ou onde for e vá para o WhatsApp do bot em uma conversa privada. Utilize os seguintes comandos:
+🔑 *SER DONO DO BOT*
+1. Entre no WhatsApp onde o bot
+   está conectado (celular/web)
+2. Abra qualquer conversa
+3. Digite o comando abaixo:
 
---- Para alterar o nome do bot ---
-${prefixo}nome-bot <Nome desejado>
-Você pode usar letras modificadas também. 🙂
+📌 *${prefixo}numero-dono* <seu nº>
+Ex: ${prefixo}numero-dono 5511999998888
+⚠️ Sem +, sem - e sem o 9 extra
+O nº deve ser igual ao seu WhatsApp
 
---- Apelido do Dono do Bot ---
-${prefixo}nick-dono <Seu apelido>
+💡 _Enquanto não configurar, o
+próprio bot é o dono dele mesmo._
 
---- Configurar o número do dono ---
-${prefixo}numero-dono <Seu número>
-O número deve ser digitado junto, sem o símbolo de + ou -, e sem o 9 da operadora. Deve ser idêntico ao seu número do WhatsApp.
-    
-Lembre-se, você deve utilizar o próprio WhatsApp e número do bot para configurar o número de dono, porque só ele é dono dele mesmo enquanto não for configurado.
+━━━━━━━━━━━━━━━━━
+👥 *SUB-DONOS*
+━━━━━━━━━━━━━━━━━
 
---- Prefixo Do Bot ---
-${prefixo}prefixo-bot &
-Pode por qualquer símbolo, se o seu símbolo for ${prefixo} ele vai passar a ser & de acordo com o que você mudou.
+📌 ${prefixo}dono2 <nº> — 2º dono
+📌 ${prefixo}dono3 <nº> — 3º dono
+_Sub-donos têm acesso a comandos
+admin mas não removem o dono._
 
---- TROCAR FOTO DO MENU ---
-${prefixo}fotomenu
-Apenas marque a foto que queres que seja do menu, com o comando.
+━━━━━━━━━━━━━━━━━
+✏️ *PERSONALIZAR*
+━━━━━━━━━━━━━━━━━
 
-Boa sorte.
-`
+📌 ${prefixo}nome-bot <nome>
+📌 ${prefixo}nick-dono <apelido>
+📌 ${prefixo}prefixo-bot <símbolo>
+Ex: ${prefixo}prefixo-bot /
+
+🖼️ *MUDAR FOTO/GIF DO MENU*
+📌 ${prefixo}fotomenu — Marque uma foto
+📌 ${prefixo}gifmenu — Marque um GIF
+_Aparece quando usam ${prefixo}menu_
+
+━━━━━━━━━━━━━━━━━
+🔄 *ATIVAÇÕES*
+━━━━━━━━━━━━━━━━━
+
+📌 ${prefixo}modoregistro — Obrigar registro
+📌 ${prefixo}aniversario — Parabéns auto
+📌 ${prefixo}modogold — Economia virtual
+📌 ${prefixo}status — Ver tudo ativado
+
+━━━━━━━━━━━━━━━━━
+🏢 *SOBRE O BOT*
+━━━━━━━━━━━━━━━━━
+
+Bot exclusivo da *bronxyshost.com*
+Dev: *M.Scheyot*
+
+📝 100% descriptografado
+💻 Editor de código no servidor
+📽️ Tutorial: youtu.be/lCeC0TIsgsk
+
+⚡ _Powered by Bronxys Host_`
 }
 
 exports.configbot = configbot

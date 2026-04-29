@@ -131,7 +131,15 @@ function rmPaid(from, idpaid) {
   savePaid();
 }
 
-const { prepareWAMessageMedia } = require(`baileys`);
+// prepareWAMessageMedia será carregado via import() dinâmico onde necessário
+let _prepareWAMessageMedia = null;
+async function getPrepareWAMessageMedia() {
+  if (!_prepareWAMessageMedia) {
+    const baileys = await import("@whiskeysockets/baileys");
+    _prepareWAMessageMedia = baileys.prepareWAMessageMedia;
+  }
+  return _prepareWAMessageMedia;
+}
 
 const paidgrouplinkpath = `./operacao/horarios/grouplink.json`;
 
@@ -149,6 +157,7 @@ async function addGroupLinkInPaid(blackmd, from) {
   if (!isJsonIncludes(groupLinkPaid, from)) {
     try {
       getftgp = await blackmd.profilePictureUrl(from, "image");
+      const prepareWAMessageMedia = await getPrepareWAMessageMedia();
       upwapi = await prepareWAMessageMedia(
         { image: { url: getftgp } },
         { upload: blackmd.waUploadToServer }
@@ -231,9 +240,9 @@ async function paidFunc(sabrina) {
                   (b.letra == `m`
                     ? !String(b.nmr / 5).includes(`.`)
                       ? String(
-                          Number(sendHours(`mm`)) -
-                            (Number(sendHours(`mm`)) % 5)
-                        )
+                        Number(sendHours(`mm`)) -
+                        (Number(sendHours(`mm`)) % 5)
+                      )
                       : sendHours(`mm`)
                     : `00`);
                 soma = contarMin(atual) + multiplicador;
@@ -252,11 +261,11 @@ async function paidFunc(sabrina) {
                   caption: `🍀 *HORÁRIOS PAGANTES DAS ${sendHours("HH")}h* 💰
 
 ${ABC.resultado
-  .map(
-    (h) => `*${h.name}*
+                      .map(
+                        (h) => `*${h.name}*
 ${h.times.map((p) => `⥲ ${p}`).join(`\n`)}`
-  )
-  .join(`\n\n`)}
+                      )
+                      .join(`\n\n`)}
 
 ${ABC.dica}`,
                   contextInfo: { forwardingScore: 999, isForwarded: true },
