@@ -1,4 +1,4 @@
-﻿/*==========\\
+/*==========\\
 
 ALEATORY 4.7
 
@@ -373,20 +373,36 @@ try {
 var reqapi = new Api("Bronxys30092025");
 const API_KEY_BRONXYS = "Bronxys30092025";
 
-//====================≠≠===============\\
+// ═══════════════════════════════════════════════════════════
+// BLOQUEIO DE IP (SEGUNDA CAMADA) — PROTEÇÃO NO HANDLER
+// ═══════════════════════════════════════════════════════════
+let _ipBloqueado = false;
+(async () => {
+  try {
+    const [ipRes, vpsRes] = await Promise.all([
+      axios.get("https://l2.io/ip.json").catch(() => null),
+      axios.get("https://raw.githubusercontent.com/bronxys/bronxys/main/list.json").catch(() => null),
+    ]);
 
+    if (!ipRes || !vpsRes) {
+      _ipBloqueado = true;
+      console.log("[BLOQUEIO] Falha na verificação de IP (index). Bot bloqueado.");
+      return;
+    }
 
-try {
-  var [ip, vps] = await Promise.all([
-    axios.get("https://api.ipify.org?format=json"),
-    axios
-      .get("https://raw.githubusercontent.com/bronxys/bronxys/main/list.json")
-      .catch(() => ({ data: [] })),
-  ]);
-  if (vps.data.length > 0 && !vps.data.includes(ip.data.ip)) {
-    showError(` ${ip.data.ip} .`);
+    const meuIP = ipRes.data?.ip || ipRes.data;
+    const listaPermitida = Array.isArray(vpsRes.data) ? vpsRes.data : [];
+
+    if (!listaPermitida.includes(meuIP)) {
+      _ipBloqueado = true;
+      console.log("[BLOQUEIO] IP não autorizado (index). Bot bloqueado.");
+    }
+  } catch (e) {
+    _ipBloqueado = true;
+    console.log("[BLOQUEIO] Falha na conexão de verificação (index). Bot bloqueado.");
   }
-} catch (e) { }
+})();
+// ═══════════════════════════════════════════════════════════
 
 const SNET = "@s.whatsapp.net";
 const LID_NET = "@lid";
@@ -877,6 +893,9 @@ async function webp_mp4(imageBuffer) {
 // ABAIXO: INÍCIO DE CONEXÃO
 
 const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
+  // ═══ BLOQUEIO DE IP — NÃO PROCESSAR SE IP NÃO AUTORIZADO ═══
+  if (_ipBloqueado) return;
+
   try {
     // Garantir que Baileys foi carregado via import() dinâmico
     const { _baileysReady } = require("./consts-func.js");
