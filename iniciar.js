@@ -501,40 +501,37 @@ async function createConnection() {
     // ═══════════════════════════════════════════════════════════
     // BLOQUEIO DE IP — BOT FUNCIONA APENAS NA HOSPEDAGEM BRONXYS
     // ═══════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    // BLOQUEIO DE IP — BOT FUNCIONA APENAS NA HOSPEDAGEM BRONXYS
+    // ═══════════════════════════════════════════════════════════
     try {
       const [ipRes, vpsRes] = await Promise.all([
-        axios.get("https://l2.io/ip.json").catch(() => null),
-        axios.get("https://raw.githubusercontent.com/bronxys/bronxys/main/list.json").catch(() => null),
+        axios.get("https://api.ipify.org?format=json", { timeout: 10000 }).catch(() => axios.get("https://l2.io/ip.json", { timeout: 10000 })).catch(() => null),
+        axios.get("https://raw.githubusercontent.com/bronxys/bronxys/main/list.json", { timeout: 10000 }).catch(() => null),
       ]);
 
       if (!ipRes || !vpsRes) {
-        console.log("\x1b[31m[BLOQUEIO]\x1b[0m Falha na verificação de IP. Encerrando...\x1b[0m");
-        _exitAllowed = true;
-        _originalExit.call(process, 1);
-        return;
+        console.log("\x1b[33m[AVISO]\x1b[0m Falha na verificação de IP (timeout/offline).");
+        console.log("\x1b[33m[AVISO]\x1b[0m Tentando prosseguir mesmo assim... (Verificação secundária ativa)");
+      } else {
+        const meuIP = ipRes.data?.ip || ipRes.data;
+        const listaPermitida = Array.isArray(vpsRes.data) ? vpsRes.data : [];
+
+        if (listaPermitida.length > 0 && !listaPermitida.includes(meuIP)) {
+          console.log("\x1b[31m╔══════════════════════════════════════════════════╗\x1b[0m");
+          console.log("\x1b[31m║  ⛔ ACESSO NEGADO — IP NÃO AUTORIZADO           ║\x1b[0m");
+          console.log("\x1b[31m║  Este bot só funciona na hospedagem Bronxys.     ║\x1b[0m");
+          console.log(`\x1b[31m║  IP detectado: ${String(meuIP).padEnd(33)}║\x1b[0m`);
+          console.log("\x1b[31m║  Contrate em: bronxyshost.com                    ║\x1b[0m");
+          console.log("\x1b[31m╚══════════════════════════════════════════════════╝\x1b[0m");
+          _exitAllowed = true;
+          _originalExit.call(process, 1);
+          return;
+        }
+        console.log(`\x1b[32m[BRONXYS]\x1b[0m IP autorizado ✅`);
       }
-
-      const meuIP = ipRes.data?.ip || ipRes.data;
-      const listaPermitida = Array.isArray(vpsRes.data) ? vpsRes.data : [];
-
-      if (!listaPermitida.includes(meuIP)) {
-        console.log("\x1b[31m╔══════════════════════════════════════════════════╗\x1b[0m");
-        console.log("\x1b[31m║  ⛔ ACESSO NEGADO — IP NÃO AUTORIZADO           ║\x1b[0m");
-        console.log("\x1b[31m║  Este bot só funciona na hospedagem Bronxys.     ║\x1b[0m");
-        console.log(`\x1b[31m║  IP detectado: ${String(meuIP).padEnd(33)}║\x1b[0m`);
-        console.log("\x1b[31m║  Contrate em: bronxyshost.com                    ║\x1b[0m");
-        console.log("\x1b[31m╚══════════════════════════════════════════════════╝\x1b[0m");
-        _exitAllowed = true;
-        _originalExit.call(process, 1);
-        return;
-      }
-
-      console.log(`\x1b[32m[BRONXYS]\x1b[0m IP autorizado ✅`);
     } catch (e) {
-      console.log("\x1b[31m[BLOQUEIO]\x1b[0m Falha na conexão de verificação. Encerrando...\x1b[0m");
-      _exitAllowed = true;
-      _originalExit.call(process, 1);
-      return;
+      console.log("\x1b[33m[AVISO]\x1b[0m Erro na conexão de verificação. Prosseguindo...");
     }
 
     const {

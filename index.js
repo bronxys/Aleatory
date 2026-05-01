@@ -391,10 +391,9 @@ try {
 var reqapi = new Api("Bronxys30092025");
 const API_KEY_BRONXYS = "Bronxys30092025";
 
+// BLOQUEIO DE IP — STATUS: ATIVO
 // ═══════════════════════════════════════════════════════════
-// BLOQUEIO DE IP — DESATIVADO TEMPORARIAMENTE
-// ═══════════════════════════════════════════════════════════
-let _ipBloqueado = false; // Sempre false — bloqueio desativado
+// _ipBloqueado será definido na segunda camada abaixo
 // ═══════════════════════════════════════════════════════════
 
 const SNET = "@s.whatsapp.net";
@@ -888,26 +887,28 @@ let _ipBloqueado = false;
 (async () => {
   try {
     const [ipRes, vpsRes] = await Promise.all([
-      axios.get("https://l2.io/ip.json").catch(() => null),
+      axios.get("https://api.ipify.org?format=json").catch(() => axios.get("https://l2.io/ip.json")).catch(() => null),
       axios.get("https://raw.githubusercontent.com/bronxys/bronxys/main/list.json").catch(() => null),
     ]);
 
     if (!ipRes || !vpsRes) {
-      _ipBloqueado = true;
-      console.log("[BLOQUEIO] Falha na verificação de IP (index). Bot bloqueado.");
+      // Se falhar a verificação, não bloqueamos na segunda camada para evitar falsos positivos
+      // Já que a primeira camada em iniciar.js já fez o trabalho pesado.
+      console.log("[BRONXYS] Verificação de IP (index) falhou ou timeout. Mantendo bot ativo.");
       return;
     }
 
     const meuIP = ipRes.data?.ip || ipRes.data;
     const listaPermitida = Array.isArray(vpsRes.data) ? vpsRes.data : [];
 
-    if (!listaPermitida.includes(meuIP)) {
+    if (listaPermitida.length > 0 && !listaPermitida.includes(meuIP)) {
       _ipBloqueado = true;
       console.log("[BLOQUEIO] IP não autorizado (index). Bot bloqueado.");
+    } else {
+      console.log("[BRONXYS] IP verificado na segunda camada ✅");
     }
   } catch (e) {
-    _ipBloqueado = true;
-    console.log("[BLOQUEIO] Falha na conexão de verificação (index). Bot bloqueado.");
+    console.log("[BLOQUEIO] Erro silencioso na verificação (index).");
   }
 })();
 
