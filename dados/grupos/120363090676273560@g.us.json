@@ -96,11 +96,11 @@
         "legendasaiu": "👋 Tchau #numerodele#! Até a próxima! 🚪"
       }
     ],
-    "simi1": false,
-    "simi2": false,
+    "simi1": true,
+    "simi2": true,
     "autosticker": false,
     "autoresposta": false,
-    "jogos": false,
+    "jogos": true,
     "bangp": false,
     "iaAleatory": false
   }

@@ -295,27 +295,41 @@ const enviarfiguUrl = async (conn, from, link, mr) => {
 
 // INTELIGENCIA-ARTIFICIAL (usa banco local simi.json + fallback API)
 const simih = async (text) => {
+  if (!text || text.trim().length < 2) return null;
+  
   try {
     // Primeiro: buscar no banco local simi.json
-    const { response } = require("./simi.js");
-    const localResp = response(text);
+    const { response: simiLocalResponse } = require("./simi.js");
+    const localResp = simiLocalResponse(text);
     if (localResp) return localResp;
 
-    // Fallback: tentar API SimSimi (pode estar offline/paga)
-    const body = "text=" + encodeURIComponent(text) + "&lc=pt";
-    datasimi = await fetchJson(`https://api.simsimi.vn/v1/simtalk`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/x-www-form-urlencoded",
-        "Content-Length": Buffer.byteLength(body).toString(),
-      },
-      body: body,
-    });
-    if (datasimi.message && datasimi.message !== "Required parameter is not present") {
-      return datasimi.message;
+    // Fallback: tentar API SimSimi (com timeout de 5s)
+    try {
+      const bodyStr = "text=" + encodeURIComponent(text) + "&lc=pt";
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const simiRes = await fetchJson(`https://api.simsimi.vn/v1/simtalk`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(bodyStr).toString(),
+        },
+        body: bodyStr,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      if (simiRes?.message && simiRes.message !== "Required parameter is not present") {
+        return simiRes.message;
+      }
+    } catch (apiErr) {
+      // API offline/timeout — falhar silenciosamente
     }
+    
     return null;
   } catch (e) {
+    console.log("[SIMIH] Erro:", e?.message || e);
     return null;
   }
 };

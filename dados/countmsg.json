@@ -4,11 +4,143 @@
     "numbers": [
       {
         "id": "261443249250374@lid",
-        "messages": 2,
+        "messages": 967,
         "figus": 0,
-        "cmd_messages": 3,
+        "cmd_messages": 359,
         "aparelho": "WhatsApp web シ",
         "nick": "M.Scheyot Ytb"
+      },
+      {
+        "id": "86943694119114@lid",
+        "messages": 0,
+        "cmd_messages": 1,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "Aleatory-Bronxys"
+      },
+      {
+        "id": "23730365460667@lid",
+        "messages": 5,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "haha"
+      },
+      {
+        "id": "240565983649797@lid",
+        "messages": 0,
+        "cmd_messages": 12,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "Bronxyshost.com"
+      }
+    ]
+  },
+  {
+    "groupId": "120363041759698518@g.us",
+    "numbers": [
+      {
+        "id": "17098835230888@lid",
+        "messages": 2,
+        "figus": 0,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "nick": "Lucas Santtos"
+      },
+      {
+        "id": "130855439712392@lid",
+        "messages": 2,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "figus": 1,
+        "nick": "Bot Rogerio Ávila zeus"
+      },
+      {
+        "id": "23730365460667@lid",
+        "messages": 5,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "figus": 3,
+        "nick": "haha"
+      },
+      {
+        "id": "148125368983666@lid",
+        "messages": 3,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "DEXz🥷🏽"
+      },
+      {
+        "id": "170077030727892@lid",
+        "messages": 0,
+        "cmd_messages": 1,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "wan é 🔝"
+      },
+      {
+        "id": "107666391187507@lid",
+        "messages": 1,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "😇"
+      }
+    ]
+  },
+  {
+    "groupId": "120363422857705223@g.us",
+    "numbers": [
+      {
+        "id": "23730365460667@lid",
+        "messages": 2,
+        "figus": 0,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "nick": "haha"
+      }
+    ]
+  },
+  {
+    "groupId": "120363404336116597@g.us",
+    "numbers": [
+      {
+        "id": "261443249250374@lid",
+        "messages": 20,
+        "figus": 1,
+        "cmd_messages": 6,
+        "aparelho": "WhatsApp web シ",
+        "nick": "M.Scheyot Ytb"
+      },
+      {
+        "id": "139586437120022@lid",
+        "messages": 4,
+        "cmd_messages": 1,
+        "aparelho": "Android ツ",
+        "figus": 2,
+        "nick": "janderson"
+      },
+      {
+        "id": "253377887924402@lid",
+        "messages": 2,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "JT 𝙴𝙳𝙸𝚃𝙰𝚅𝙴𝙻"
+      }
+    ]
+  },
+  {
+    "groupId": "120363143193025860@g.us",
+    "numbers": [
+      {
+        "id": "96138564739143@lid",
+        "messages": 3,
+        "figus": 0,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "nick": "zXBlåckXz - 𝐎 𝐏𝐚𝐢"
       }
     ]
   }

@@ -581,6 +581,67 @@ function cancelarRegistro(sender) {
     return true;
 }
 
+// ===== SISTEMA DE NÍVEL DE INTIMIDADE =====
+
+/**
+ * Calcula o nível de intimidade/engajamento do membro no grupo.
+ * XP = mensagens * 1 + figurinhas * 2 + comandos * 3
+ * 
+ * Níveis:
+ *  0-29     → 🌑 Novato         (acabou de chegar)
+ *  30-99    → 🌙 Chegante       (tá conhecendo a galera)
+ *  100-299  → ⭐ Enturmado      (já faz parte)
+ *  300-699  → 🔥 Família        (da galera)
+ *  700-1499 → 💎 Veterano       (respeito)
+ *  1500-2999→ 🦍 Macaco Véio    (tá aqui desde sempre)
+ *  3000-5999→ 👑 Rei do Chat    (domina o grupo)
+ *  6000+    → 🏆 Lenda Viva     (ícone do grupo)
+ */
+function calcularNivel(msgs, figs, cmds) {
+    const xp = (msgs || 0) * 1 + (figs || 0) * 2 + (cmds || 0) * 3;
+
+    const niveis = [
+        { min: 0,    max: 29,   icon: "🌑", nome: "ɴᴏᴠᴀᴛᴏ",       titulo: "Novato",       frase: "Acabou de chegar, bora interagir!" },
+        { min: 30,   max: 99,   icon: "🌙", nome: "ᴄʜᴇɢᴀɴᴛᴇ",     titulo: "Chegante",     frase: "Tá conhecendo a galera... vai firme!" },
+        { min: 100,  max: 299,  icon: "⭐", nome: "ᴇɴᴛᴜʀᴍᴀᴅᴏ",    titulo: "Enturmado",    frase: "Já faz parte da turma!" },
+        { min: 300,  max: 699,  icon: "🔥", nome: "ғᴀᴍɪ́ʟɪᴀ",      titulo: "Família",      frase: "É da família, pode confiar!" },
+        { min: 700,  max: 1499, icon: "💎", nome: "ᴠᴇᴛᴇʀᴀɴᴏ",     titulo: "Veterano",     frase: "Respeitem o veterano do grupo!" },
+        { min: 1500, max: 2999, icon: "🦍", nome: "ᴍᴀᴄᴀᴄᴏ ᴠᴇ́ɪᴏ",  titulo: "Macaco Véio",  frase: "Tá aqui desde a fundação do grupo!" },
+        { min: 3000, max: 5999, icon: "👑", nome: "ʀᴇɪ ᴅᴏ ᴄʜᴀᴛ",  titulo: "Rei do Chat",  frase: "O chat é dele! Curvem-se!" },
+        { min: 6000, max: Infinity, icon: "🏆", nome: "ʟᴇɴᴅᴀ ᴠɪᴠᴀ", titulo: "Lenda Viva", frase: "Uma lenda entre nós... imbatível!" },
+    ];
+
+    let nivel = niveis[0];
+    for (const n of niveis) {
+        if (xp >= n.min && xp <= n.max) {
+            nivel = n;
+            break;
+        }
+    }
+
+    // Barra de progresso para o próximo nível
+    const progresso = nivel.max === Infinity
+        ? 1
+        : (xp - nivel.min) / (nivel.max - nivel.min + 1);
+    const barFill = Math.min(10, Math.round(progresso * 10));
+    const barra = "▓".repeat(barFill) + "░".repeat(10 - barFill);
+
+    const nextXp = nivel.max === Infinity ? "∞" : nivel.max + 1;
+    const nivelIdx = niveis.indexOf(nivel) + 1;
+
+    return {
+        xp,
+        icon: nivel.icon,
+        nome: nivel.nome,
+        titulo: nivel.titulo,
+        frase: nivel.frase,
+        barra,
+        nextXp,
+        nivel: nivelIdx,
+        totalNiveis: niveis.length,
+    };
+}
+
 // ===== GERAR TEXTO DO PERFIL (Layout Premium) =====
 
 function gerarPerfil(userData, numero, pushname, extras = {}) {
@@ -589,8 +650,8 @@ function gerarPerfil(userData, numero, pushname, extras = {}) {
 
     // ═══ Barra visual compacta ═══
     const _bar = (pct) => {
-        const filled = Math.round(pct / 10);
-        return "▓".repeat(filled) + "░".repeat(10 - filled);
+        const filled = Math.round(pct / 20);
+        return "▓".repeat(filled) + "░".repeat(5 - filled);
     };
 
     // ═══ Seed fixo por número ═══
@@ -612,14 +673,9 @@ function gerarPerfil(userData, numero, pushname, extras = {}) {
     const pFiel = _seed(numero, 8);
     const pInteligencia = _seed(numero, 9);
 
-    // ═══ Rank ═══
-    const _totalMsgs = extras.mensagens || 0;
-    let _rank = "🌑 ɴᴏᴠᴀᴛᴏ";
-    if (_totalMsgs >= 5000) _rank = "🏆 ʟᴇɴᴅᴀ́ʀɪᴏ";
-    else if (_totalMsgs >= 2000) _rank = "💎 ᴅɪᴀᴍᴀɴᴛᴇ";
-    else if (_totalMsgs >= 1000) _rank = "🥇 ᴏᴜʀᴏ";
-    else if (_totalMsgs >= 500) _rank = "🥈 ᴘʀᴀᴛᴀ";
-    else if (_totalMsgs >= 100) _rank = "🥉 ʙʀᴏɴᴢᴇ";
+    // ═══ Sistema de Nível de Intimidade ═══
+    const _nivelInfo = calcularNivel(extras.mensagens || 0, extras.figurinhas || 0, extras.comandos || 0);
+    const _rank = _nivelInfo.icon + " " + _nivelInfo.nome;
 
     // ═══ Elemento do signo ═══
     const _elementos = {
@@ -640,12 +696,12 @@ function gerarPerfil(userData, numero, pushname, extras = {}) {
     let txt = "";
 
     // ═══ CARD PRINCIPAL ═══
-    txt += `┏━━━━━━━━━━━━━━━━━━━━━┓\n`;
-    txt += `┃  ${genIcon} *𝗣𝗘𝗥𝗙𝗜𝗟* ━ @${numero}\n`;
-    txt += `┗━━━━━━━━━━━━━━━━━━━━━┛\n\n`;
+    txt += `┏━━━━━━━━━━━━━━━┓\n`;
+    txt += `┃ ${genIcon} *𝗣𝗘𝗥𝗙𝗜𝗟* ━ @${numero}\n`;
+    txt += `┗━━━━━━━━━━━━━━━┛\n\n`;
 
     // ═══ IDENTIDADE + DADOS (junto) ═══
-    txt += `╔══〘 📛 〙══════════════╗\n`;
+    txt += `╔══〘 📛 〙════════╗\n`;
     txt += `║ 👤 *${u.nome}*`;
     if (pushname && pushname !== u.nome) txt += ` _(${pushname})_`;
     txt += `\n`;
@@ -655,32 +711,38 @@ function gerarPerfil(userData, numero, pushname, extras = {}) {
     txt += `║ 💼 *${u.profissao}* ─ ⛪ *${u.religiao}*\n`;
     txt += `║ ${_civilEmoji} *${u.estadoCivil || "Não informado"}*\n`;
     txt += `║ ⚽ *${u.time}*\n`;
-    txt += `╠════════════════════╣\n`;
+    txt += `╠══════════════╣\n`;
     txt += `║ 💬 _"${u.frase}"_\n`;
-    txt += `╚════════════════════╝\n\n`;
+    txt += `╚══════════════╝\n\n`;
 
-    // ═══ RANK + ATIVIDADE (compacto) ═══
-    txt += `╔══〘 🏅 〙══════════════╗\n`;
+    // ═══ NÍVEL DE INTIMIDADE + ATIVIDADE ═══
+    txt += `╔══〘 🏅 〙════════╗\n`;
     txt += `║ ${_rank}`;
     if (extras.golds !== undefined) txt += ` ─ 💰 *${extras.golds}G*`;
     txt += `\n`;
     if (extras.mensagens !== undefined) {
         txt += `║ 💬 *${extras.mensagens}* ᴍsɢs ─ 🤖 *${extras.comandos}* ᴄᴍᴅs\n`;
         txt += `║ 🎭 *${extras.figurinhas}* ғɪɢs ─ ⚠️ *${extras.advertencias || 0}/3* ᴀᴅᴠ\n`;
+        // Barra de XP para próximo nível
+        txt += `║ ⚡ *XP:* ${_nivelInfo.xp}/${_nivelInfo.nextXp} ${_nivelInfo.barra}\n`;
+        txt += `║ 💭 _${_nivelInfo.frase}_\n`;
+        if (extras.mutado) {
+            txt += `║ 🔇 *ᴍᴜᴛᴀᴅᴏ* ─ ${extras.mutadoMsgs || 0} ᴍsɢs ᴀᴘᴀɢᴀᴅᴀs\n`;
+        }
     }
-    txt += `╚════════════════════╝\n\n`;
+    txt += `╚══════════════╝\n\n`;
 
     // ═══ PERSONALIDADE (compacto, 2 por linha) ═══
-    txt += `╔══〘 🎭 〙══════════════╗\n`;
-    txt += `║ 😈 *Safado* ${_bar(pSafado)} *${pSafado}%*\n`;
-    txt += `║ 🐄 *Gado* ${_bar(pGado)} *${pGado}%*\n`;
-    txt += `║ 😍 *Bonito* ${_bar(pBoniteza)} *${pBoniteza}%*\n`;
-    txt += `║ 🔥 *Gostoso* ${_bar(pGostosura)} *${pGostosura}%*\n`;
-    txt += `║ 😴 *Vagabundo* ${_bar(pVagabundo)} *${pVagabundo}%*\n`;
-    txt += `║ 🐂 *Corno* ${_bar(pCorno)} *${pCorno}%*\n`;
-    txt += `║ 💍 *Fiel* ${_bar(pFiel)} *${pFiel}%*\n`;
-    txt += `║ 🧠 *Inteligente* ${_bar(pInteligencia)} *${pInteligencia}%*\n`;
-    txt += `╚════════════════════╝\n\n`;
+    txt += `╔══〘 🎭 〙════════╗\n`;
+    txt += `║ 😈 *sᴀғᴀᴅᴏ* ${_bar(pSafado)} *${pSafado}%*\n`;
+    txt += `║ 🐄 *ɢᴀᴅᴏ* ${_bar(pGado)} *${pGado}%*\n`;
+    txt += `║ 😍 *ʙᴏɴɪᴛᴏ* ${_bar(pBoniteza)} *${pBoniteza}%*\n`;
+    txt += `║ 🔥 *ɢᴏsᴛᴏsᴏ* ${_bar(pGostosura)} *${pGostosura}%*\n`;
+    txt += `║ 😴 *ᴠᴀɢᴀʙᴜɴᴅᴏ* ${_bar(pVagabundo)} *${pVagabundo}%*\n`;
+    txt += `║ 🐂 *ᴄᴏʀɴᴏ* ${_bar(pCorno)} *${pCorno}%*\n`;
+    txt += `║ 💍 *ғɪᴇʟ* ${_bar(pFiel)} *${pFiel}%*\n`;
+    txt += `║ 🧠 *ɪɴᴛᴇʟɪɢᴇɴᴛᴇ* ${_bar(pInteligencia)} *${pInteligencia}%*\n`;
+    txt += `╚══════════════╝\n\n`;
 
     // ═══ FOOTER ═══
     txt += `> 📅 ʀᴇɢ: ${moment(u.registradoEm).format("DD/MM/YY")} ─ 🔄 ᴀᴛᴛ: ${moment(u.atualizadoEm).format("DD/MM/YY")}`;
@@ -721,6 +783,7 @@ module.exports = {
     processarResposta,
     cancelarRegistro,
     gerarPerfil,
+    calcularNivel,
     mensagemIntro,
     mensagemJaRegistrado,
     STEPS,

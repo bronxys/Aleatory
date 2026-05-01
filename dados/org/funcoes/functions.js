@@ -28,8 +28,18 @@ const cor5 = corzinhas[Math.floor(Math.random() * (corzinhas.length))];
 
 async function convertSticker(base64, author, pack) {
     try {
-        // Importar wa-sticker-formatter dinamicamente
-        const { Sticker } = require('wa-sticker-formatter');
+        // Importar wa-sticker-formatter dinamicamente (LAZY - só quando chamado)
+        let Sticker;
+        try {
+            Sticker = require('wa-sticker-formatter').Sticker;
+        } catch (sharpErr) {
+            // wa-sticker-formatter/sharp não disponível — usar fallback ffmpeg
+            console.log('[STICKER] wa-sticker-formatter indisponível, usando fallback ffmpeg');
+            const { imageToWebp } = require('../sticker/exif');
+            const imageBuffer = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+            const webpBuff = await imageToWebp(imageBuffer);
+            return webpBuff.toString('base64');
+        }
         
         // Remover o prefixo data:image/jpeg;base64, se existir
         const imageBuffer = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
@@ -46,7 +56,7 @@ async function convertSticker(base64, author, pack) {
         const buffer = await sticker.toBuffer();
         return buffer.toString('base64');
     } catch (error) {
-        console.error('Erro ao converter sticker:', error);
+        console.error('Erro ao converter sticker:', error?.message || error);
         throw error;
     }
 }

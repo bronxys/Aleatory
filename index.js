@@ -162,6 +162,14 @@ const {
   zerarAluguel,
 } = require("./dados/org/funcoes/aluguel.js");
 
+// ═══════ SISTEMA DE RESUMO INTELIGENTE ═══════
+const {
+  addMessage: addResumoMsg,
+  getMessageCount: getResumoCount,
+  analyzeGroup: analyzeResumoGroup,
+  gerarResumo,
+} = require("./dados/org/funcoes/resumo.js");
+
 // ── Confirmação de zerar aluguel ──
 const _pendingZerarAluguel = new Map();
 
@@ -293,6 +301,7 @@ const {
   processarResposta,
   cancelarRegistro,
   gerarPerfil,
+  calcularNivel,
   mensagemIntro,
   mensagemJaRegistrado,
   calcularIdade,
@@ -302,6 +311,15 @@ const {
   initBirthdayScheduler,
   checkAndCelebrate,
 } = require("./dados/org/funcoes/aniversario.js");
+
+const {
+  iniciarQuiz,
+  verificarResposta,
+  cancelarQuiz,
+  temQuiz,
+  getDica,
+  buscarImagem,
+} = require("./dados/org/funcoes/quiz.js");
 // ══════════════════════════════════════════════════════════
 
 //_-_-_-_-_-_-_-_-_-_-_-_-(INFOS)_-_-_-_-_-_-_-_-_-_-_-_-_-_-_--\\
@@ -374,34 +392,9 @@ var reqapi = new Api("Bronxys30092025");
 const API_KEY_BRONXYS = "Bronxys30092025";
 
 // ═══════════════════════════════════════════════════════════
-// BLOQUEIO DE IP (SEGUNDA CAMADA) — PROTEÇÃO NO HANDLER
+// BLOQUEIO DE IP — DESATIVADO TEMPORARIAMENTE
 // ═══════════════════════════════════════════════════════════
-let _ipBloqueado = false;
-(async () => {
-  try {
-    const [ipRes, vpsRes] = await Promise.all([
-      axios.get("https://l2.io/ip.json").catch(() => null),
-      axios.get("https://raw.githubusercontent.com/bronxys/bronxys/main/list.json").catch(() => null),
-    ]);
-
-    if (!ipRes || !vpsRes) {
-      _ipBloqueado = true;
-      console.log("[BLOQUEIO] Falha na verificação de IP (index). Bot bloqueado.");
-      return;
-    }
-
-    const meuIP = ipRes.data?.ip || ipRes.data;
-    const listaPermitida = Array.isArray(vpsRes.data) ? vpsRes.data : [];
-
-    if (!listaPermitida.includes(meuIP)) {
-      _ipBloqueado = true;
-      console.log("[BLOQUEIO] IP não autorizado (index). Bot bloqueado.");
-    }
-  } catch (e) {
-    _ipBloqueado = true;
-    console.log("[BLOQUEIO] Falha na conexão de verificação (index). Bot bloqueado.");
-  }
-})();
+let _ipBloqueado = false; // Sempre false — bloqueio desativado
 // ═══════════════════════════════════════════════════════════
 
 const SNET = "@s.whatsapp.net";
@@ -889,6 +882,34 @@ async function webp_mp4(imageBuffer) {
     response2.url,
   ).toString();
 }
+
+// BLOQUEIO DE IP (SEGUNDA CAMADA) — PROTEÇÃO NO HANDLER
+let _ipBloqueado = false;
+(async () => {
+  try {
+    const [ipRes, vpsRes] = await Promise.all([
+      axios.get("https://l2.io/ip.json").catch(() => null),
+      axios.get("https://raw.githubusercontent.com/bronxys/bronxys/main/list.json").catch(() => null),
+    ]);
+
+    if (!ipRes || !vpsRes) {
+      _ipBloqueado = true;
+      console.log("[BLOQUEIO] Falha na verificação de IP (index). Bot bloqueado.");
+      return;
+    }
+
+    const meuIP = ipRes.data?.ip || ipRes.data;
+    const listaPermitida = Array.isArray(vpsRes.data) ? vpsRes.data : [];
+
+    if (!listaPermitida.includes(meuIP)) {
+      _ipBloqueado = true;
+      console.log("[BLOQUEIO] IP não autorizado (index). Bot bloqueado.");
+    }
+  } catch (e) {
+    _ipBloqueado = true;
+    console.log("[BLOQUEIO] Falha na conexão de verificação (index). Bot bloqueado.");
+  }
+})();
 
 // ABAIXO: INÍCIO DE CONEXÃO
 
@@ -1700,6 +1721,20 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       }
 
       if (!info.message) return;
+
+      // ═══ CAPTURA DE MENSAGENS PARA RESUMO INTELIGENTE ═══
+      if (isGroup && !info.key.fromMe) {
+        try {
+          const _resumoText = info.message?.conversation ||
+            info.message?.extendedTextMessage?.text ||
+            info.message?.imageMessage?.caption ||
+            info.message?.videoMessage?.caption || "";
+          if (_resumoText && _resumoText.trim().length >= 2) {
+            addResumoMsg(from, sender, pushname, _resumoText);
+          }
+        } catch (_rErr) { /* silencioso */ }
+      }
+      // ═══════════════════════════════════════════════════════
 
       // Auto-register Group in Gold System
       if (isGroup) {
@@ -3061,6 +3096,124 @@ ${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
           "./dados/countmsg.json",
           JSON.stringify(countMessage, null, 2) + "\n",
         );
+      }
+
+      // ═══ CAPTURA PARA SISTEMA DE RESUMO ═══
+      if (isGroup && !isCmd && !info.key.fromMe && budy && budy.trim().length >= 2) {
+        try { addResumoMsg(from, sender, pushname, budy); } catch { }
+      }
+
+      // ═══ SISTEMA DE QUIZ — VERIFICAR RESPOSTAS ═══
+      if (isGroup && !isCmd && !info.key.fromMe && budy && temQuiz(from)) {
+        try {
+          const _quizResult = verificarResposta(from, budy);
+          if (_quizResult) {
+            // Usar sender2 (já sem LID) para exibição e sender para menção
+            const _qNum = sender2;
+
+            if (_quizResult.status === "acertou") {
+              // ═══ XP ALEATÓRIO (valores altos são raros) ═══
+              const _qNivel = _quizResult.nivel || 1;
+              // Usa distribuição exponencial: valores baixos são comuns, altos raríssimos
+              const _roll = Math.random();
+              let _qXP;
+              if (_qNivel === 1) {
+                // Fácil: 1-5 (70%), 6-12 (25%), 13-20 (5%)
+                if (_roll < 0.70) _qXP = Math.floor(Math.random() * 5) + 1;
+                else if (_roll < 0.95) _qXP = Math.floor(Math.random() * 7) + 6;
+                else _qXP = Math.floor(Math.random() * 8) + 13;
+              } else if (_qNivel === 2) {
+                // Médio: 3-10 (65%), 11-25 (28%), 26-40 (7%)
+                if (_roll < 0.65) _qXP = Math.floor(Math.random() * 8) + 3;
+                else if (_roll < 0.93) _qXP = Math.floor(Math.random() * 15) + 11;
+                else _qXP = Math.floor(Math.random() * 15) + 26;
+              } else {
+                // Difícil: 5-15 (55%), 16-40 (35%), 41-70 (10%)
+                if (_roll < 0.55) _qXP = Math.floor(Math.random() * 11) + 5;
+                else if (_roll < 0.90) _qXP = Math.floor(Math.random() * 25) + 16;
+                else _qXP = Math.floor(Math.random() * 30) + 41;
+              }
+
+              // ═══ REAGIR À MENSAGEM CORRETA ═══
+              const _qReacts = ["🎉", "🏆", "✅", "🔥", "⭐", "💯", "👑", "🥇"];
+              const _qReact = _qReacts[Math.floor(Math.random() * _qReacts.length)];
+              await conn.sendMessage(from, { react: { text: _qReact, key: info.key } });
+
+              try {
+                const _qInd = countMessage.map(i => i.groupId).indexOf(from);
+                if (_qInd >= 0) {
+                  const _qNumIds = countMessage[_qInd].numbers.map(n => n.id);
+                  const _qNumIdx = _qNumIds.indexOf(sender);
+                  if (_qNumIdx >= 0) {
+                    countMessage[_qInd].numbers[_qNumIdx].messages += _qXP;
+                    countMessage[_qInd].numbers[_qNumIdx].cmd_messages += Math.floor(_qXP / 3);
+                  }
+                  fs.writeFileSync("./dados/countmsg.json", JSON.stringify(countMessage, null, 2) + "\n");
+                }
+              } catch (e) { console.log("[QUIZ-XP] Erro:", e?.message); }
+
+              const _qNivelTxt = _qNivel === 1 ? "🟢" : _qNivel === 2 ? "🟡" : "🔴";
+
+              await conn.sendMessage(from, {
+                text: `┏━━━━━━━━━━━━━━━┓\n` +
+                      `┃ 🎉 *ACERTOU!*\n` +
+                      `┗━━━━━━━━━━━━━━━┛\n\n` +
+                      `> 👏 Parabéns @${_qNum}!\n` +
+                      `> ✅ Resposta: *${_quizResult.resposta}*\n` +
+                      `> 🎯 Em *${_quizResult.tentativas}* tentativa(s)\n` +
+                      `> ${_qNivelTxt} *+${_qXP} XP* adicionado ao perfil!\n\n` +
+                      `> ⏳ Próximo quiz em *5 segundos*...`,
+                mentions: [sender],
+              }, { quoted: info });
+
+              // ═══ AUTO PRÓXIMO QUIZ (5s delay) ═══
+              setTimeout(async () => {
+                try {
+                  if (temQuiz(from)) return;
+                  await conn.sendMessage(from, { text: "🔄 *Buscando próximo quiz...*" });
+                  const _autoQuiz = await iniciarQuiz(from);
+                  if (!_autoQuiz) return;
+                  const _autoSrc = _autoQuiz.thumbnailUrl || _autoQuiz.wiki;
+                  const _autoImg = await buscarImagem(_autoSrc, _autoQuiz.categoria);
+                  const _autoNivel = _autoQuiz.nivelGrupo === 1 ? "🟢 Fácil" : _autoQuiz.nivelGrupo === 2 ? "🟡 Médio" : "🔴 Difícil";
+                  const _autoTxt =
+                    `┏━━━━━━━━━━━━━━━┓\n` +
+                    `┃ ${_autoQuiz.categoria} *QUIZ*\n` +
+                    `┗━━━━━━━━━━━━━━━┛\n\n` +
+                    `> 💡 Dica: _${_autoQuiz.dica}_\n` +
+                    `> 📊 Nível: *${_autoNivel}*\n\n` +
+                    `> 🎯 *Quem é / O que é?*\n` +
+                    `> Responda no chat!\n` +
+                    `> ⏱ Tempo: *5 minutos*\n` +
+                    `> ⚡ XP aleatório para quem acertar!\n` +
+                    `> 🛑 *${prefix}cancelarquiz* para parar`;
+                  if (_autoImg) {
+                    await conn.sendMessage(from, { image: _autoImg, caption: _autoTxt });
+                  } else {
+                    await conn.sendMessage(from, { text: _autoTxt + `\n\n> ⚠️ _Imagem indisponível_` });
+                  }
+                } catch (e) { console.log("[QUIZ-AUTO]", e?.message); }
+              }, 5000);
+
+            } else if (_quizResult.status === "quase") {
+              await conn.sendMessage(from, {
+                text: `🔥 *Quase lááá!* Tá pertinho, tenta de novo!`,
+              }, { quoted: info });
+            } else if (_quizResult.status === "longe") {
+              await conn.sendMessage(from, {
+                text: `❌ *Passou longe!* Tenta outra vez...`,
+              }, { quoted: info });
+            } else if (_quizResult.status === "timeout") {
+              await conn.sendMessage(from, {
+                text: `⏰ *Tempo esgotado!*\n\n> A resposta era: *${_quizResult.resposta}*\n> O quiz foi encerrado automaticamente.`,
+              });
+            } else if (_quizResult.status === "esgotou") {
+              await conn.sendMessage(from, {
+                text: `😞 *Ninguém acertou!*\n\n> A resposta era: *${_quizResult.resposta}*\n> Use *${prefix}quiz* para uma nova rodada!`,
+              });
+            }
+          }
+        } catch (e) { console.log("[QUIZ] Erro:", e?.message); }
       }
 
       //============(EVAL-EXECUÇÕES)===========\\
@@ -4679,6 +4832,8 @@ https://wa.me/${numerodono_ofc}`);
         "gitdobot",
         "tutorial",
         "modoregistro",
+        "resumo",
+        "resumir",
       ];
 
       if (
@@ -5049,28 +5204,34 @@ https://wa.me/${numerodono_ofc}`);
 
               // Seed fixo para porcentagens
               const _seedFn = (s, o) => { let h = 0; for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i) + o; h |= 0; } return Math.abs(h % 101); };
-              const _barFn = (p) => "▓".repeat(Math.round(p / 10)) + "░".repeat(10 - Math.round(p / 10));
+              const _barFn = (p) => "▓".repeat(Math.round(p / 20)) + "░".repeat(5 - Math.round(p / 20));
 
-              let _txt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n`;
-              _txt += `┃  👤 *𝗣𝗘𝗥𝗙𝗜𝗟* ━ @${numero}\n`;
-              _txt += `┗━━━━━━━━━━━━━━━━━━━━━┛\n\n`;
+              let _txt = `┏━━━━━━━━━━━━━━━┓\n`;
+              _txt += `┃ 👤 *𝗣𝗘𝗥𝗙𝗜𝗟* ━ @${numero}\n`;
+              _txt += `┗━━━━━━━━━━━━━━━┛\n\n`;
 
-              _txt += `╔══〘 📛 〙══════════════╗\n`;
+              _txt += `╔══〘 📛 〙════════╗\n`;
               _txt += `║ 👤 *${_nome}*\n`;
               _txt += `║ 📝 _ᴠɪsɪᴛᴀɴᴛᴇ ─ sᴇᴍ ʀᴇɢɪsᴛʀᴏ_\n`;
-              _txt += `╚════════════════════╝\n\n`;
+              _txt += `╚══════════════╝\n\n`;
 
               if (isGroup) {
-                _txt += `╔══〘 🏅 〙══════════════╗\n`;
-                _txt += `║ 🌑 ɴᴏᴠᴀᴛᴏ ─ 💰 *${perfilExtras.golds || 0}G*\n`;
-                _txt += `║ 💬 *${perfilExtras.mensagens || 0}* ᴍsɢs ─ 🤖 *${perfilExtras.comandos || 0}* ᴄᴍᴅs\n`;
-                _txt += `║ 🎭 *${perfilExtras.figurinhas || 0}* ғɪɢs`;
-                if (perfilExtras.advertencias > 0) _txt += ` ─ ⚠️ *${perfilExtras.advertencias}/3* ᴀᴅᴠ`;
-                _txt += `\n`;
+                // Calcular nível de intimidade dinâmico usando sistema compartilhado
+                const _xpMsgs = perfilExtras.mensagens || 0;
+                const _xpFigs = perfilExtras.figurinhas || 0;
+                const _xpCmds = perfilExtras.comandos || 0;
+                const _nvInfo = calcularNivel(_xpMsgs, _xpFigs, _xpCmds);
+
+                _txt += `╔══〘 🏅 〙════════╗\n`;
+                _txt += `║ ${_nvInfo.icon} ${_nvInfo.nome} ─ 💰 *${perfilExtras.golds || 0}G*\n`;
+                _txt += `║ 💬 *${_xpMsgs}* ᴍsɢs ─ 🤖 *${_xpCmds}* ᴄᴍᴅs\n`;
+                _txt += `║ 🎭 *${_xpFigs}* ғɪɢs ─ ⚠️ *${perfilExtras.advertencias || 0}/3* ᴀᴅᴠ\n`;
+                _txt += `║ ⚡ *XP:* ${_nvInfo.xp}/${_nvInfo.nextXp} ${_nvInfo.barra}\n`;
+                _txt += `║ 💭 _${_nvInfo.frase}_\n`;
                 if (perfilExtras.mutado) {
                   _txt += `║ 🔇 *ᴍᴜᴛᴀᴅᴏ* ─ ${perfilExtras.mutadoMsgs} ᴍsɢs ᴀᴘᴀɢᴀᴅᴀs\n`;
                 }
-                _txt += `╚════════════════════╝\n\n`;
+                _txt += `╚══════════════╝\n\n`;
               }
 
               // Personalidade
@@ -5079,16 +5240,16 @@ https://wa.me/${numerodono_ofc}`);
               const _pV = _seedFn(numero, 5), _pC = _seedFn(numero, 6);
               const _pF = _seedFn(numero, 8), _pI = _seedFn(numero, 9);
 
-              _txt += `╔══〘 🎭 〙══════════════╗\n`;
-              _txt += `║ 😈 *Safado* ${_barFn(_pS)} *${_pS}%*\n`;
-              _txt += `║ 🐄 *Gado* ${_barFn(_pG)} *${_pG}%*\n`;
-              _txt += `║ 😍 *Bonito* ${_barFn(_pB)} *${_pB}%*\n`;
-              _txt += `║ 🔥 *Gostoso* ${_barFn(_pGo)} *${_pGo}%*\n`;
-              _txt += `║ 😴 *Vagabundo* ${_barFn(_pV)} *${_pV}%*\n`;
-              _txt += `║ 🐂 *Corno* ${_barFn(_pC)} *${_pC}%*\n`;
-              _txt += `║ 💍 *Fiel* ${_barFn(_pF)} *${_pF}%*\n`;
-              _txt += `║ 🧠 *Inteligente* ${_barFn(_pI)} *${_pI}%*\n`;
-              _txt += `╚════════════════════╝\n\n`;
+              _txt += `╔══〘 🎭 〙════════╗\n`;
+              _txt += `║ 😈 *sᴀғᴀᴅᴏ* ${_barFn(_pS)} *${_pS}%*\n`;
+              _txt += `║ 🐄 *ɢᴀᴅᴏ* ${_barFn(_pG)} *${_pG}%*\n`;
+              _txt += `║ 😍 *ʙᴏɴɪᴛᴏ* ${_barFn(_pB)} *${_pB}%*\n`;
+              _txt += `║ 🔥 *ɢᴏsᴛᴏsᴏ* ${_barFn(_pGo)} *${_pGo}%*\n`;
+              _txt += `║ 😴 *ᴠᴀɢᴀʙᴜɴᴅᴏ* ${_barFn(_pV)} *${_pV}%*\n`;
+              _txt += `║ 🐂 *ᴄᴏʀɴᴏ* ${_barFn(_pC)} *${_pC}%*\n`;
+              _txt += `║ 💍 *ғɪᴇʟ* ${_barFn(_pF)} *${_pF}%*\n`;
+              _txt += `║ 🧠 *ɪɴᴛᴇʟɪɢᴇɴᴛᴇ* ${_barFn(_pI)} *${_pI}%*\n`;
+              _txt += `╚══════════════╝\n\n`;
 
               _txt += `> 💡 _ᴜsᴇ *!ʀᴇɢɪsᴛʀᴀʀ* ɴᴏ ᴘᴠ ᴘᴀʀᴀ ᴅᴇsʙʟᴏǫᴜᴇᴀʀ ᴏ ᴘᴇʀғɪʟ ᴄᴏᴍᴘʟᴇᴛᴏ!_`;
 
@@ -5749,14 +5910,30 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           bule.sort((a, b) =>
             a.messages + a.cmd_messages < b.cmd_messages + b.messages ? 0 : -1,
           );
-          boardi = "Rank dos mais Ghosts do Grupo:\n\n";
-          if (bule.length == 0) boardi += "Sem Ghosts";
+          boardi = "╭──────────────────╮\n│ 👻 *RANK GHOSTS DO GRUPO*\n╰──────────────────╯\n\n";
+          if (bule.length == 0) boardi += "✅ Sem Ghosts";
           for (i = 0; i < (bule.length < 5 ? bule.length : 5); i++) {
-            if (i != null)
-              boardi += `${i + 1}º : @${bule[i].id.split("@")[0]}\nMensagens: ${bule[i].messages
-                }\nComandos dados: ${bule[i].cmd_messages}\nAparelho: ${bule[i].aparelho
-                }\n\n`;
-            mentioned_jid.push(bule[i].id);
+            if (i != null) {
+              // Resolver LID → número real
+              let _rkiJid = bule[i].id;
+              let _rkiNum = _rkiJid.split("@")[0];
+              if (_rkiNum.length > 15 && groupMembers && groupMembers.length > 0) {
+                const _rkiFound = groupMembers.find(p => {
+                  const pLid = (p.lid || "").split("@")[0];
+                  const pId = (p.id || "").split("@")[0];
+                  return pLid === _rkiNum || pId === _rkiNum;
+                });
+                if (_rkiFound && _rkiFound.id) {
+                  const _rkiReal = _rkiFound.id.split("@")[0];
+                  if (_rkiReal.length <= 15) {
+                    _rkiNum = _rkiReal;
+                    _rkiJid = _rkiReal + "@s.whatsapp.net";
+                  }
+                }
+              }
+              boardi += `${i + 1}º : @${_rkiNum}\n💬 Mensagens: ${bule[i].messages}\n🤖 Comandos: ${bule[i].cmd_messages}\n📱 Aparelho: ${bule[i].aparelho}\n\n`;
+              mentioned_jid.push(_rkiJid);
+            }
           }
           mentions(boardi, mentioned_jid, true);
           break;
@@ -13043,18 +13220,23 @@ vota em quem mandou melhor! 🏆
                 "🚫 O áudio é muito longo. Tente algo com menos de 1 hora.",
               );
 
-            var N_E = "Não encontrado.";
-            var bla = `
-🎧 𝗕𝗔𝗜𝗫𝗔𝗡𝗗𝗢 𝗦𝗨𝗔 𝗠𝗨́𝗦𝗜𝗖𝗔...
+            var N_E = "???";
+            var _desc = (data[0]?.desc || "").substring(0, 55);
+            var bla = `──────────────────
+  ♪ *ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴜ́sɪᴄᴀ*
+──────────────────
 
-🎶 Título: ${data[0]?.titulo || N_E}
-⏱️ Duração: ${data[0]?.tempo || N_E}
-📅 Postado: ${data[0]?.postado || N_E}
-📝 Descrição: ${data[0]?.desc || N_E}
-> ▶︎ •၊၊||၊|။||||။‌‌‌‌၊|• 0:10  
+  ◈ *${data[0]?.titulo || N_E}*
 
-💡 Para vídeo: ${prefix}playmp4 ${q.trim()}
-📄 Para documento: ${prefix}playdoc ${q.trim()}
+  ▿ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ │ *${data[0]?.tempo || N_E}*
+  ▿ ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${data[0]?.postado || N_E}*
+  ▿ _${_desc || "ᴅᴇsᴄ. ɪɴᴅɪsᴘᴏɴɪ́ᴠᴇʟ"}_
+
+  ▷ ━━●━━━━━━━ *${data[0]?.tempo || "0:00"}*
+
+──────────────────
+> ◇ *${prefix}playmp4* ─ ᴠɪ́ᴅᴇᴏ
+> ◇ *${prefix}playdoc* ─ ᴅᴏᴄᴜᴍᴇɴᴛᴏ
     `;
 
             conn.sendMessage(
@@ -13103,18 +13285,23 @@ vota em quem mandou melhor! 🏆
                 "🚫 O arquivo é muito longo. Tente algo menor que 1 hora.",
               );
 
-            var N_E = "Não encontrado.";
-            var bla = `
-📄 𝗕𝗔𝗜𝗫𝗔𝗡𝗗𝗢 𝗦𝗘𝗨 𝗗𝗢𝗖𝗨𝗠𝗘𝗡𝗧𝗢...
+            var N_E = "???";
+            var _desc = (data[0]?.desc || "").substring(0, 55);
+            var bla = `──────────────────
+  ♫ *ᴅᴏᴡɴʟᴏᴀᴅ ᴅᴏᴄᴜᴍᴇɴᴛᴏ*
+──────────────────
 
-🎶 Título: ${data[0]?.titulo || N_E}
-⏱️ Duração: ${data[0]?.tempo || N_E}
-📅 Postado: ${data[0]?.postado || N_E}
-📝 Descrição: ${data[0]?.desc || N_E}
-> ▶︎ •၊၊||၊|။||||။‌‌‌‌၊|• 0:10  
+  ◈ *${data[0]?.titulo || N_E}*
 
-💡 Para vídeo: ${prefix}playmp4 ${q.trim()}
-🎧 Para áudio: ${prefix}play ${q.trim()}
+  ▿ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ │ *${data[0]?.tempo || N_E}*
+  ▿ ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${data[0]?.postado || N_E}*
+  ▿ _${_desc || "ᴅᴇsᴄ. ɪɴᴅɪsᴘᴏɴɪ́ᴠᴇʟ"}_
+
+  ▷ ━━●━━━━━━━ *${data[0]?.tempo || "0:00"}*
+
+──────────────────
+> ◇ *${prefix}playmp4* ─ ᴠɪ́ᴅᴇᴏ
+> ◇ *${prefix}play* ─ ᴀ́ᴜᴅɪᴏ
     `;
 
             conn.sendMessage(
@@ -13160,18 +13347,23 @@ vota em quem mandou melhor! 🏆
                 "🚫 O vídeo é muito longo. Escolha um com menos de 1 hora.",
               );
 
-            var N_E = "Não encontrado.";
-            var bla = `
-🎬 𝗕𝗔𝗜𝗫𝗔𝗡𝗗𝗢 𝗦𝗘𝗨 𝗩𝗜́𝗗𝗘𝗢...
+            var N_E = "???";
+            var _desc = (data[0]?.desc || "").substring(0, 55);
+            var bla = `──────────────────
+  ▶ *ᴅᴏᴡɴʟᴏᴀᴅ ᴠɪ́ᴅᴇᴏ*
+──────────────────
 
-🎶 Título: ${data[0]?.titulo || N_E}
-⏱️ Duração: ${data[0]?.tempo || N_E}
-📅 Postado: ${data[0]?.postado || N_E}
-📝 Descrição: ${data[0]?.desc || N_E}
-> ▶︎ •၊၊||၊|။||||။‌‌‌‌၊|• 0:10  
+  ◈ *${data[0]?.titulo || N_E}*
 
-💡 Para áudio: ${prefix}play ${q.trim()}
-📄 Para documento: ${prefix}playdoc ${q.trim()}
+  ▿ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ │ *${data[0]?.tempo || N_E}*
+  ▿ ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${data[0]?.postado || N_E}*
+  ▿ _${_desc || "ᴅᴇsᴄ. ɪɴᴅɪsᴘᴏɴɪ́ᴠᴇʟ"}_
+
+  ▷ ━━●━━━━━━━ *${data[0]?.tempo || "0:00"}*
+
+──────────────────
+> ◇ *${prefix}play* ─ ᴀ́ᴜᴅɪᴏ
+> ◇ *${prefix}playdoc* ─ ᴅᴏᴄᴜᴍᴇɴᴛᴏ
     `;
 
             conn.sendMessage(
@@ -13980,8 +14172,25 @@ ${Blue || "│  ✅ Ninguém"}
                 const _rCh = dataGp[0]?.Chances;
                 const _rCh_ =
                   _rCh[_rCh.findIndex((a) => a.id === rank[_ri].id)];
-                _rankMent.push(rank[_ri].id);
-                _rankTxt += `│  ${_medalhas[_ri] || `${_ri + 1}º`} @${rank[_ri].id.split("@")[0]}\n`;
+                // Resolver LID → número real
+                let _rgJid = rank[_ri].id;
+                let _rgNum = _rgJid.split("@")[0];
+                if (_rgNum.length > 15 && groupMembers && groupMembers.length > 0) {
+                  const _rgF = groupMembers.find(p => {
+                    const pLid = (p.lid || "").split("@")[0];
+                    const pId = (p.id || "").split("@")[0];
+                    return pLid === _rgNum || pId === _rgNum;
+                  });
+                  if (_rgF && _rgF.id) {
+                    const _rgReal = _rgF.id.split("@")[0];
+                    if (_rgReal.length <= 15) {
+                      _rgNum = _rgReal;
+                      _rgJid = _rgReal + "@s.whatsapp.net";
+                    }
+                  }
+                }
+                _rankMent.push(_rgJid);
+                _rankTxt += `│  ${_medalhas[_ri] || `${_ri + 1}º`} @${_rgNum}\n`;
                 _rankTxt += `│  💰 *${rank[_ri]?.Golds || 0}*G`;
                 _rankTxt += ` │ 🛡️ ${_rCh_?.Escudo?.length > 0 ? "✅" : "❌"}`;
                 _rankTxt += ` │ ⛏️ ${_rCh_?.ChanceG || 0}/3\n│\n`;
@@ -16949,6 +17158,7 @@ _Remove da lista negra global_
 
         // ══════════════════ SISTEMA ANTI-SPAM ══════════════════
 
+
         // ── ADM: Ativar/Desativar Anti-Spam ──
         case "antispam": {
           if (!isGroup) return reply(`❌ Apenas em *grupos*.`);
@@ -17926,6 +18136,60 @@ _Remove da lista negra global_
 ┃  🗓️ ${_novDate}
 ┗━━━━━━━━━━━━━━━━━━━━━┛
 
+╔══〘 🆕 〙══════════════╗
+║  *𝗡𝗢𝗩𝗢𝗦 𝗖𝗢𝗠𝗔𝗡𝗗𝗢𝗦*
+╠════════════════════╣
+║ 🧠 *${prefix}ǫᴜɪᴢ* — sɪsᴛᴇᴍᴀ ᴅᴇ ǫᴜɪᴢ
+║   ↳ ᴘᴇʀɢᴜɴᴛᴀs ᴅɪɴᴀ̂ᴍɪᴄᴀs ᴅᴀ ᴡɪᴋɪᴘᴇᴅɪᴀ
+║   ↳ ɪᴍᴀɢᴇɴs, ᴅɪᴄᴀs ᴇ xᴘ ᴀʟᴇᴀᴛᴏ́ʀɪᴏ
+║   ↳ ɴɪ́ᴠᴇɪs ᴅᴇ ᴅɪғɪᴄᴜʟᴅᴀᴅᴇ ᴘʀᴏɢʀᴇssɪᴠᴏs
+║
+║ 📋 *${prefix}ʀᴇsᴜᴍᴏ* — ʀᴇsᴜᴍɪʀ ᴄᴏɴᴠᴇʀsᴀ
+║   ↳ ʀᴇsᴜᴍᴏ ɪɴᴛᴇʟɪɢᴇɴᴛᴇ ᴅᴏ ɢʀᴜᴘᴏ
+║   ↳ ᴛᴇᴍᴀs, ᴄᴏɴғʟɪᴛᴏs ᴇ ᴅᴇsᴛᴀǫᴜᴇs
+╚════════════════════╝
+
+╔══〘 🎨 〙══════════════╗
+║  *𝗔𝗧𝗨𝗔𝗟𝗜𝗭𝗔𝗖̧𝗢̃𝗘𝗦 𝗩𝗜𝗦𝗨𝗔𝗜𝗦*
+╠════════════════════╣
+║ 🖌️ *ᴍᴇɴᴜs* — ᴠɪsᴜᴀʟ ʀᴇᴍᴏᴅᴇʟᴀᴅᴏ
+║   ↳ ʟᴀʏᴏᴜᴛ ᴍᴏᴅᴇʀɴᴏ ᴇ ʟɪᴍᴘᴏ
+║   ↳ ᴄᴀɪxᴀs ᴀʀʀᴇᴅᴏɴᴅᴀᴅᴀs ᴇ sɪ́ᴍʙᴏʟᴏs
+║
+║ 🎵 *${prefix}ᴘʟᴀʏ* — ɴᴏᴠᴏ ᴠɪsᴜᴀʟ
+║   ↳ ᴄᴀʀᴅ ᴍᴏᴅᴇʀɴɪᴢᴀᴅᴏ ᴇ ᴇʟᴇɢᴀɴᴛᴇ
+║
+║ 👤 *${prefix}ᴘᴇʀғɪʟ* — ᴀᴛᴜᴀʟɪᴢᴀᴅᴏ
+║   ↳ ᴄᴀʀᴅ ᴄᴏᴍᴘᴀᴄᴛᴏ ᴇ ᴘʀᴏғɪssɪᴏɴᴀʟ
+║   ↳ ᴍᴇɴᴄ̧ᴏ̃ᴇs ᴄᴏʀʀɪɢɪᴅᴀs
+╚════════════════════╝
+
+╔══〘 🛠️ 〙══════════════╗
+║  *𝗖𝗢𝗥𝗥𝗘𝗖̧𝗢̃𝗘𝗦 & 𝗙𝗜𝗫𝗘𝗦*
+╠════════════════════╣
+║ 📊 *ʀᴀɴᴋᴀᴛɪᴠᴏ* — ᴄᴏʀʀɪɢɪᴅᴏ ✅
+║   ↳ ᴍᴇɴᴄ̧ᴏ̃ᴇs ғᴜɴᴄɪᴏɴᴀɴᴅᴏ
+║   ↳ sᴇᴍ ᴇʀʀᴏs ᴅᴇ ʟɪᴅ
+║
+║ 📉 *ʀᴀɴᴋɪɴᴀᴛɪᴠᴏs* — ᴄᴏʀʀɪɢɪᴅᴏ ✅
+║   ↳ ғᴜɴᴄɪᴏɴᴀɴᴅᴏ ᴄᴏʀʀᴇᴛᴀᴍᴇɴᴛᴇ
+║
+║ 🤖 *sɪᴍɪʜ / sɪᴍɪʜ𝟐* — ᴄᴏʀʀɪɢɪᴅᴏs ✅
+║   ↳ ᴄʜᴀᴛʙᴏᴛ ᴇsᴛᴀ́ᴠᴇʟ ᴇ ʀᴇsᴘᴏɴᴅᴇɴᴅᴏ
+╚════════════════════╝
+
+╔══〘 📝 〙══════════════╗
+║  *𝗥𝗘𝗚𝗜𝗦𝗧𝗥𝗢 & 𝗣𝗘𝗥𝗙𝗜𝗟*
+╠════════════════════╣
+║ 📝 *${prefix}ʀᴇɢɪsᴛʀᴀʀ* — ᴀᴛᴜᴀʟɪᴢᴀᴅᴏ
+║   ↳ sɪsᴛᴇᴍᴀ ᴍᴀɪs ᴇsᴛᴀ́ᴠᴇʟ
+║   ↳ ʙᴜɢs ᴄᴏʀʀɪɢɪᴅᴏs
+║
+║ 👤 *${prefix}ᴘᴇʀғɪʟ* — ᴏᴛɪᴍɪᴢᴀᴅᴏ
+║   ↳ ᴅᴀᴅᴏs ᴅᴇ ᴇɴɢᴀᴊᴀᴍᴇɴᴛᴏ
+║   ↳ ɴɪ́ᴠᴇɪs ᴅᴇ ɪɴᴛɪᴍɪᴅᴀᴅᴇ
+╚════════════════════╝
+
 ╔══〘 🚀 〙══════════════╗
 ║  *𝗖𝗢𝗡𝗘𝗫𝗔̃𝗢 & 𝗘𝗦𝗧𝗔𝗕𝗜𝗟𝗜𝗗𝗔𝗗𝗘*
 ╠════════════════════╣
@@ -17935,7 +18199,7 @@ _Remove da lista negra global_
 ╚════════════════════╝
 
 ╔══〘 🛠️ 〙══════════════╗
-║  *𝗖𝗢𝗥𝗥𝗘𝗖̧𝗢̃𝗘𝗦 & 𝗠𝗘𝗟𝗛𝗢𝗥𝗜𝗔𝗦*
+║  *𝗖𝗢𝗥𝗥𝗘𝗖̧𝗢̃𝗘𝗦 𝗔𝗡𝗧𝗘𝗥𝗜𝗢𝗥𝗘𝗦*
 ╠════════════════════╣
 ║ 🔧 ᴀᴊᴜsᴛᴇs ᴠɪsᴜᴀɪs ᴇ ғᴜɴᴄɪᴏɴᴀɪs
 ║ 🔇 ᴄᴏᴍᴀɴᴅᴏ *ᴍᴜᴛᴇ* ᴀᴘʀɪᴍᴏʀᴀᴅᴏ
@@ -17947,7 +18211,7 @@ _Remove da lista negra global_
 ╚════════════════════╝
 
 ╔══〘 🤖 〙══════════════╗
-║  *𝗡𝗢𝗩𝗢𝗦 𝗥𝗘𝗖𝗨𝗥𝗦𝗢𝗦 𝗖𝗢𝗠 𝗜𝗔*
+║  *𝗥𝗘𝗖𝗨𝗥𝗦𝗢𝗦 𝗖𝗢𝗠 𝗜𝗔*
 ╠════════════════════╣
 ║ 🧠 *ɪᴀ ᴀʟᴇᴀᴛᴏ́ʀɪᴀ* — ᴍᴀɪs ɪɴᴛᴇʟɪɢᴇɴᴛᴇ
 ║   ↳ ᴘᴠ + ɢʀᴜᴘᴏs
@@ -17959,7 +18223,7 @@ _Remove da lista negra global_
 ╚════════════════════╝
 
 ╔══〘 ✨ 〙══════════════╗
-║  *𝗡𝗢𝗩𝗜𝗗𝗔𝗗𝗘𝗦 𝗡𝗢 𝗦𝗜𝗦𝗧𝗘𝗠𝗔*
+║  *𝗦𝗜𝗦𝗧𝗘𝗠𝗔*
 ╠════════════════════╣
 ║ 💻 ɴᴏᴠᴏ ᴠɪsᴜᴀʟ ᴅᴏ ᴛᴇʀᴍɪɴᴀʟ
 ║   ↳ ɪɴᴛᴇʀғᴀᴄᴇ ʟɪᴍᴘᴀ ᴇ ᴍᴏᴅᴇʀɴᴀ
@@ -17979,20 +18243,12 @@ _Remove da lista negra global_
 ╚════════════════════╝
 
 ╔══〘 📀 〙══════════════╗
-║  *𝗡𝗢𝗩𝗢 𝗠𝗘𝗡𝗨 𝗠𝗜́𝗗𝗜𝗔𝗦*
+║  *𝗠𝗘𝗡𝗨 𝗠𝗜́𝗗𝗜𝗔𝗦*
 ╠════════════════════╣
 ║ 🎬 ᴍᴇɴᴜ ᴇxᴄʟᴜsɪᴠᴏ ᴅᴇ ᴍɪ́ᴅɪᴀs
 ║   ↳ 📥 ᴛᴏᴅᴏs ᴏs ᴅᴏᴡɴʟᴏᴀᴅs
 ║   ↳ 🎭 ᴛᴏᴅᴀs ᴀs ғɪɢᴜʀɪɴʜᴀs
 ║ 👉 *${prefix}ᴍᴇɴᴜᴍɪᴅɪᴀs*
-╚════════════════════╝
-
-╔══〘 🆕 〙══════════════╗
-║  *𝗢𝗨𝗧𝗥𝗢𝗦*
-╠════════════════════╣
-║ ➕ ɴᴏᴠᴏs ᴄᴏᴍᴀɴᴅᴏs ᴀᴅɪᴄɪᴏɴᴀᴅᴏs
-║ ⚡ ᴍᴇʟʜᴏʀɪᴀs ᴅᴇ ᴅᴇsᴇᴍᴘᴇɴʜᴏ
-║ 👤 ᴘᴇʀғɪʟ ᴍᴏᴅᴇʀɴɪᴢᴀᴅᴏ
 ╚════════════════════╝
 
 ┏━━━━━━━━━━━━━━━━━━━━━┓
@@ -18136,6 +18392,136 @@ _Remove da lista negra global_
           break;
 
         //======================================\\
+
+        // ═══════ SISTEMA DE QUIZ COM IMAGEM ═══════
+        case "quiz":
+        case "quizz": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!isModobn) return reply(Res_SoModoBN);
+
+          if (temQuiz(from)) {
+            const _qInfo = getDica(from);
+            return reply(
+              `⚠️ *Já tem um quiz ativo!*\n\n` +
+              `> Categoria: *${_qInfo.categoria}*\n` +
+              `> 💡 Dica: _${_qInfo.dica}_\n\n` +
+              `> Responda no chat ou use *${prefix}cancelarquiz*`
+            );
+          }
+
+          reply("🔄 *Buscando quiz...*");
+
+          const _quiz = await iniciarQuiz(from);
+          if (!_quiz) return reply("❌ Nenhum quiz disponível no momento. Tente novamente!");
+
+          try {
+            // Quiz dinâmico usa thumbnailUrl direto, wiki array como fallback
+            const _imgSource = _quiz.thumbnailUrl || _quiz.wiki;
+            const _quizImgBuf = await buscarImagem(_imgSource, _quiz.categoria);
+
+            const _nivelTxt = _quiz.nivelGrupo === 1 ? "🟢 Fácil" : _quiz.nivelGrupo === 2 ? "🟡 Médio" : "🔴 Difícil";
+
+            const _quizTxt =
+              `┏━━━━━━━━━━━━━━━┓\n` +
+              `┃ ${_quiz.categoria} *QUIZ*\n` +
+              `┗━━━━━━━━━━━━━━━┛\n\n` +
+              `> 💡 Dica: _${_quiz.dica}_\n` +
+              `> 📊 Nível: *${_nivelTxt}*\n\n` +
+              `> 🎯 *Quem é / O que é?*\n` +
+              `> Responda no chat!\n` +
+              `> ⏱ Tempo: *5 minutos*\n` +
+              `> ⚡ Quem acertar ganha *XP aleatório*!`;
+
+            if (_quizImgBuf) {
+              await conn.sendMessage(from, {
+                image: _quizImgBuf,
+                caption: _quizTxt,
+              }, { quoted: info });
+            } else {
+              await conn.sendMessage(from, {
+                text: _quizTxt + `\n\n> ⚠️ _Imagem indisponível_`,
+              }, { quoted: info });
+            }
+          } catch (e) {
+            console.log("[QUIZ] Erro ao enviar:", e?.message);
+            reply("❌ Erro ao iniciar quiz.");
+            cancelarQuiz(from);
+          }
+          break;
+        }
+
+        case "dica":
+        case "dicaquiz": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!temQuiz(from)) return reply("❌ Nenhum quiz ativo. Use *!quiz* para iniciar!");
+          const _dInfo = getDica(from);
+          reply(`💡 *Dica:* _${_dInfo.dica}_\n> Categoria: *${_dInfo.categoria}*`);
+          break;
+        }
+
+        case "cancelarquiz":
+        case "pularquiz":
+        case "stopquiz": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          const _cResp = cancelarQuiz(from);
+          if (_cResp) {
+            reply(`⏭️ *Quiz cancelado!*\n\n> A resposta era: *${_cResp}*\n> Use *!quiz* para outra rodada!`);
+          } else {
+            reply("❌ Nenhum quiz ativo no momento.");
+          }
+          break;
+        }
+
+        case "revelar":
+        case "revelarquiz": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!isGroupAdmins) return reply("🔒 Apenas *admins* podem revelar a resposta!");
+          if (!temQuiz(from)) return reply("❌ Nenhum quiz ativo no momento.");
+
+          const _revResp = cancelarQuiz(from);
+          if (_revResp) {
+            await conn.sendMessage(from, {
+              text: `┏━━━━━━━━━━━━━━━┓\n` +
+                    `┃ 👁️ *REVELADO!*\n` +
+                    `┗━━━━━━━━━━━━━━━┛\n\n` +
+                    `> 🔓 A resposta era: *${_revResp}*\n` +
+                    `> 👤 Revelado por @${sender2}\n\n` +
+                    `> ⏳ Próximo quiz em *5 segundos*...`,
+              mentions: [sender],
+            }, { quoted: info });
+
+            // Auto próximo quiz
+            setTimeout(async () => {
+              try {
+                if (temQuiz(from)) return;
+                await conn.sendMessage(from, { text: "🔄 *Buscando próximo quiz...*" });
+                const _revQuiz = await iniciarQuiz(from);
+                if (!_revQuiz) return;
+                const _revSrc = _revQuiz.thumbnailUrl || _revQuiz.wiki;
+                const _revImg = await buscarImagem(_revSrc, _revQuiz.categoria);
+                const _revNivel = _revQuiz.nivelGrupo === 1 ? "🟢 Fácil" : _revQuiz.nivelGrupo === 2 ? "🟡 Médio" : "🔴 Difícil";
+                const _revTxt =
+                  `┏━━━━━━━━━━━━━━━┓\n` +
+                  `┃ ${_revQuiz.categoria} *QUIZ*\n` +
+                  `┗━━━━━━━━━━━━━━━┛\n\n` +
+                  `> 💡 Dica: _${_revQuiz.dica}_\n` +
+                  `> 📊 Nível: *${_revNivel}*\n\n` +
+                  `> 🎯 *Quem é / O que é?*\n` +
+                  `> Responda no chat!\n` +
+                  `> ⏱ Tempo: *5 minutos*\n` +
+                  `> ⚡ XP aleatório para quem acertar!\n` +
+                  `> 🛑 *${prefix}cancelarquiz* para parar`;
+                if (_revImg) {
+                  await conn.sendMessage(from, { image: _revImg, caption: _revTxt });
+                } else {
+                  await conn.sendMessage(from, { text: _revTxt + `\n\n> ⚠️ _Imagem indisponível_` });
+                }
+              } catch (e) { console.log("[QUIZ-REVELAR]", e?.message); }
+            }, 5000);
+          }
+          break;
+        }
+        // ═══════════════════════════════════════════
 
         //===(ZOUEIRAS/BRINCADEIRAS/HUMOR)===\\
 
@@ -18697,6 +19083,57 @@ _Remove da lista negra global_
           });
           break;
 
+        // ═══════ COMANDO DE RESUMO INTELIGENTE ═══════
+        case "resumo":
+        case "resumir":
+        case "resumogrupo":
+        case "oqrolou":
+        case "oquerolou": {
+          if (!isGroup) return reply(Res_SoGrupo);
+
+          const _rsmCount = getResumoCount(from);
+          if (_rsmCount < 5) {
+            return reply(
+              `❌ *Poucas mensagens capturadas!*\n\n` +
+              `> Apenas *${_rsmCount}* msgs capturadas.\n` +
+              `> Mínimo: *5* mensagens.\n\n` +
+              `> 💡 Continue conversando e tente novamente!`
+            );
+          }
+
+          await conn.sendMessage(from, { react: { text: "📊", key: info.key } });
+
+          try {
+            const _rsmAnalysis = analyzeResumoGroup(from, groupMembers);
+            const _rsmSettings = JSON.parse(fs.readFileSync("./dados/settings.json", "utf-8"));
+            const _rsmResult = await gerarResumo(_rsmAnalysis, groupName, _rsmSettings);
+
+            if (_rsmResult && _rsmResult.text) {
+              // Enviar com imagem de banner
+              const _rsmImgPath = "./dados/img/resumo_banner.png";
+              if (fs.existsSync(_rsmImgPath)) {
+                await conn.sendMessage(from, {
+                  image: fs.readFileSync(_rsmImgPath),
+                  caption: _rsmResult.text,
+                  mentions: _rsmResult.mentions || [],
+                }, { quoted: info });
+              } else {
+                await conn.sendMessage(from, {
+                  text: _rsmResult.text,
+                  mentions: _rsmResult.mentions || [],
+                }, { quoted: info });
+              }
+            } else {
+              reply("❌ Não foi possível gerar o resumo.");
+            }
+          } catch (_rsmErr) {
+            console.error("[RESUMO] Erro:", _rsmErr?.message || _rsmErr);
+            reply("❌ Erro ao gerar resumo.");
+          }
+          break;
+        }
+        // ═══════════════════════════════════════════════
+
         case "rankativos":
         case "rankativo":
           if (!isGroup) return reply(Res_SoGrupo);
@@ -18725,23 +19162,29 @@ _Remove da lista negra global_
               : -1,
           );
           menc = [];
-          blad = `
-┌────────────────┐
-│ RANK DE MAIS ATIVOS DO GRUPO\n`;
+          blad = `╭──────────────────╮\n│ 🏆 *RANK MAIS ATIVOS DO GRUPO*\n╰──────────────────╯\n`;
           for (i = 0; i < (blue.length < 5 ? blue.length : 5); i++) {
             if (i != null && blue[i]) {
-              const participantId = blue[i].id || "";
-              const participantNumber = participantId
-                ? participantId.split("@")[0]
-                : "Desconhecido";
-              blad += `
-┌───────────────
-│ ${i + 1}º : @${participantNumber}
-└─────
- ༺ Mensagens: ${blue[i].messages || 0}\n ༺ Comandos dados: ${blue[i].cmd_messages || 0
-                }\n ༺ Conectado em: ${blue[i].aparelho || "Desconhecido"
-                }\n ༺ Figurinhas: ${blue[i].figus || 0}\n└────────────\n`;
-              if (participantId) menc.push(participantId);
+              // Resolver LID → número real
+              let _rkaJid = blue[i].id || "";
+              let _rkaNum = _rkaJid.split("@")[0];
+              if (_rkaNum.length > 15 && groupMembers && groupMembers.length > 0) {
+                const _rkaFound = groupMembers.find(p => {
+                  const pLid = (p.lid || "").split("@")[0];
+                  const pId = (p.id || "").split("@")[0];
+                  return pLid === _rkaNum || pId === _rkaNum;
+                });
+                if (_rkaFound && _rkaFound.id) {
+                  const _rkaReal = _rkaFound.id.split("@")[0];
+                  if (_rkaReal.length <= 15) {
+                    _rkaNum = _rkaReal;
+                    _rkaJid = _rkaReal + "@s.whatsapp.net";
+                  }
+                }
+              }
+              const _rkaMedal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏅";
+              blad += `\n${_rkaMedal} *${i + 1}º* ─ @${_rkaNum}\n   💬 Msgs: *${blue[i].messages || 0}* ─ 🤖 Cmds: *${blue[i].cmd_messages || 0}*\n   🎭 Figs: *${blue[i].figus || 0}* ─ 📱 ${blue[i].aparelho || "Desconhecido"}\n`;
+              if (_rkaJid) menc.push(_rkaJid);
             }
           }
           mentions(blad, menc, true);
@@ -18761,27 +19204,35 @@ _Remove da lista negra global_
               "❌ Marque o @ de quem deseja puxar a atividade / Só pode um por vez..",
             );
           }
+          // Resolver LID → número real para checkativo
+          let _ckJid = menc_os2;
+          let _ckNum = _ckJid ? _ckJid.split("@")[0] : "Desconhecido";
+          if (_ckNum.length > 15 && groupMembers && groupMembers.length > 0) {
+            const _ckF = groupMembers.find(p => {
+              const pLid = (p.lid || "").split("@")[0];
+              const pId = (p.id || "").split("@")[0];
+              return pLid === _ckNum || pId === _ckNum;
+            });
+            if (_ckF && _ckF.id) {
+              const _ckReal = _ckF.id.split("@")[0];
+              if (_ckReal.length <= 15) {
+                _ckNum = _ckReal;
+                _ckJid = _ckReal + "@s.whatsapp.net";
+              }
+            }
+          }
           var indnum = numbersIds.indexOf(menc_os2);
           if (indnum >= 0 && countMessage[ind].numbers[indnum]) {
             var RSM_CN = countMessage[ind].numbers[indnum];
-            const participantNumber = menc_os2
-              ? menc_os2.split("@")[0]
-              : "Desconhecido";
             mentions(
-              `𵣘⃟ᵒ Consulta das atividade de\n𵣘⃟ᵒ @${participantNumber} no grupo: ${groupName}\n𵣘⃟ᵒ Mensagens: ${RSM_CN.messages || 0
-              }\n𵣘⃟ᵒ Comandos dados: ${RSM_CN.cmd_messages || 0
-              }\n𵣘⃟ᵒ Conectado em: ${RSM_CN.aparelho || "Desconhecido"
-              }\n𵣘⃟ Figurinhas: ${RSM_CN.figus || 0}`,
-              [menc_os2],
+              `╭──────────────────╮\n│ 📊 *ATIVIDADE*\n│ @${_ckNum}\n│ Grupo: ${groupName}\n╰──────────────────╯\n\n💬 Mensagens: *${RSM_CN.messages || 0}*\n🤖 Comandos: *${RSM_CN.cmd_messages || 0}*\n📱 Aparelho: *${RSM_CN.aparelho || "Desconhecido"}*\n🎭 Figurinhas: *${RSM_CN.figus || 0}*`,
+              [_ckJid],
               true,
             );
           } else {
-            const participantNumber = menc_os2
-              ? menc_os2.split("@")[0]
-              : "Desconhecido";
             mentions(
-              `⋆⃟ۣۜᵪ➜ Consulta da atividade de ⋆⃟ۣۜᵪ➜ @${participantNumber} no grupo\n⋆⃟ۣۜᵪ➜ Mensagens: 0\n⋆⃟ۣۜᵪ➜ Comandos dados: 0`,
-              [menc_os2],
+              `╭──────────────────╮\n│ 📊 *ATIVIDADE*\n│ @${_ckNum}\n╰──────────────────╯\n\n💬 Mensagens: *0*\n🤖 Comandos: *0*`,
+              [_ckJid],
               true,
             );
           }
@@ -20452,25 +20903,43 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
 
           if (isSimi2 && !isCmd && isGroup) {
             if (type == "conversation" || type == "extendedTextMessage") {
-              var { insert, response } = require("./simi.js");
-              if (info.key.fromMe) return;
-              if (
-                type == "extendedTextMessage" &&
-                prefix.includes(
-                  info.message.extendedTextMessage.contextInfo.quotedMessage
-                    .conversation[0],
-                )
-              )
-                return;
-              insert(type, info);
-              const sami = await response(budy);
-              if (sami)
-                conn.sendMessage(from, { text: sami }, { quoted: info });
+              try {
+                var { insert, response: simiResponse2 } = require("./simi.js");
+                if (info.key.fromMe) { /* ignorar msgs do bot */ }
+                else {
+                  // Verificar se é resposta a um comando (citação com prefixo)
+                  let _isQuotedCmd = false;
+                  try {
+                    if (type == "extendedTextMessage") {
+                      const _ctx = info.message?.extendedTextMessage?.contextInfo;
+                      const _qm = _ctx?.quotedMessage;
+                      const _qText = _qm?.conversation || _qm?.extendedTextMessage?.text || "";
+                      if (_qText && prefix.includes(_qText[0])) _isQuotedCmd = true;
+                    }
+                  } catch { }
+
+                  if (!_isQuotedCmd) {
+                    // APRENDER: inserir mensagem no banco simi.json
+                    insert(type, info);
+
+                    // RESPONDER: buscar resposta no banco local
+                    const _textoSimi = budy || body || "";
+                    if (_textoSimi.trim().length >= 2) {
+                      const sami = simiResponse2(_textoSimi);
+                      if (sami) {
+                        conn.sendMessage(from, { text: sami }, { quoted: info });
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                console.log("[SIMI2] Erro no handler:", e?.message || e);
+              }
             }
           }
 
           // ═══════════════════════════════════════════════
-          // 🧠 IA ALEATORY — Completamente isolada do handler principal
+          // 🧠 IA ALEATORY — Sistema com Rate Limit + Fallbacks
           // ═══════════════════════════════════════════════
           if (!isCmd && budy && !info.key.fromMe && (type === "conversation" || type === "extendedTextMessage")) {
             const _iaText = (budy || "").trim();
@@ -20495,108 +20964,190 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
               }
 
               if (_iaMencionou || _iaRespondeuBot) {
-                // Cooldown de 3s
+                // ═══ RATE LIMIT GLOBAL (proteção contra 429) ═══
+                if (!global._iaRateLimit) global._iaRateLimit = { blocked: false, until: 0, backoff: 60000, activeRequests: 0 };
+                const _rl = global._iaRateLimit;
+
+                // Verificar se está em período de bloqueio por rate limit
+                if (_rl.blocked && Date.now() < _rl.until) {
+                  const _rlRestante = Math.ceil((_rl.until - Date.now()) / 1000);
+                  const _conn0 = global.conn || conn;
+                  await _conn0.sendMessage(from, {
+                    text: `⏳ *A IA está descansando!*\n\n_Muitas mensagens foram enviadas. Aguarde *${_rlRestante}s* e tente novamente._`,
+                  }, { quoted: info });
+                  continue;
+                }
+
+                // Reset do bloqueio se já passou o tempo
+                if (_rl.blocked && Date.now() >= _rl.until) {
+                  _rl.blocked = false;
+                  _rl.backoff = 60000; // Reset backoff
+                }
+
+                // Limitar requisições simultâneas (máx 2)
+                if (_rl.activeRequests >= 2) continue;
+
+                // Cooldown por usuário (15s normal, 30s se teve rate limit recente)
                 if (!global._iaCooldown) global._iaCooldown = new Map();
+                const _iaCooldownMs = _rl.backoff > 60000 ? 30000 : 15000;
                 const _iaLast = global._iaCooldown.get(sender) || 0;
-                if (Date.now() - _iaLast >= 10000) {
-                  global._iaCooldown.set(sender, Date.now());
+                if (Date.now() - _iaLast < _iaCooldownMs) continue;
+                global._iaCooldown.set(sender, Date.now());
 
-                  // ═══ EXECUÇÃO ISOLADA — não pode derrubar o bot ═══
-                  const _iaFrom = from;
-                  const _iaSender = sender;
-                  const _iaPush = pushname;
-                  const _iaIsGroup = isGroup;
-                  const _iaInfo = info;
-                  const _iaQuotedCtx = _iaRespondeuBot ? info.message?.extendedTextMessage?.contextInfo : null;
+                // ═══ EXECUÇÃO ISOLADA — não pode derrubar o bot ═══
+                const _iaFrom = from;
+                const _iaSender = sender;
+                const _iaPush = pushname;
+                const _iaIsGroup = isGroup;
+                const _iaInfo = info;
+                const _iaQuotedCtx = _iaRespondeuBot ? info.message?.extendedTextMessage?.contextInfo : null;
 
-                  setTimeout(async () => {
+                _rl.activeRequests++;
+
+                setTimeout(async () => {
+                  try {
+                    if (!global._iaMemory) global._iaMemory = new Map();
+                    const _iaMemKey = _iaSender + "_" + _iaFrom;
+                    const _iaHist = global._iaMemory.get(_iaMemKey) || [];
+
+                    let _iaQuery = _iaText.replace(/\b(aleatory|aleatori|hey|ei|oi|ola|olá)[,.:!?]?\s*/gi, "").trim();
+                    if (_iaQuery.length < 2) _iaQuery = _iaText;
+
+                    // Contexto da msg citada
+                    if (_iaQuotedCtx && _iaHist.length === 0) {
+                      const _qt = _iaQuotedCtx.quotedMessage?.conversation ||
+                        _iaQuotedCtx.quotedMessage?.extendedTextMessage?.text || "";
+                      if (_qt) _iaHist.push({ role: "assistant", content: _qt });
+                    }
+
+                    _iaHist.push({ role: "user", content: _iaQuery });
+                    if (_iaHist.length > 4) _iaHist.splice(0, _iaHist.length - 4);
+
+                    const _iaSys = `Você é Aleatory Bot, assistente de WhatsApp da BronxysHost. Responda em pt-BR, amigável, direto (máx 150 palavras). Use emojis com moderação. NUNCA diga que usa API externa ou Gemini. Usuário: ${_iaPush || "amigo"}. ${_iaIsGroup ? "Chat de grupo." : "Chat privado."}`;
+
+                    let _iaReply = "";
+
+                    // ═══ TENTATIVA 1: POLLINATIONS (sem chave) ═══
                     try {
-                      if (!global._iaMemory) global._iaMemory = new Map();
-                      const _iaMemKey = _iaSender + "_" + _iaFrom;
-                      const _iaHist = global._iaMemory.get(_iaMemKey) || [];
-
-                      let _iaQuery = _iaText.replace(/\b(aleatory|aleatori|hey|ei|oi|ola|olá)[,.:!?]?\s*/gi, "").trim();
-                      if (_iaQuery.length < 2) _iaQuery = _iaText;
-
-                      // Contexto da msg citada
-                      if (_iaQuotedCtx && _iaHist.length === 0) {
-                        const _qt = _iaQuotedCtx.quotedMessage?.conversation ||
-                          _iaQuotedCtx.quotedMessage?.extendedTextMessage?.text || "";
-                        if (_qt) _iaHist.push({ role: "assistant", content: _qt });
+                      const _polRes = await axios.post("https://text.pollinations.ai/v1/chat/completions", {
+                        messages: [{ role: "system", content: _iaSys }, ..._iaHist],
+                        model: "openai",
+                        jsonMode: false,
+                        seed: Math.floor(Math.random() * 99999),
+                      }, {
+                        headers: {
+                          "Content-Type": "application/json",
+                          "Referer": "https://bronxyshost.com",
+                          "Origin": "https://bronxyshost.com",
+                        },
+                        timeout: 25000,
+                      });
+                      if (_polRes?.data?.choices?.[0]?.message?.content) {
+                        _iaReply = _polRes.data.choices[0].message.content;
+                        console.log("[IA-ALEATORY] ✅ Pollinations respondeu");
                       }
+                    } catch (_e1) {
+                      const _statusCode = _e1?.response?.status;
+                      console.log("[IA-ALEATORY] Pollinations falhou:", _statusCode || _e1?.message || "erro");
 
-                      _iaHist.push({ role: "user", content: _iaQuery });
-                      if (_iaHist.length > 4) _iaHist.splice(0, _iaHist.length - 4);
+                      // ═══ DETECTAR 429 E ATIVAR BACKOFF GLOBAL ═══
+                      if (_statusCode === 429) {
+                        _rl.blocked = true;
+                        _rl.until = Date.now() + _rl.backoff;
+                        console.log(`[IA-ALEATORY] ⚠️ Rate limit! Bloqueando por ${_rl.backoff / 1000}s`);
+                        _rl.backoff = Math.min(_rl.backoff * 2, 300000); // Dobrar backoff (máx 5min)
+                      }
+                    }
 
-                      const _iaSys = `Você é Aleatory Bot, assistente de WhatsApp da BronxysHost. Responda em pt-BR, amigável, direto (máx 150 palavras). Use emojis com moderação. NUNCA diga que usa API externa ou Gemini. Usuário: ${_iaPush || "amigo"}. ${_iaIsGroup ? "Chat de grupo." : "Chat privado."}`;
-
-                      let _iaReply = "";
-
-                      // ═══ POLLINATIONS (ilimitado, sem chave) ═══
+                    // ═══ TENTATIVA 2: GEMINI (se tiver chave) ═══
+                    if (!_iaReply) {
                       try {
-                        const _polRes = await axios.post("https://text.pollinations.ai/v1/chat/completions", {
-                          messages: [{ role: "system", content: _iaSys }, ..._iaHist],
-                          model: "openai",
-                          jsonMode: false,
-                          seed: Math.floor(Math.random() * 99999),
+                        const _gemKey = setting?.gemini_api_key || "";
+                        if (_gemKey && _gemKey.length > 10) {
+                          const _gemContents = [
+                            { role: "user", parts: [{ text: _iaSys }] },
+                            { role: "model", parts: [{ text: "Entendido!" }] },
+                          ];
+                          for (const h of _iaHist) {
+                            _gemContents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.content }] });
+                          }
+                          const _gemRes = await axios.post(
+                            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${_gemKey}`,
+                            { contents: _gemContents },
+                            { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+                          );
+                          const _gemText = _gemRes?.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                          if (_gemText && _gemText.length > 1) {
+                            _iaReply = _gemText.trim();
+                            console.log("[IA-ALEATORY] ✅ Gemini respondeu (backup)");
+                          }
+                        }
+                      } catch (_eGem) {
+                        console.log("[IA-ALEATORY] Gemini falhou:", _eGem?.response?.status || _eGem?.message || "erro");
+                      }
+                    }
+
+                    // ═══ TENTATIVA 3: DUCKDUCKGO AI (sem chave, sem limite severo) ═══
+                    if (!_iaReply) {
+                      try {
+                        const _duckMsgs = [{ role: "user", content: _iaSys + "\n\n" + _iaQuery }];
+                        const _duckRes = await axios.post("https://duckduckgo.com/duckchat/v1/chat", {
+                          model: "gpt-4o-mini",
+                          messages: _duckMsgs,
                         }, {
                           headers: {
                             "Content-Type": "application/json",
-                            "Referer": "https://bronxyshost.com",
-                            "Origin": "https://bronxyshost.com",
+                            "x-vqd-accept": "1",
                           },
-                          timeout: 30000,
+                          timeout: 15000,
                         });
-                        if (_polRes?.data?.choices?.[0]?.message?.content) {
-                          _iaReply = _polRes.data.choices[0].message.content;
-                          console.log("[IA-ALEATORY] ✅ Respondeu com sucesso");
+                        // DuckDuckGo retorna streaming, tentar pegar texto
+                        const _duckText = typeof _duckRes.data === "string"
+                          ? _duckRes.data.split("\n").filter(l => l.startsWith("data:")).map(l => {
+                            try { return JSON.parse(l.slice(5))?.message; } catch { return ""; }
+                          }).join("")
+                          : _duckRes.data?.message || "";
+                        if (_duckText && _duckText.length > 1) {
+                          _iaReply = _duckText.trim();
+                          console.log("[IA-ALEATORY] ✅ DuckDuckGo respondeu (backup 2)");
                         }
-                      } catch (_e1) {
-                        console.log("[IA-ALEATORY] Falhou:", _e1?.response?.status || _e1?.message || "erro");
+                      } catch (_eDuck) {
+                        console.log("[IA-ALEATORY] DuckDuckGo falhou:", _eDuck?.message || "erro");
                       }
-
-                      // ═══ GEMINI BACKUP (se tiver chave e Pollinations falhou) ═══
-                      if (!_iaReply) {
-                        try {
-                          const _gemKey = setting?.gemini_api_key || "";
-                          if (_gemKey && _gemKey.length > 10) {
-                            const _gemContents = [
-                              { role: "user", parts: [{ text: _iaSys }] },
-                              { role: "model", parts: [{ text: "Entendido!" }] },
-                            ];
-                            for (const h of _iaHist) {
-                              _gemContents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.content }] });
-                            }
-                            const _gemRes = await axios.post(
-                              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${_gemKey}`,
-                              { contents: _gemContents },
-                              { headers: { "Content-Type": "application/json" }, timeout: 10000 }
-                            );
-                            const _gemText = _gemRes?.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if (_gemText && _gemText.length > 1) {
-                              _iaReply = _gemText.trim();
-                              console.log("[IA-ALEATORY] ✅ Gemini respondeu (backup)");
-                            }
-                          }
-                        } catch (_eGem) {
-                          console.log("[IA-ALEATORY] Gemini falhou:", _eGem?.message || "erro");
-                        }
-                      }
-
-                      // Só envia se tiver resposta real (sem msg de erro no chat)
-                      if (_iaReply && _iaReply.length > 0) {
-                        _iaHist.push({ role: "assistant", content: _iaReply });
-                        if (_iaHist.length > 4) _iaHist.splice(0, _iaHist.length - 4);
-                        global._iaMemory.set(_iaMemKey, _iaHist);
-
-                        const _conn = global.conn || conn;
-                        await _conn.sendMessage(_iaFrom, { text: _iaReply }, { quoted: _iaInfo });
-                      }
-                    } catch (e) {
-                      console.log("[IA-ALEATORY] Erro isolado:", e?.message || e);
                     }
-                  }, 0);
-                }
+
+                    // ═══ TENTATIVA 4: SIMI LOCAL (último recurso) ═══
+                    if (!_iaReply) {
+                      try {
+                        const _simiLocal = await simih(_iaQuery);
+                        if (_simiLocal && _simiLocal.length > 0) {
+                          _iaReply = _simiLocal;
+                          console.log("[IA-ALEATORY] ✅ Simi local respondeu (último recurso)");
+                        }
+                      } catch { }
+                    }
+
+                    // Enviar resposta se tiver
+                    if (_iaReply && _iaReply.length > 0) {
+                      _iaHist.push({ role: "assistant", content: _iaReply });
+                      if (_iaHist.length > 4) _iaHist.splice(0, _iaHist.length - 4);
+                      global._iaMemory.set(_iaMemKey, _iaHist);
+
+                      const _conn = global.conn || conn;
+                      await _conn.sendMessage(_iaFrom, { text: _iaReply }, { quoted: _iaInfo });
+                    } else {
+                      // Todas as APIs falharam — avisar o usuário UMA vez
+                      const _conn = global.conn || conn;
+                      await _conn.sendMessage(_iaFrom, {
+                        text: `😴 _Estou com dificuldade para responder agora. Tenta de novo em alguns segundos!_`,
+                      }, { quoted: _iaInfo });
+                    }
+                  } catch (e) {
+                    console.log("[IA-ALEATORY] Erro isolado:", e?.message || e);
+                  } finally {
+                    _rl.activeRequests = Math.max(0, _rl.activeRequests - 1);
+                  }
+                }, 0);
               }
             }
           }
@@ -20913,30 +21464,44 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           }
           //===============(SIMIH-1)===============\\
 
-          if (isGroup && isSimi && budy != undefined) {
+          if (isGroup && isSimi && budy != undefined && budy.trim().length >= 2) {
             if (type === "imageMessage") return;
             if (type === "audioMessage") return;
             if (type === "stickerMessage") return;
             if (info.key.fromMe) return;
-            let muehe;
-            let start = Date.now();
-            do {
-              muehe = await simih(budy);
-              if (Date.now() - start > 10000) {
-                break;
+            try {
+              let muehe = null;
+              let _simiAttempts = 0;
+              const _simiMaxAttempts = 3;
+              const _simiStart = Date.now();
+
+              do {
+                muehe = await simih(budy);
+                _simiAttempts++;
+                if (Date.now() - _simiStart > 8000) break;
+                if (!muehe) break; // sem resposta, não repetir
+              } while (
+                _simiAttempts < _simiMaxAttempts &&
+                muehe &&
+                TEXTOS_GERAL.PALAVRAS_PROIBIDA_DE_O_SIMI_FALAR.some((i) =>
+                  muehe
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .includes(i),
+                )
+              );
+
+              if (muehe) {
+                // Verificar palavras proibidas uma última vez
+                const _proibido = TEXTOS_GERAL.PALAVRAS_PROIBIDA_DE_O_SIMI_FALAR.some((i) =>
+                  muehe.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(i),
+                );
+                if (!_proibido) reply(muehe);
               }
-            } while (
-              muehe &&
-              TEXTOS_GERAL.PALAVRAS_PROIBIDA_DE_O_SIMI_FALAR.some((i) =>
-                muehe
-                  .toLowerCase()
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "")
-                  .includes(i),
-              )
-            );
-            if (!muehe) return;
-            reply(muehe);
+            } catch (e) {
+              console.log("[SIMIH1] Erro:", e?.message || e);
+            }
           }
 
           //========================================\\

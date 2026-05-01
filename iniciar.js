@@ -536,7 +536,6 @@ async function createConnection() {
       _originalExit.call(process, 1);
       return;
     }
-    // ═══════════════════════════════════════════════════════════
 
     const {
       useMultiFileAuthState,
