@@ -75,9 +75,6 @@ exports.fetchJson = fetchJson = (url, options) => new Promise(async (resolve, re
     };
     const response = await fetch(url, mergedOptions);
     const body = await response.text();
-    if (!response.ok) {
-      console.error(`[fetchJson] HTTP ${response.status}: ${body.slice(0, 200)}`);
-    }
     try {
       resolve(JSON.parse(body));
     } catch (parseErr) {

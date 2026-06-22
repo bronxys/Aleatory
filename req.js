@@ -36,16 +36,16 @@ class api {
 
   play(q, isAudio = true) {
     var midia = isAudio ? "play" : "play_video";
-    return `${this.#base}/${midia}?apikey=${this.#key}&nome_url=${q}`;
+    return `${this.#base}/${midia}?apikey=${this.#key}&nome_url=${encodeURIComponent(q)}`;
   }
 
   play2(q, isAudio = true) {
     var midia = isAudio ? "play2" : "play_video";
-    return `${this.#base}/${midia}?apikey=${this.#key}&nome_url=${q}`;
+    return `${this.#base}/${midia}?apikey=${this.#key}&nome_url=${encodeURIComponent(q)}`;
   }
 
   tiktok(url) {
-    return `${this.#base}/tiktok?apikey=${this.#key}&url=${url}`;
+    return `${this.#base}/tiktok?apikey=${this.#key}&url=${encodeURIComponent(url)}`;
   }
 
   legenda(url, txt1, txt2) {
@@ -56,12 +56,12 @@ class api {
 
   facebook(url, isAudio = true) {
     var midia = isAudio ? "face_audio" : "face_video";
-    return `${this.#base}/${midia}?apikey=${this.#key}&url=${url}`;
+    return `${this.#base}/${midia}?apikey=${this.#key}&url=${encodeURIComponent(url)}`;
   }
 
   twitter(url, isAudio = true) {
     var midia = isAudio ? "twitter_audio" : "twitter_video";
-    return `${this.#base}/${midia}?apikey=${this.#key}&url=${url}`;
+    return `${this.#base}/${midia}?apikey=${this.#key}&url=${encodeURIComponent(url)}`;
   }
 
   iaimg(q) {
@@ -114,15 +114,15 @@ class api {
   }
 
   spotify_mp3(url) {
-    return `${this.#base}/spotify?url=${url}&apikey=${this.#key}`;
+    return `${this.#base}/spotify?url=${encodeURIComponent(url)}&apikey=${this.#key}`;
   }
 
   ifunny_mp4(url) {
-    return `${this.#base}/ifunny?url=${url}&apikey=${this.#key}`;
+    return `${this.#base}/ifunny?url=${encodeURIComponent(url)}&apikey=${this.#key}`;
   }
 
   kwai_mp4(url) {
-    return `${this.#base}/kwai?url=${url}&apikey=${this.#key}`;
+    return `${this.#base}/kwai?url=${encodeURIComponent(url)}&apikey=${this.#key}`;
   }
 
   async gerarnick(texto) {
@@ -325,16 +325,17 @@ class api {
 
   async instagram(url) {
     try {
-      var abc = await this.fetchJson(`${this.#base}/instagram?url=${url}`);
+      var abc = await this.fetchJson(`${this.#base}/instagram?url=${encodeURIComponent(url)}`);
       return abc;
     } catch (error) {
+      console.error('[INSTAGRAM] Erro:', error?.message || error);
       throw "Erro no comando instagram.";
     }
   }
 
   async mediafire(url) {
     try {
-      var abc = await this.fetchJson(`${this.#base}/mediafire?url=${url}`);
+      var abc = await this.fetchJson(`${this.#base}/mediafire?url=${encodeURIComponent(url)}`);
       return abc;
     } catch (error) {
       throw "Erro no comando mediafire.";
