@@ -13265,7 +13265,8 @@ vota em quem mandou melhor! 🏆
                 { quoted: info },
               )
               .catch(() => reply("⚠️ Erro ao enviar o áudio."));
-          } catch {
+          } catch (playErr) {
+            console.error('[PLAY] Erro:', playErr?.message || playErr);
             reply(
               "😿 A API de músicas está em reparos. Tente novamente mais tarde.",
             );
@@ -20473,12 +20474,25 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
         //=======(FIM-EFEITOS-MARCAR)=========\\
 
         default:
-          if (isGroup && dataGp[0]?.autobaixar) {
-            // ═══ AUTOBAIXAR: Extrai link do corpo da mensagem ═══
+          // ═══════════════════════════════════════════════════════════
+          // ═══ SISTEMA AUTOBAIXAR — Download automático de mídias ═══
+          // ═══════════════════════════════════════════════════════════
+
+          // No grupo: só funciona se autobaixar estiver ativo
+          // No privado: sempre funciona automaticamente
+          const _autobaixarAtivo = isGroup ? dataGp[0]?.autobaixar : true;
+
+          if (_autobaixarAtivo) {
             const _bodyTxt = budy || body || "";
             const _foundLinks = linkfy.find(_bodyTxt);
-            const _extractedUrl =
-              _foundLinks.length > 0 ? _foundLinks[0].href : null;
+            let _extractedUrl = _foundLinks.length > 0 ? _foundLinks[0].href : null;
+
+            // Fallback: regex para capturar URLs que o linkfy pode não pegar
+            if (!_extractedUrl) {
+              const _urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/i;
+              const _match = _bodyTxt.match(_urlRegex);
+              if (_match) _extractedUrl = _match[0];
+            }
 
             // Detecta tipo de mídia pela URL
             let _abType = false;
@@ -20511,6 +20525,14 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                 (_url.includes("youtu.be/") && _url.length < 45)
               )
                 _abType = "shorts";
+              else if (
+                _url.includes("youtube.com/watch") ||
+                _url.includes("youtube.com/v/") ||
+                _url.includes("youtube.com/embed/") ||
+                (_url.includes("youtu.be/") && _url.length >= 45) ||
+                _url.includes("m.youtube.com/watch")
+              )
+                _abType = "youtube";
             }
 
             // Detecta áudio/vídeo para transcrição
@@ -20518,7 +20540,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
               info?.message?.audioMessage || info?.message?.videoMessage;
 
             if (_abType || _hasAudioOrVideo) {
-              // Transcrição de áudio/vídeo
+              // ── Transcrição de áudio/vídeo ──
               if (_hasAudioOrVideo && !_abType) {
                 try {
                   const _isAudioAB = !!info?.message?.audioMessage;
@@ -20552,13 +20574,20 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                         );
                       }
                     })
-                    .catch(() => { });
-                } catch { }
+                    .catch((e) => {
+                      console.error("[AUTOBAIXAR] Erro na transcrição:", e?.message || e);
+                    });
+                } catch (e) {
+                  console.error("[AUTOBAIXAR] Erro ao processar mídia:", e?.message || e);
+                }
               }
 
-              // Download de links
+              // ── Download de links ──
               if (_abType && _extractedUrl) {
                 try {
+                  const _safeUrl = encodeURIComponent(_extractedUrl);
+                  console.log(`[AUTOBAIXAR] Detectado: ${_abType} → ${_extractedUrl}`);
+
                   switch (_abType) {
                     case "spotify":
                       conn
@@ -20567,34 +20596,58 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                           mimetype: "audio/mpeg",
                           mentions: [sender],
                         })
-                        .catch(() => { });
+                        .catch((e) => {
+                          console.error("[AUTOBAIXAR] Spotify erro:", e?.message || e);
+                        });
                       break;
 
                     case "instagram":
                       try {
                         const _igData = await reqapi.instagram(_extractedUrl);
-                        const _igType = _igData.msg[0].type;
-                        const _igMime =
-                          _igType === "mp4"
-                            ? "video/mp4"
-                            : _igType === "jpg"
-                              ? "image/jpeg"
-                              : _igType === "webp"
-                                ? "image/webp"
-                                : "video/mp4";
-                        const _igMsg = _igMime.startsWith("image")
-                          ? {
-                            image: { url: _igData.msg[0].url },
-                            mimetype: _igMime,
+                        if (_igData?.msg && _igData.msg.length > 0) {
+                          const _igType = _igData.msg[0].type;
+                          const _igMime =
+                            _igType === "mp4"
+                              ? "video/mp4"
+                              : _igType === "jpg"
+                                ? "image/jpeg"
+                                : _igType === "webp"
+                                  ? "image/webp"
+                                  : "video/mp4";
+                          const _igMsg = _igMime.startsWith("image")
+                            ? {
+                              image: { url: _igData.msg[0].url },
+                              mimetype: _igMime,
+                              mentions: [sender],
+                            }
+                            : {
+                              video: { url: _igData.msg[0].url },
+                              mimetype: _igMime,
+                              mentions: [sender],
+                            };
+                          conn.sendMessage(from, _igMsg).catch((e) => {
+                            console.error("[AUTOBAIXAR] Instagram envio erro:", e?.message || e);
+                          });
+                        }
+                      } catch (e) {
+                        console.error("[AUTOBAIXAR] Instagram erro:", e?.message || e);
+                      }
+                      break;
+
+                    case "youtube":
+                      try {
+                        conn
+                          .sendMessage(from, {
+                            video: { url: reqapi.play(_extractedUrl, false) },
+                            mimetype: "video/mp4",
                             mentions: [sender],
-                          }
-                          : {
-                            video: { url: _igData.msg[0].url },
-                            mimetype: _igMime,
-                            mentions: [sender],
-                          };
-                        conn.sendMessage(from, _igMsg).catch(() => { });
-                      } catch { }
+                          })
+                          .catch((e) => {
+                            console.error("[AUTOBAIXAR] YouTube vídeo erro:", e?.message || e);
+                          });
+                      } catch (e) {
+                        console.error("[AUTOBAIXAR] YouTube erro:", e?.message || e);
+                      }
                       break;
 
                     case "tiktok":
@@ -20619,12 +20672,16 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                             mimetype: "video/mp4",
                             mentions: [sender],
                           })
-                          .catch(() => { });
-                      } catch { }
+                          .catch((e) => {
+                            console.error(`[AUTOBAIXAR] ${_abType} envio erro:`, e?.message || e);
+                          });
+                      } catch (e) {
+                        console.error(`[AUTOBAIXAR] ${_abType} erro:`, e?.message || e);
+                      }
                       break;
                   }
                 } catch (e) {
-                  console.log("[AUTOBAIXAR] Erro:", e.message || e);
+                  console.error("[AUTOBAIXAR] Erro geral:", e?.message || e);
                 }
               }
             }

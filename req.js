@@ -24,13 +24,13 @@ class api {
     const body = await response.text();
 
     if (!response.ok) {
-      throw new Error(`API respondeu HTTP ${response.status}: ${body.slice(0, 200)}`);
+      console.error(`[API] HTTP ${response.status} em ${apiUrl.pathname}: ${body.slice(0, 200)}`);
     }
 
     try {
       return JSON.parse(body);
     } catch (err) {
-      throw new Error(`Resposta JSON invalida da API: ${body.slice(0, 200)}`);
+      throw new Error(`Resposta JSON invalida da API (HTTP ${response.status}): ${body.slice(0, 300)}`);
     }
   }
 
@@ -275,9 +275,10 @@ class api {
 
   async ytsearch(nome) {
     try {
-      var abc = await this.fetchJson(`${this.#base}/pesquisa_ytb?nome=${nome}`);
+      var abc = await this.fetchJson(`${this.#base}/pesquisa_ytb?nome=${encodeURIComponent(nome)}`);
       return abc;
     } catch (error) {
+      console.error('[YTSEARCH] Erro na pesquisa:', error?.message || error);
       throw "Erro no comando de pesquisa do YouTube.";
     }
   }
