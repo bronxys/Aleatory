@@ -20329,32 +20329,28 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           if (!isQuotedSticker)
             return reply("*[ ❗ ] Marque a figurinha animada 😉*");
           try {
-            if (
-              ((isMedia && !info.message.videoMessage) || isQuotedSticker) &&
-              !q.length <= 1
-            ) {
-              buff = await getFileBuffer(
-                info.message.extendedTextMessage.contextInfo.quotedMessage
-                  .stickerMessage,
-                "sticker",
-              );
-              reply("*「 ❗ 」 Aguarde, convertendo a figu em gif 🥱*");
-              a = await webp_mp4(buff);
-              conn
-                .sendMessage(
-                  from,
-                  {
-                    video: { url: a },
-                    gifPlayback: true,
-                    fileName: `stick.gif`,
-                  },
-                  { quoted: info },
-                )
-                .catch((e) => {
-                  reply("Erro... 🥱");
-                });
-              DLT_FL(buff);
-            }
+            buff = await getFileBuffer(
+              info.message.extendedTextMessage.contextInfo.quotedMessage
+                .stickerMessage,
+              "sticker",
+            );
+            reply("*「 ❗ 」 Aguarde, convertendo a figu em gif 🥱*");
+            a = await webp_mp4(buff);
+            conn
+              .sendMessage(
+                from,
+                {
+                  video: { url: a },
+                  gifPlayback: true,
+                  fileName: `stick.gif`,
+                },
+                { quoted: info },
+              )
+              .catch((e) => {
+                console.error("[TOGIF] Erro ao enviar:", e?.message || e);
+                reply("Erro ao converter figurinha... 🥱");
+              });
+            DLT_FL(buff);
           } catch (e) {
             console.log(e);
             reply("Erro... 🥱");
@@ -20483,7 +20479,8 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           const _autobaixarAtivo = isGroup ? dataGp[0]?.autobaixar : true;
 
           if (_autobaixarAtivo) {
-            const _bodyTxt = budy || body || "";
+            // Usar body original (com case correto) para extração de links
+            const _bodyTxt = body || budy || "";
             const _foundLinks = linkfy.find(_bodyTxt);
             let _extractedUrl = _foundLinks.length > 0 ? _foundLinks[0].href : null;
 
@@ -20585,8 +20582,10 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
               // ── Download de links ──
               if (_abType && _extractedUrl) {
                 try {
-                  const _safeUrl = encodeURIComponent(_extractedUrl);
                   console.log(`[AUTOBAIXAR] Detectado: ${_abType} → ${_extractedUrl}`);
+                  
+                  // Reação visual para o usuário saber que detectou
+                  conn.sendMessage(from, { react: { text: "📥", key: info.key } }).catch(() => {});
 
                   switch (_abType) {
                     case "spotify":
@@ -20594,10 +20593,10 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                         .sendMessage(from, {
                           audio: { url: reqapi.spotify_mp3(_extractedUrl) },
                           mimetype: "audio/mpeg",
-                          mentions: [sender],
-                        })
+                        }, { quoted: info })
                         .catch((e) => {
                           console.error("[AUTOBAIXAR] Spotify erro:", e?.message || e);
+                          conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
                         });
                       break;
 
@@ -20618,19 +20617,22 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                             ? {
                               image: { url: _igData.msg[0].url },
                               mimetype: _igMime,
-                              mentions: [sender],
                             }
                             : {
                               video: { url: _igData.msg[0].url },
                               mimetype: _igMime,
-                              mentions: [sender],
                             };
-                          conn.sendMessage(from, _igMsg).catch((e) => {
+                          conn.sendMessage(from, _igMsg, { quoted: info }).catch((e) => {
                             console.error("[AUTOBAIXAR] Instagram envio erro:", e?.message || e);
+                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
                           });
+                        } else {
+                          console.error("[AUTOBAIXAR] Instagram retornou sem mídia:", JSON.stringify(_igData).slice(0, 200));
+                          conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
                         }
                       } catch (e) {
                         console.error("[AUTOBAIXAR] Instagram erro:", e?.message || e);
+                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
                       }
                       break;
 
@@ -20640,10 +20642,10 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                           .sendMessage(from, {
                             video: { url: reqapi.play(_extractedUrl, false) },
                             mimetype: "video/mp4",
-                            mentions: [sender],
-                          })
+                          }, { quoted: info })
                           .catch((e) => {
                             console.error("[AUTOBAIXAR] YouTube vídeo erro:", e?.message || e);
+                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
                           });
                       } catch (e) {
                         console.error("[AUTOBAIXAR] YouTube erro:", e?.message || e);
@@ -20670,10 +20672,10 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                           .sendMessage(from, {
                             video: { url: _vidUrl },
                             mimetype: "video/mp4",
-                            mentions: [sender],
-                          })
+                          }, { quoted: info })
                           .catch((e) => {
                             console.error(`[AUTOBAIXAR] ${_abType} envio erro:`, e?.message || e);
+                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
                           });
                       } catch (e) {
                         console.error(`[AUTOBAIXAR] ${_abType} erro:`, e?.message || e);
