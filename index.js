@@ -13157,18 +13157,25 @@ vota em quem mandou melhor! 🏆
               );
             reply(Res_Aguarde);
             try {
-              conn
-                .sendMessage(
-                  from,
-                  {
-                    audio: { url: reqapi.spotify_mp3(q.trim()) },
-                    mimetype: "audio/mpeg",
-                  },
-                  { quoted: info },
-                )
-                .catch(() => reply("Erro!"));
-            } catch {
-              return reply("Erro... 🥱");
+              const _spData = await reqapi.spotify_download(q.trim());
+              if (_spData && _spData.buffer) {
+                conn
+                  .sendMessage(
+                    from,
+                    {
+                      audio: _spData.buffer,
+                      mimetype: "audio/mpeg",
+                      fileName: (_spData.title || 'spotify') + '.mp3',
+                    },
+                    { quoted: info },
+                  )
+                  .catch(() => reply("Erro ao enviar o áudio!"));
+              } else {
+                reply("Não foi possível baixar a música do Spotify. Tente novamente.");
+              }
+            } catch (e) {
+              console.error('[SPOTIFY] Erro:', e?.message || e);
+              return reply("Erro ao baixar do Spotify... Tente novamente mais tarde. 🥱");
             }
           }
           break;
@@ -17424,9 +17431,35 @@ _Remove da lista negra global_
             );
           reply(Res_Aguarde);
           try {
-            bas64 = `data:image/jpeg;base64,${encmediats.toString("base64")}`;
-            var mantap = await convertSticker(bas64, `${author2}`, `${pack}`);
-            var sti = Buffer.from(mantap, "base64");
+            // O sticker já é WebP — não precisa reconverter com ffmpeg.
+            // Apenas injeta os metadados EXIF (pack/author) usando node-webpmux.
+            const webpmux = require("node-webpmux");
+            const path = require("path");
+            const Crypto = require("crypto");
+            const tmpFileIn = path.join(require("os").tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`);
+            const tmpFileOut = path.join(require("os").tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`);
+            
+            fs.writeFileSync(tmpFileIn, encmediats);
+            
+            const img = new webpmux.Image();
+            const json = {
+              "sticker-pack-id": `Aleatory-Bot`,
+              "sticker-pack-name": pack,
+              "sticker-pack-publisher": author2,
+              "emojis": [""]
+            };
+            const exifAttr = Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00]);
+            const jsonBuff = Buffer.from(JSON.stringify(json), "utf-8");
+            const exif = Buffer.concat([exifAttr, jsonBuff]);
+            exif.writeUIntLE(jsonBuff.length, 14, 4);
+            
+            await img.load(tmpFileIn);
+            fs.unlinkSync(tmpFileIn);
+            img.exif = exif;
+            await img.save(tmpFileOut);
+            
+            var sti = fs.readFileSync(tmpFileOut);
+            fs.unlinkSync(tmpFileOut);
             await conn.sendMessage(from, { sticker: sti }, { quoted: info });
           } catch (err) {
             console.error("Erro ao criar sticker:", err);
@@ -20589,15 +20622,27 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
 
                   switch (_abType) {
                     case "spotify":
-                      conn
-                        .sendMessage(from, {
-                          audio: { url: reqapi.spotify_mp3(_extractedUrl) },
-                          mimetype: "audio/mpeg",
-                        }, { quoted: info })
-                        .catch((e) => {
-                          console.error("[AUTOBAIXAR] Spotify erro:", e?.message || e);
+                      try {
+                        const _spAutoData = await reqapi.spotify_download(_extractedUrl);
+                        if (_spAutoData && _spAutoData.buffer) {
+                          conn
+                            .sendMessage(from, {
+                              audio: _spAutoData.buffer,
+                              mimetype: "audio/mpeg",
+                              fileName: (_spAutoData.title || 'spotify') + '.mp3',
+                            }, { quoted: info })
+                            .catch((e) => {
+                              console.error("[AUTOBAIXAR] Spotify envio erro:", e?.message || e);
+                              conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                            });
+                        } else {
+                          console.error("[AUTOBAIXAR] Spotify: buffer vazio");
                           conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
-                        });
+                        }
+                      } catch (e) {
+                        console.error("[AUTOBAIXAR] Spotify erro:", e?.message || e);
+                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                      }
                       break;
 
                     case "instagram":

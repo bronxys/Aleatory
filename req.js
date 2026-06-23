@@ -117,6 +117,88 @@ class api {
     return `${this.#base}/spotify?url=${encodeURIComponent(url)}&apikey=${this.#key}`;
   }
 
+  async spotify_download(url) {
+    try {
+      const apiUrl = `${this.#base}/spotify?url=${encodeURIComponent(url)}&apikey=${this.#key}`;
+      
+      // Primeiro tenta baixar como stream direto (caso a API retorne o áudio diretamente)
+      const response = await fetch(apiUrl, {
+        timeout: 60000,
+        headers: {
+          'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      
+      // Se a API retorna JSON, extrair a URL real do áudio
+      if (contentType.includes('application/json') || contentType.includes('text/')) {
+        const body = await response.text();
+        let data;
+        try {
+          data = JSON.parse(body);
+        } catch {
+          throw new Error(`Resposta inválida da API Spotify: ${body.slice(0, 200)}`);
+        }
+
+        // Tenta encontrar a URL do áudio no JSON (vários formatos possíveis)
+        const audioUrl = data.url || data.link || data.download || data.audio || data.result?.url || data.result?.link || data.result?.download || data.data?.url || data.data?.link || data.data?.download;
+        
+        if (!audioUrl) {
+          console.error('[SPOTIFY] Resposta da API sem URL de áudio:', JSON.stringify(data).slice(0, 500));
+          throw new Error(`API Spotify não retornou URL de áudio. Resposta: ${JSON.stringify(data).slice(0, 300)}`);
+        }
+
+        // Baixa o áudio real
+        const audioResponse = await fetch(audioUrl, {
+          timeout: 60000,
+          headers: {
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+
+        if (!audioResponse.ok) {
+          throw new Error(`Erro ao baixar áudio: HTTP ${audioResponse.status}`);
+        }
+
+        const buffer = await audioResponse.buffer();
+        return {
+          buffer,
+          title: data.title || data.titulo || data.nome || data.name || data.result?.title || 'Spotify Audio',
+          artist: data.artist || data.artista || data.result?.artist || '',
+          thumb: data.thumb || data.thumbnail || data.image || data.result?.thumb || data.result?.thumbnail || null
+        };
+      }
+
+      // Se a API retorna o áudio diretamente (binary stream)
+      if (contentType.includes('audio/') || contentType.includes('application/octet-stream')) {
+        const buffer = await response.buffer();
+        return {
+          buffer,
+          title: 'Spotify Audio',
+          artist: '',
+          thumb: null
+        };
+      }
+
+      // Fallback: tenta tratar como áudio mesmo assim
+      const buffer = await response.buffer();
+      if (buffer && buffer.length > 1000) {
+        return {
+          buffer,
+          title: 'Spotify Audio',
+          artist: '',
+          thumb: null
+        };
+      }
+
+      throw new Error(`Tipo de resposta inesperado: ${contentType}`);
+    } catch (error) {
+      console.error('[SPOTIFY] Erro no download:', error?.message || error);
+      throw error;
+    }
+  }
+
   ifunny_mp4(url) {
     return `${this.#base}/ifunny?url=${encodeURIComponent(url)}&apikey=${this.#key}`;
   }
