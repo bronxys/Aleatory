@@ -69,7 +69,12 @@
         "Escudo": []
       }
     ],
-    "ausentes": [],
+    "ausentes": [
+      {
+        "id": "231761367855348@lid",
+        "msg": "Vai dormir praga!"
+      }
+    ],
     "forca_inc": false,
     "comandos_gold": [],
     "antipalavrao": {
@@ -96,12 +101,12 @@
         "legendasaiu": "👋 Tchau #numerodele#! Até a próxima! 🚪"
       }
     ],
-    "simi1": true,
-    "simi2": true,
+    "simi1": false,
+    "simi2": false,
     "autosticker": false,
     "autoresposta": false,
     "jogos": true,
     "bangp": false,
-    "iaAleatory": false
+    "iaAleatory": true
   }
 ]

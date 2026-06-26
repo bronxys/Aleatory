@@ -391,9 +391,9 @@ try {
 var reqapi = new Api("Bronxys30092025");
 const API_KEY_BRONXYS = "Bronxys30092025";
 
-// BLOQUEIO DE IP — STATUS: ATIVO
+// BLOQUEIO DE IP — STATUS: DESATIVADO (temporariamente)
 // ═══════════════════════════════════════════════════════════
-// _ipBloqueado será definido na segunda camada abaixo
+// Para reativar, descomente a segunda camada abaixo e o guard no startAle
 // ═══════════════════════════════════════════════════════════
 
 const SNET = "@s.whatsapp.net";
@@ -846,43 +846,48 @@ const FormData = require("form-data");
 const { JSDOM } = require("jsdom");
 
 async function webp_mp4(imageBuffer) {
-  let formData = new FormData();
-  formData.append("new-image-url", "");
-  formData.append("new-image", imageBuffer, "image.webp");
+  const axios = require("axios");
+  const cheerio = require("cheerio");
+  const FormData = require("form-data");
+  return new Promise(async (resolve, reject) => {
+    try {
+      const form = new FormData();
+      form.append("new-image-url", "");
+      form.append("new-image", imageBuffer, "image.webp");
 
-  let response = await fetch("https://ezgif.com/webp-to-mp4", {
-    method: "POST",
-    body: formData,
+      let res = await axios.post("https://ezgif.com/webp-to-mp4", form, {
+        headers: form.getHeaders(),
+      });
+      let html = res.data;
+      let $ = cheerio.load(html);
+      const file = $('input[name="file"]').attr("value");
+      if (!file) throw new Error("Erro no upload ezgif");
+
+      // Pegar a URL correta após redirecionamento (ex: https://s6.ezgif.com/webp-to-mp4)
+      const formUrl = res.request.res.responseUrl;
+      
+      const convertForm = new FormData();
+      convertForm.append("file", file);
+      convertForm.append("convert", "Convert WebP to MP4!");
+
+      let res2 = await axios.post(formUrl + "/" + file, convertForm, {
+        headers: convertForm.getHeaders(),
+      });
+      $ = cheerio.load(res2.data);
+      const resultUrl = "https:" + $("div#output > p.outfile > video > source").attr("src");
+      if (resultUrl === "https:undefined") throw new Error("Erro na conversão ezgif");
+
+      const videoRes = await axios.get(resultUrl, { responseType: "arraybuffer" });
+      resolve(Buffer.from(videoRes.data));
+    } catch (error) {
+      reject(new Error("[TOGIF/EZGIF] Falha: " + (error.message || error)));
+    }
   });
-
-  let html = await response.text();
-
-  let { document } = new JSDOM(html).window;
-
-  let formData2 = new FormData();
-  let formValues = {};
-
-  for (let input of document.querySelectorAll("form input[name]")) {
-    formValues[input.name] = input.value;
-    formData2.append(input.name, input.value);
-  }
-
-  let response2 = await fetch(
-    "https://ezgif.com/webp-to-mp4/" + formValues.file,
-    { method: "POST", body: formData2 },
-  );
-
-  let html2 = await response2.text();
-
-  let { document: document2 } = new JSDOM(html2).window;
-
-  return new URL(
-    document2.querySelector("div#output > p.outfile > video > source").src,
-    response2.url,
-  ).toString();
 }
 
-// BLOQUEIO DE IP (SEGUNDA CAMADA) — PROTEÇÃO NO HANDLER
+// BLOQUEIO DE IP (SEGUNDA CAMADA) — DESATIVADO TEMPORARIAMENTE
+// Para reativar, descomente o bloco abaixo:
+/*
 let _ipBloqueado = false;
 (async () => {
   try {
@@ -892,8 +897,6 @@ let _ipBloqueado = false;
     ]);
 
     if (!ipRes || !vpsRes) {
-      // Se falhar a verificação, não bloqueamos na segunda camada para evitar falsos positivos
-      // Já que a primeira camada em iniciar.js já fez o trabalho pesado.
       console.log("[BRONXYS] Verificação de IP (index) falhou ou timeout. Mantendo bot ativo.");
       return;
     }
@@ -911,12 +914,13 @@ let _ipBloqueado = false;
     console.log("[BLOQUEIO] Erro silencioso na verificação (index).");
   }
 })();
+*/
 
 // ABAIXO: INÍCIO DE CONEXÃO
 
 const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
-  // ═══ BLOQUEIO DE IP — NÃO PROCESSAR SE IP NÃO AUTORIZADO ═══
-  if (_ipBloqueado) return;
+  // ═══ BLOQUEIO DE IP — DESATIVADO TEMPORARIAMENTE ═══
+  // if (_ipBloqueado) return;
 
   try {
     // Garantir que Baileys foi carregado via import() dinâmico
@@ -966,18 +970,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         info.messageStubParameters &&
         info.messageStubParameters[0] === "Message absent from node"
       ) {
-        try {
-          if (
-            info.messageStubParameters[1] &&
-            info.messageStubParameters[1] !== "undefined"
-          ) {
-            conn.sendMessageAck(
-              JSON.parse(info.messageStubParameters[1], BufferJSON.reviver),
-            );
-          }
-        } catch (e) {
-          // Silenciar erro JSON - não afeta funcionamento
-        }
+        // sendMessageAck não existe no Baileys 7.x — mensagens "absent from node"
+        // são tratadas internamente pelo Baileys via retry automático
       }
 
       if (VR_JSON_GLOBAL && jsonGp[0]?.x9 && info.messageStubType) {
@@ -2309,8 +2303,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       const reply = (texto) => {
         conn.sendMessage(from, { text: texto }, { quoted: info }).catch((e) => {
-          console.log(e);
-          return reply("Erro... 🥱");
+          console.error("[REPLY] Erro ao enviar mensagem:", e?.message || e);
+          // NÃO chamar reply() aqui — evita recursão infinita e stack overflow
         });
       };
 
@@ -20363,8 +20357,8 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
             return reply("*[ ❗ ] Marque a figurinha animada 😉*");
           try {
             buff = await getFileBuffer(
-              info.message.extendedTextMessage.contextInfo.quotedMessage
-                .stickerMessage,
+              info.message?.extendedTextMessage?.contextInfo?.quotedMessage
+                ?.stickerMessage,
               "sticker",
             );
             reply("*「 ❗ 」 Aguarde, convertendo a figu em gif 🥱*");
@@ -20373,7 +20367,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
               .sendMessage(
                 from,
                 {
-                  video: { url: a },
+                  video: a,
                   gifPlayback: true,
                   fileName: `stick.gif`,
                 },
@@ -20383,9 +20377,8 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                 console.error("[TOGIF] Erro ao enviar:", e?.message || e);
                 reply("Erro ao converter figurinha... 🥱");
               });
-            DLT_FL(buff);
           } catch (e) {
-            console.log(e);
+            console.log("[TOGIF] Erro:", e?.message || e);
             reply("Erro... 🥱");
           }
           break;

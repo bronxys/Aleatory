@@ -4,9 +4,9 @@
     "numbers": [
       {
         "id": "261443249250374@lid",
-        "messages": 967,
-        "figus": 0,
-        "cmd_messages": 359,
+        "messages": 971,
+        "figus": 3,
+        "cmd_messages": 372,
         "aparelho": "WhatsApp web シ",
         "nick": "M.Scheyot Ytb"
       },
@@ -20,11 +20,11 @@
       },
       {
         "id": "23730365460667@lid",
-        "messages": 5,
+        "messages": 31,
         "cmd_messages": 0,
         "aparelho": "Android ツ",
         "figus": 0,
-        "nick": "haha"
+        "nick": ""
       },
       {
         "id": "240565983649797@lid",
@@ -33,6 +33,22 @@
         "aparelho": "Android ツ",
         "figus": 0,
         "nick": "Bronxyshost.com"
+      },
+      {
+        "id": "177176007729195@lid",
+        "messages": 1,
+        "cmd_messages": 0,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "Josival Ribeiro"
+      },
+      {
+        "id": "231761367855348@lid",
+        "messages": 9,
+        "cmd_messages": 2,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "Luanna Ribeiro"
       }
     ]
   },
@@ -57,11 +73,11 @@
       },
       {
         "id": "23730365460667@lid",
-        "messages": 5,
+        "messages": 6,
         "cmd_messages": 0,
         "aparelho": "Android ツ",
         "figus": 3,
-        "nick": "haha"
+        "nick": ""
       },
       {
         "id": "148125368983666@lid",
@@ -86,6 +102,14 @@
         "aparelho": "Android ツ",
         "figus": 0,
         "nick": "😇"
+      },
+      {
+        "id": "203925550592072@lid",
+        "messages": 0,
+        "cmd_messages": 1,
+        "aparelho": "Android ツ",
+        "figus": 0,
+        "nick": "Júlio"
       }
     ]
   },

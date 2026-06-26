@@ -3,7 +3,7 @@ const fs = require("fs");
 
 // Lista de todas as dependências essenciais para o bot funcionar
 const dependencies = [
-  "@whiskeysockets/baileys@7.0.0-rc.9",
+  "@whiskeysockets/baileys@7.0.0-rc13",
   "@hapi/boom",
   "axios",
   "fs-extra",
@@ -499,11 +499,10 @@ async function createConnection() {
     await loadBaileys();
 
     // ═══════════════════════════════════════════════════════════
-    // BLOQUEIO DE IP — BOT FUNCIONA APENAS NA HOSPEDAGEM BRONXYS
+    // BLOQUEIO DE IP — DESATIVADO TEMPORARIAMENTE
+    // Para reativar, descomente o bloco abaixo:
     // ═══════════════════════════════════════════════════════════
-    // ═══════════════════════════════════════════════════════════
-    // BLOQUEIO DE IP — BOT FUNCIONA APENAS NA HOSPEDAGEM BRONXYS
-    // ═══════════════════════════════════════════════════════════
+    /*
     try {
       const [ipRes, vpsRes] = await Promise.all([
         axios.get("https://api.ipify.org?format=json", { timeout: 10000 }).catch(() => axios.get("https://l2.io/ip.json", { timeout: 10000 })).catch(() => null),
@@ -533,6 +532,7 @@ async function createConnection() {
     } catch (e) {
       console.log("\x1b[33m[AVISO]\x1b[0m Erro na conexão de verificação. Prosseguindo...");
     }
+    */
 
     const {
       useMultiFileAuthState,
@@ -749,7 +749,7 @@ async function createConnection() {
 
         // ─── LOGGING SEMPRE (independente de config) ───────────────────
         const acao = ale2.action; // 'add' | 'remove' | 'promote' | 'demote'
-        const autorJid = ale2.author || ale2.authorPn || null;
+        const autorJid = ale2.authorPn || ale2.author || null;
         const autorNum = autorJid ? String(autorJid).split("@")[0] : null;
 
         for (const p of (ale2.participants || [])) {
