@@ -1,0 +1,25 @@
+[
+  {
+    "id_gp": "",
+    "nome_": "Lucas dev",
+    "link": "https://chat.whatsapp.com/JybewWdXq1YFBDj303y1xy?s=cl&p=i&mlu=0&ilr=4",
+    "responsavel_nome": "Scheyot",
+    "responsavel_contato": "5512978986457",
+    "data_aluguel": "2026-10-14T02:32:18.076Z",
+    "vencimento": 1792549938,
+    "vencimento_iso": "2026-10-21T02:32:18.076Z",
+    "plano_dias_original": 7,
+    "plano_dias": 7,
+    "dias_renovados": 0,
+    "renovacoes": 0,
+    "valor": "50",
+    "aviso_7d_enviado": true,
+    "aviso_3d_enviado": false,
+    "aviso_1d_enviado": false,
+    "pausado": false,
+    "pausado_em": null,
+    "dias_restantes_ao_pausar": 0,
+    "cadastrado_por": "M.Scheyot (261443249250374)",
+    "ultima_atualizacao": "2026-10-14T02:32:18.076Z"
+  }
+]
