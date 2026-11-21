@@ -6072,8 +6072,7 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
 
         // ═══════════════════════════════════════════════════════════
         //  🗳️ SISTEMA DE VOTAÇÃO DE BANIMENTO — ALEATORY 9.0
-        //  Qualquer membro pode iniciar. Votação por mensagem.
-        //  ADMs notificados invisivelmente. Timer de 5 minutos.
+        //  Quorum fixo: 5 votos. ADMs notificados invisivelmente. Timer 5 min.
         // ═══════════════════════════════════════════════════════════
         case "votarban":
         case "voteban":
@@ -6082,156 +6081,104 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isBotGroupAdmins) return reply("❌ Preciso ser *administrador* do grupo para executar remoções!");
 
-          // Verificar se já existe uma votação ativa neste grupo
           const _vbDir = "./dados/org/json/VOTARBAN";
           if (!fs.existsSync(_vbDir)) fs.mkdirSync(_vbDir, { recursive: true });
           const _vbFile = `${_vbDir}/voteban_${from}.json`;
 
           if (fs.existsSync(_vbFile)) {
             const _vbAtiva = JSON.parse(fs.readFileSync(_vbFile));
-            return reply(
-              `⚠️ *Já existe uma votação ativa neste grupo!*\n\n` +
-              `👤 Alvo: @${_vbAtiva.alvo.split("@")[0]}\n` +
-              `⏳ Aguarde o término ou peça a um ADM para cancelar com *${prefix}cancelarvoto*`,
-            );
+            return conn.sendMessage(from, {
+              text:
+                `⚠️ *Já existe uma votação ativa!*\n` +
+                `> 👤 Alvo: @${_vbAtiva.alvo.split("@")[0]} (${_vbAtiva.votos_sim.length}/${_vbAtiva.quorum})\n` +
+                `> _Use \`${prefix}statusvoto\` ou \`${prefix}cancelarvoto\` (ADM)_`,
+              mentions: [_vbAtiva.alvo],
+            }, { quoted: info });
           }
 
-          // Verificar se marcou alguém
           if (!menc_os2) {
             return reply(
-              `╭─────────────────────╮\n` +
-              `│  🗳️ *VOTAÇÃO DE BANIMENTO*\n` +
-              `╰─────────────────────╯\n\n` +
-              `❌ *Marque o usuário que deseja votar para banir!*\n\n` +
-              `💡 *Como usar:*\n` +
-              `• *${prefix}votarban @usuario*\n` +
-              `• Ou responda a mensagem dele com *${prefix}votarban*`
+              `🗳️ *Votação de Ban*\n\n` +
+              `Marque alguém ou responda a mensagem:\n` +
+              `> \`${prefix}votarban\` @usuario\n\n` +
+              `_Meta fixa: *5 votos* em até 5 min._`
             );
           }
 
-          // Não pode votar contra o bot
           if (botNumber.includes(menc_os2)) return reply("🤖 Não dá pra me banir por votação, sou o juiz aqui! 😎");
-          // Não pode votar contra o dono
           if (JSON.stringify(numerodono).indexOf(menc_os2) >= 0) return reply("👑 Não é possível abrir votação contra o dono do bot!");
-          // Não pode votar contra ADMs
           if (groupAdmins.includes(menc_os2)) return reply("🛡️ Não é possível abrir votação contra um *administrador* do grupo!");
-          // Verificar se o alvo está no grupo
           if (!JSON.stringify(groupMembers).includes(menc_os2)) return reply("❌ Esse usuário não está no grupo!");
-          // Não pode votar contra si mesmo
           if (menc_os2 === sender) return reply("🤦 Você não pode abrir votação contra si mesmo!");
 
-          // Calcular quorum necessário (mínimo 3, máximo baseado em membros não-admin)
-          const _vbMembrosNaoAdmin = groupMembers.filter(m => !groupAdmins.includes(m.id)).length;
-          const _vbQuorum = Math.max(3, Math.ceil(_vbMembrosNaoAdmin * 0.3)); // 30% dos membros não-admin, mínimo 3
+          // Quorum fixo: 5 votos
+          const _vbQuorum = 5;
+          const _vbBar = (atual, meta) => "🟩".repeat(Math.min(atual, meta)) + "⬜".repeat(Math.max(0, meta - atual));
 
-          // Criar dados da votação
           const _vbDados = {
             alvo: menc_os2,
             iniciador: sender,
             grupo: from,
-            votos_sim: [sender], // quem iniciou automaticamente vota sim
+            votos_sim: [sender], // quem iniciou já conta como 1º voto
             votos_nao: [],
             quorum: _vbQuorum,
-            totalMembros: _vbMembrosNaoAdmin,
             inicio: Date.now(),
             duracao: 300000, // 5 minutos
-            msgId: null, // será preenchido após enviar
+            msgId: null,
           };
 
           fs.writeFileSync(_vbFile, JSON.stringify(_vbDados, null, 2));
 
-          // Montar lista de ADMs para menção invisível
+          // Menções invisíveis dos ADMs
           const _vbAdmJids = groupAdmins.filter(a => !botNumber.includes(a));
-          // Criar menções invisíveis usando caractere zero-width
           const _vbAdmMencoes = _vbAdmJids.map(a => `\u200B@${a.split("@")[0]}\u200B`).join("");
 
-          // Mensagem de votação
           const _vbTexto =
-            `╔══════════════════════════════╗\n` +
-            `║   🗳️ *VOTAÇÃO DE BANIMENTO* 🗳️\n` +
-            `╠══════════════════════════════╣\n` +
-            `║\n` +
-            `║  👤 *Acusado:* @${menc_os2.split("@")[0]}\n` +
-            `║  🧑‍⚖️ *Solicitante:* @${sender.split("@")[0]}\n` +
-            `║\n` +
-            `║  ━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `║\n` +
-            `║  📊 *Como votar:*\n` +
-            `║  ✅ Digite *${prefix}votoban sim* para BANIR\n` +
-            `║  ❌ Digite *${prefix}votoban nao* para MANTER\n` +
-            `║\n` +
-            `║  ━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `║\n` +
-            `║  📈 *Votos necessários:* ${_vbQuorum} votos\n` +
-            `║  👥 *Membros votantes:* ${_vbMembrosNaoAdmin}\n` +
-            `║  ⏱️ *Tempo:* 5 minutos\n` +
-            `║\n` +
-            `║  ⚠️ _Cada membro pode votar apenas 1 vez_\n` +
-            `║  ⚠️ _ADMs podem cancelar com ${prefix}cancelarvoto_\n` +
-            `║\n` +
-            `╚══════════════════════════════╝\n` +
-            `\u200E${_vbAdmMencoes}`; // menções invisíveis dos ADMs
+            `🗳️ *VOTAÇÃO DE BAN*\n\n` +
+            `👤 *Alvo:* @${menc_os2.split("@")[0]}\n` +
+            `⚖️ *Por:* @${sender.split("@")[0]}\n` +
+            `📊 *Meta:* ${_vbQuorum} votos · ⏱️ 5 min\n` +
+            `${_vbBar(1, _vbQuorum)} *(1/${_vbQuorum})*\n\n` +
+            `> ✅ \`${prefix}votoban sim\` — Banir\n` +
+            `> ❌ \`${prefix}votoban nao\` — Manter\n\n` +
+            `_1 voto por membro · ADM: \`${prefix}cancelarvoto\`_` +
+            `\u200E${_vbAdmMencoes}`;
 
-          // Enviar mensagem de votação
           const _vbMsg = await conn.sendMessage(from, {
             text: _vbTexto,
             mentions: [menc_os2, sender, ..._vbAdmJids],
           }, { quoted: info });
 
-          // Salvar ID da mensagem de votação
           _vbDados.msgId = _vbMsg?.key?.id || null;
           fs.writeFileSync(_vbFile, JSON.stringify(_vbDados, null, 2));
 
-          // Log no console
-          console.log(`[VOTARBAN] 🗳️ Votação iniciada no grupo ${from} contra ${menc_os2} por ${sender} | Quorum: ${_vbQuorum}`);
+          console.log(`[VOTARBAN] 🗳️ Votação iniciada no grupo ${from} contra ${menc_os2} por ${sender} | Meta: ${_vbQuorum}`);
 
           // Timer de 5 minutos para encerrar votação automaticamente
           setTimeout(async () => {
             try {
-              if (!fs.existsSync(_vbFile)) return; // votação já foi cancelada ou finalizada
+              if (!fs.existsSync(_vbFile)) return;
               const _vbFinal = JSON.parse(fs.readFileSync(_vbFile));
               const _vbSimCount = _vbFinal.votos_sim.length;
               const _vbNaoCount = _vbFinal.votos_nao.length;
               const _vbAprovado = _vbSimCount >= _vbFinal.quorum && _vbSimCount > _vbNaoCount;
 
-              // Montar lista de votantes
-              let _vbListaVotos = "";
-              if (_vbFinal.votos_sim.length > 0) {
-                _vbListaVotos += `\n✅ *Votaram SIM (${_vbSimCount}):*\n`;
-                _vbFinal.votos_sim.forEach(v => { _vbListaVotos += `  • @${v.split("@")[0]}\n`; });
-              }
-              if (_vbFinal.votos_nao.length > 0) {
-                _vbListaVotos += `\n❌ *Votaram NÃO (${_vbNaoCount}):*\n`;
-                _vbFinal.votos_nao.forEach(v => { _vbListaVotos += `  • @${v.split("@")[0]}\n`; });
-              }
-
+              const _vbSimStr = _vbFinal.votos_sim.map(v => `@${v.split("@")[0]}`).join(", ");
+              const _vbNaoStr = _vbFinal.votos_nao.map(v => `@${v.split("@")[0]}`).join(", ");
               const _vbTodosVotantes = [..._vbFinal.votos_sim, ..._vbFinal.votos_nao, _vbFinal.alvo, ..._vbAdmJids];
 
               if (_vbAprovado) {
-                // BANIR o usuário
                 await conn.sendMessage(from, {
                   text:
-                    `╔══════════════════════════════╗\n` +
-                    `║  ⚖️ *RESULTADO DA VOTAÇÃO* ⚖️\n` +
-                    `╠══════════════════════════════╣\n` +
-                    `║\n` +
-                    `║  🔨 *BANIMENTO APROVADO!*\n` +
-                    `║\n` +
-                    `║  👤 *Banido:* @${_vbFinal.alvo.split("@")[0]}\n` +
-                    `║  ✅ *A favor:* ${_vbSimCount} votos\n` +
-                    `║  ❌ *Contra:* ${_vbNaoCount} votos\n` +
-                    `║  📊 *Quorum:* ${_vbFinal.quorum} necessários\n` +
-                    `║\n` +
-                    `║  🗳️ *Detalhes dos votos:*\n` +
-                    `║${_vbListaVotos.split("\n").join("\n║  ")}\n` +
-                    `║\n` +
-                    `║  _O membro será removido agora._\n` +
-                    `║\n` +
-                    `╚══════════════════════════════╝`,
+                    `🔨 *BANIMENTO APROVADO*\n\n` +
+                    `👤 *Removido:* @${_vbFinal.alvo.split("@")[0]}\n` +
+                    `📊 *Placar:* ✅ ${_vbSimCount} × ❌ ${_vbNaoCount}\n` +
+                    (_vbSimStr ? `> ✅ Sim: ${_vbSimStr}\n` : "") +
+                    (_vbNaoStr ? `> ❌ Não: ${_vbNaoStr}\n` : "") +
+                    `\n_Removendo membro do grupo..._`,
                   mentions: _vbTodosVotantes,
                 });
 
-                // Remover o alvo do grupo
                 try {
                   await conn.groupParticipantsUpdate(from, [_vbFinal.alvo], "remove");
                   console.log(`[VOTARBAN] ✅ ${_vbFinal.alvo} removido do grupo ${from} por votação`);
@@ -6240,52 +6187,33 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
                   await conn.sendMessage(from, { text: "⚠️ *Erro ao remover o usuário!* Peça a um ADM para remover manualmente." });
                 }
 
-                // Notificar ADMs no PV (discretamente)
                 for (const _adm of _vbAdmJids) {
                   try {
                     await conn.sendMessage(_adm, {
                       text:
-                        `🔔 *[ALERTA ADM — VOTAÇÃO]*\n\n` +
-                        `O membro @${_vbFinal.alvo.split("@")[0]} foi *removido por votação popular* do grupo.\n\n` +
-                        `📊 Votos: ✅ ${_vbSimCount} × ❌ ${_vbNaoCount}\n` +
-                        `🧑‍⚖️ Solicitado por: @${_vbFinal.iniciador.split("@")[0]}\n\n` +
-                        `_Esta é uma notificação automática do Aleatory Bot._`,
+                        `🔔 *Alerta ADM — Votação*\n\n` +
+                        `@${_vbFinal.alvo.split("@")[0]} foi *removido por votação*.\n` +
+                        `> 📊 ✅ ${_vbSimCount} × ❌ ${_vbNaoCount} · Por @${_vbFinal.iniciador.split("@")[0]}`,
                       mentions: [_vbFinal.alvo, _vbFinal.iniciador],
                     });
-                  } catch { /* ADM pode ter bloqueado o bot */ }
+                  } catch { }
                 }
               } else {
-                // NÃO banir
                 await conn.sendMessage(from, {
                   text:
-                    `╔══════════════════════════════╗\n` +
-                    `║  ⚖️ *RESULTADO DA VOTAÇÃO* ⚖️\n` +
-                    `╠══════════════════════════════╣\n` +
-                    `║\n` +
-                    `║  ✋ *BANIMENTO NEGADO!*\n` +
-                    `║\n` +
-                    `║  👤 *Acusado:* @${_vbFinal.alvo.split("@")[0]} fica no grupo\n` +
-                    `║  ✅ *A favor:* ${_vbSimCount} votos\n` +
-                    `║  ❌ *Contra:* ${_vbNaoCount} votos\n` +
-                    `║  📊 *Quorum:* ${_vbFinal.quorum} necessários\n` +
-                    `║\n` +
-                    `║  🗳️ *Detalhes dos votos:*\n` +
-                    `║${_vbListaVotos.split("\n").join("\n║  ")}\n` +
-                    `║\n` +
-                    `║  _Quorum não atingido ou maioria optou por manter._\n` +
-                    `║\n` +
-                    `╚══════════════════════════════╝`,
+                    `✋ *BANIMENTO NEGADO*\n\n` +
+                    `👤 @${_vbFinal.alvo.split("@")[0]} continua no grupo.\n` +
+                    `📊 *Placar:* ✅ ${_vbSimCount} × ❌ ${_vbNaoCount} _(meta: ${_vbFinal.quorum})_`,
                   mentions: _vbTodosVotantes,
                 });
               }
 
-              // Limpar arquivo de votação
               try { fs.unlinkSync(_vbFile); } catch { }
             } catch (errTimer) {
               console.error("[VOTARBAN] Erro no timer de votação:", errTimer);
               try { fs.unlinkSync(_vbFile); } catch { }
             }
-          }, 300000); // 5 minutos
+          }, 300000);
           break;
         }
 
@@ -6299,39 +6227,35 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           const _vbFile2 = `${_vbDir2}/voteban_${from}.json`;
 
           if (!fs.existsSync(_vbFile2)) {
-            return reply("❌ *Nenhuma votação de banimento ativa neste grupo!*");
+            return reply("❌ *Nenhuma votação ativa neste grupo!*");
           }
 
           const _vbDados2 = JSON.parse(fs.readFileSync(_vbFile2));
 
-          // O alvo não pode votar
-          if (sender === _vbDados2.alvo) return reply("⚠️ Você é o acusado e não pode votar na própria votação!");
-          // ADMs não votam (são juízes)
-          if (groupAdmins.includes(sender) && !SoDono) return reply("🛡️ *ADMs não participam da votação.* Use *" + prefix + "cancelarvoto* para cancelar se necessário.");
+          if (sender === _vbDados2.alvo) return reply("⚠️ Você é o acusado e não pode votar nesta votação!");
+          if (groupAdmins.includes(sender) && !SoDono) return reply(`🛡️ ADMs não votam. Use \`${prefix}cancelarvoto\` se quiser cancelar.`);
 
-          // Verificar se já votou
           if (_vbDados2.votos_sim.includes(sender) || _vbDados2.votos_nao.includes(sender)) {
-            return reply("⚠️ Você já votou nesta votação! Aguarde o resultado.");
+            return reply("⚠️ Você já votou! Aguarde o resultado.");
           }
 
           const _vbVoto = q?.trim()?.toLowerCase()?.normalize("NFD")?.replace(/[\u0300-\u036f]/g, "");
+          const _vbSimWords = ["sim", "s", "yes", "si", "ban", "banir", "remover"];
+          const _vbNaoWords = ["nao", "n", "no", "nope", "manter", "ficar", "fica"];
 
-          if (!_vbVoto || (!["sim", "s", "yes", "si", "ban", "banir", "remover"].includes(_vbVoto) && !["nao", "n", "no", "nope", "manter", "ficar", "fica"].includes(_vbVoto))) {
-            return reply(
-              `🗳️ *Como votar:*\n\n` +
-              `✅ *${prefix}votoban sim* — para BANIR\n` +
-              `❌ *${prefix}votoban nao* — para MANTER\n\n` +
-              `👤 Alvo atual: @${_vbDados2.alvo.split("@")[0]}`,
-            );
+          if (!_vbVoto || (!_vbSimWords.includes(_vbVoto) && !_vbNaoWords.includes(_vbVoto))) {
+            return conn.sendMessage(from, {
+              text:
+                `🗳️ *Como votar* (@${_vbDados2.alvo.split("@")[0]}):\n` +
+                `> ✅ \`${prefix}votoban sim\` — Banir\n` +
+                `> ❌ \`${prefix}votoban nao\` — Manter`,
+              mentions: [_vbDados2.alvo],
+            }, { quoted: info });
           }
 
-          const _vbEhSim = ["sim", "s", "yes", "si", "ban", "banir", "remover"].includes(_vbVoto);
-
-          if (_vbEhSim) {
-            _vbDados2.votos_sim.push(sender);
-          } else {
-            _vbDados2.votos_nao.push(sender);
-          }
+          const _vbEhSim = _vbSimWords.includes(_vbVoto);
+          if (_vbEhSim) _vbDados2.votos_sim.push(sender);
+          else _vbDados2.votos_nao.push(sender);
 
           fs.writeFileSync(_vbFile2, JSON.stringify(_vbDados2, null, 2));
 
@@ -6339,58 +6263,35 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           const _vbNaoAtual = _vbDados2.votos_nao.length;
           const _vbRestante = Math.max(0, _vbDados2.quorum - _vbSimAtual);
           const _vbTempoRestante = Math.max(0, Math.ceil((_vbDados2.inicio + _vbDados2.duracao - Date.now()) / 60000));
+          const _vbBar2 = "🟩".repeat(Math.min(_vbSimAtual, _vbDados2.quorum)) + "⬜".repeat(Math.max(0, _vbDados2.quorum - _vbSimAtual));
 
-          // Reagir na mensagem de votação
           try {
-            await conn.sendMessage(from, {
-              react: { text: _vbEhSim ? "✅" : "❌", key: info.key }
-            });
+            await conn.sendMessage(from, { react: { text: _vbEhSim ? "✅" : "❌", key: info.key } });
           } catch { }
 
           await conn.sendMessage(from, {
             text:
-              `🗳️ *Voto registrado!*\n\n` +
-              `👤 @${sender.split("@")[0]} votou: ${_vbEhSim ? "✅ *BANIR*" : "❌ *MANTER*"}\n\n` +
-              `📊 *Placar atual:*\n` +
-              `  ✅ Banir: *${_vbSimAtual}* votos\n` +
-              `  ❌ Manter: *${_vbNaoAtual}* votos\n` +
-              `  🎯 Necessários: *${_vbDados2.quorum}* votos a favor\n` +
-              (_vbRestante > 0 ? `  ⏳ Faltam *${_vbRestante}* votos para banir\n` : "") +
-              `  ⏱️ Tempo restante: ~${_vbTempoRestante} min`,
+              `🗳️ @${sender.split("@")[0]} votou ${_vbEhSim ? "✅ *BANIR*" : "❌ *MANTER*"}\n\n` +
+              `${_vbBar2} *${_vbSimAtual}/${_vbDados2.quorum}*  (✅ ${_vbSimAtual} · ❌ ${_vbNaoAtual})\n` +
+              (_vbRestante > 0 ? `⏳ Faltam *${_vbRestante}* votos · ⏱️ ~${_vbTempoRestante} min` : `⚡ *Meta atingida!*`),
             mentions: [sender],
           });
 
-          // Verificar se atingiu quorum antecipadamente
+          // Atingiu a meta de 5 votos antecipadamente
           if (_vbSimAtual >= _vbDados2.quorum && _vbSimAtual > _vbNaoAtual) {
-            // Encerrar votação antecipadamente — BANIR
             const _vbAdmJids2 = groupAdmins.filter(a => !botNumber.includes(a));
-            let _vbListaFinal = "";
-            _vbListaFinal += `\n✅ *Votaram SIM (${_vbSimAtual}):*\n`;
-            _vbDados2.votos_sim.forEach(v => { _vbListaFinal += `  • @${v.split("@")[0]}\n`; });
-            if (_vbDados2.votos_nao.length > 0) {
-              _vbListaFinal += `\n❌ *Votaram NÃO (${_vbNaoAtual}):*\n`;
-              _vbDados2.votos_nao.forEach(v => { _vbListaFinal += `  • @${v.split("@")[0]}\n`; });
-            }
-
+            const _vbSimStr2 = _vbDados2.votos_sim.map(v => `@${v.split("@")[0]}`).join(", ");
+            const _vbNaoStr2 = _vbDados2.votos_nao.map(v => `@${v.split("@")[0]}`).join(", ");
             const _vbTodosF = [..._vbDados2.votos_sim, ..._vbDados2.votos_nao, _vbDados2.alvo, ..._vbAdmJids2];
 
             await conn.sendMessage(from, {
               text:
-                `╔══════════════════════════════╗\n` +
-                `║  ⚖️ *RESULTADO DA VOTAÇÃO* ⚖️\n` +
-                `╠══════════════════════════════╣\n` +
-                `║\n` +
-                `║  🔨 *BANIMENTO APROVADO!*\n` +
-                `║  ⚡ *Quorum atingido antes do prazo!*\n` +
-                `║\n` +
-                `║  👤 *Banido:* @${_vbDados2.alvo.split("@")[0]}\n` +
-                `║  ✅ *A favor:* ${_vbSimAtual} votos\n` +
-                `║  ❌ *Contra:* ${_vbNaoAtual} votos\n` +
-                `║${_vbListaFinal.split("\n").join("\n║  ")}\n` +
-                `║\n` +
-                `║  _O membro será removido agora._\n` +
-                `║\n` +
-                `╚══════════════════════════════╝`,
+                `🔨 *BANIMENTO APROVADO*\n\n` +
+                `👤 *Removido:* @${_vbDados2.alvo.split("@")[0]}\n` +
+                `📊 *Placar:* ✅ ${_vbSimAtual} × ❌ ${_vbNaoAtual}\n` +
+                `> ✅ Sim: ${_vbSimStr2}\n` +
+                (_vbNaoStr2 ? `> ❌ Não: ${_vbNaoStr2}\n` : "") +
+                `\n_Meta de ${_vbDados2.quorum} votos atingida! Removendo..._`,
               mentions: _vbTodosF,
             });
 
@@ -6402,16 +6303,13 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
               await conn.sendMessage(from, { text: "⚠️ *Erro ao remover!* Peça a um ADM para remover manualmente." });
             }
 
-            // Notificar ADMs no PV
             for (const _adm2 of _vbAdmJids2) {
               try {
                 await conn.sendMessage(_adm2, {
                   text:
-                    `🔔 *[ALERTA ADM — VOTAÇÃO]*\n\n` +
-                    `O membro @${_vbDados2.alvo.split("@")[0]} foi *removido por votação popular*.\n\n` +
-                    `📊 ✅ ${_vbSimAtual} × ❌ ${_vbNaoAtual}\n` +
-                    `🧑‍⚖️ Iniciado por: @${_vbDados2.iniciador.split("@")[0]}\n\n` +
-                    `_Notificação automática do Aleatory Bot._`,
+                    `🔔 *Alerta ADM — Votação*\n\n` +
+                    `@${_vbDados2.alvo.split("@")[0]} foi *removido por votação*.\n` +
+                    `> 📊 ✅ ${_vbSimAtual} × ❌ ${_vbNaoAtual} · Por @${_vbDados2.iniciador.split("@")[0]}`,
                   mentions: [_vbDados2.alvo, _vbDados2.iniciador],
                 });
               } catch { }
@@ -6441,18 +6339,10 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
 
           await conn.sendMessage(from, {
             text:
-              `╔══════════════════════════════╗\n` +
-              `║  🛑 *VOTAÇÃO CANCELADA* 🛑\n` +
-              `╠══════════════════════════════╣\n` +
-              `║\n` +
-              `║  👤 Alvo: @${_vbDados3.alvo.split("@")[0]}\n` +
-              `║  🛡️ Cancelado por: @${sender.split("@")[0]}\n` +
-              `║  ✅ Votos sim: ${_vbDados3.votos_sim.length}\n` +
-              `║  ❌ Votos não: ${_vbDados3.votos_nao.length}\n` +
-              `║\n` +
-              `║  _A votação foi cancelada por um ADM._\n` +
-              `║\n` +
-              `╚══════════════════════════════╝`,
+              `🛑 *VOTAÇÃO CANCELADA*\n\n` +
+              `👤 *Alvo:* @${_vbDados3.alvo.split("@")[0]}\n` +
+              `🛡️ *ADM:* @${sender.split("@")[0]}\n` +
+              `📊 *Placar:* ✅ ${_vbDados3.votos_sim.length} × ❌ ${_vbDados3.votos_nao.length}`,
             mentions: [_vbDados3.alvo, sender],
           });
           console.log(`[VOTARBAN] 🛑 Votação cancelada pelo ADM ${sender} no grupo ${from}`);
@@ -6473,38 +6363,126 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
           }
 
           const _vbDados4 = JSON.parse(fs.readFileSync(_vbFile4));
+          const _vbSim4 = _vbDados4.votos_sim.length;
+          const _vbNao4 = _vbDados4.votos_nao.length;
           const _vbTempo4 = Math.max(0, Math.ceil((_vbDados4.inicio + _vbDados4.duracao - Date.now()) / 60000));
-          const _vbFalta4 = Math.max(0, _vbDados4.quorum - _vbDados4.votos_sim.length);
-
-          let _vbDetalhe4 = "";
-          if (_vbDados4.votos_sim.length > 0) {
-            _vbDetalhe4 += `\n✅ *Votaram BANIR (${_vbDados4.votos_sim.length}):*\n`;
-            _vbDados4.votos_sim.forEach(v => { _vbDetalhe4 += `  • @${v.split("@")[0]}\n`; });
-          }
-          if (_vbDados4.votos_nao.length > 0) {
-            _vbDetalhe4 += `\n❌ *Votaram MANTER (${_vbDados4.votos_nao.length}):*\n`;
-            _vbDados4.votos_nao.forEach(v => { _vbDetalhe4 += `  • @${v.split("@")[0]}\n`; });
-          }
+          const _vbFalta4 = Math.max(0, _vbDados4.quorum - _vbSim4);
+          const _vbBar4 = "🟩".repeat(Math.min(_vbSim4, _vbDados4.quorum)) + "⬜".repeat(Math.max(0, _vbDados4.quorum - _vbSim4));
+          const _vbSimStr4 = _vbDados4.votos_sim.map(v => `@${v.split("@")[0]}`).join(", ");
+          const _vbNaoStr4 = _vbDados4.votos_nao.map(v => `@${v.split("@")[0]}`).join(", ");
 
           await conn.sendMessage(from, {
             text:
-              `╔══════════════════════════════╗\n` +
-              `║  📊 *STATUS DA VOTAÇÃO* 📊\n` +
-              `╠══════════════════════════════╣\n` +
-              `║\n` +
-              `║  👤 *Acusado:* @${_vbDados4.alvo.split("@")[0]}\n` +
-              `║  🧑‍⚖️ *Iniciador:* @${_vbDados4.iniciador.split("@")[0]}\n` +
-              `║\n` +
-              `║  ✅ A favor: *${_vbDados4.votos_sim.length}* votos\n` +
-              `║  ❌ Contra: *${_vbDados4.votos_nao.length}* votos\n` +
-              `║  🎯 Necessários: *${_vbDados4.quorum}* votos\n` +
-              (_vbFalta4 > 0 ? `║  ⏳ Faltam: *${_vbFalta4}* votos para banir\n` : `║  ⚡ *Quorum atingido!*\n`) +
-              `║  ⏱️ Tempo restante: ~${_vbTempo4} min\n` +
-              `║${_vbDetalhe4.split("\n").join("\n║  ")}\n` +
-              `║\n` +
-              `╚══════════════════════════════╝`,
+              `📊 *STATUS DA VOTAÇÃO*\n\n` +
+              `👤 *Alvo:* @${_vbDados4.alvo.split("@")[0]}\n` +
+              `${_vbBar4} *${_vbSim4}/${_vbDados4.quorum}*  (✅ ${_vbSim4} · ❌ ${_vbNao4})\n` +
+              (_vbFalta4 > 0 ? `⏳ Faltam *${_vbFalta4}* votos · ⏱️ ~${_vbTempo4} min\n` : `⚡ *Meta atingida!*\n`) +
+              (_vbSimStr4 ? `> ✅ Sim: ${_vbSimStr4}\n` : "") +
+              (_vbNaoStr4 ? `> ❌ Não: ${_vbNaoStr4}\n` : ""),
             mentions: [_vbDados4.alvo, _vbDados4.iniciador, ..._vbDados4.votos_sim, ..._vbDados4.votos_nao],
           });
+          break;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  ℹ️ COMANDOS DE INFORMAÇÃO — NOVIDADES v9.0
+        // ═══════════════════════════════════════════════════════════
+        case "infoban":
+        case "infovotarban":
+        case "infovoteban":
+        case "infovotacao": {
+          reply(
+            `ℹ️ *INFO · VOTAÇÃO DE BAN*\n\n` +
+            `Permite que os membros votem para remover alguém do grupo.\n\n` +
+            `📌 *Comandos:*\n` +
+            `> \`${prefix}votarban\` @usuario — Inicia votação\n` +
+            `> \`${prefix}votoban sim\` — Vota para banir\n` +
+            `> \`${prefix}votoban nao\` — Vota para manter\n` +
+            `> \`${prefix}statusvoto\` — Placar em tempo real\n` +
+            `> \`${prefix}cancelarvoto\` — Cancela (só ADM)\n\n` +
+            `📋 *Regras:*\n` +
+            `• Meta fixa de *5 votos* em até *5 minutos*\n` +
+            `• Quem abre já conta como 1º voto (1/5)\n` +
+            `• Não funciona contra ADMs, dono ou o bot\n` +
+            `• ADMs são notificados discretamente`
+          );
+          break;
+        }
+
+        case "infoavisar":
+        case "infoavisoglobal":
+        case "infoavisoflood": {
+          reply(
+            `ℹ️ *INFO · AVISO GLOBAL*\n\n` +
+            `Envia comunicados (texto, foto ou vídeo) para *todos os grupos* onde o bot está.\n\n` +
+            `📌 *Comandos (só Dono):*\n` +
+            `> \`${prefix}avisar\` mensagem — Envia 1× por grupo\n` +
+            `> \`${prefix}avisoflood\` 3 | mensagem — Repete 1–10×\n` +
+            `> \`${prefix}statusaviso\` — Acompanha o envio\n` +
+            `> \`${prefix}cancelaraviso\` — Para o disparo\n\n` +
+            `💡 _Também funciona marcando/enviando foto ou vídeo. Delay anti-ban automático._`
+          );
+          break;
+        }
+
+        case "infoia":
+        case "infoiaaleatory": {
+          reply(
+            `ℹ️ *INFO · IA ALEATORY v9.0*\n\n` +
+            `Inteligência artificial integrada com suporte a *voz natural brasileira*.\n\n` +
+            `📌 *Como usar:*\n` +
+            `> \`${prefix}ia\` sua pergunta — Pergunta direta\n` +
+            `> \`${prefix}iaaleatory\` — Liga/desliga no grupo ou PV\n\n` +
+            `🎙️ *Modo conversa (quando ativa):*\n` +
+            `• Chame *"Aleatory"* no grupo ou responda o bot\n` +
+            `• Saudações, Natal, piadas e elogios respondem em *áudio*!\n` +
+            `• Com \`gemini_api_key\` em settings.json, fala respostas dinâmicas`
+          );
+          break;
+        }
+
+        case "infonuke": {
+          reply(
+            `ℹ️ *INFO · NUKE*\n\n` +
+            `Remove todos os membros não-ADMs do grupo em uma única ação.\n\n` +
+            `📌 *Uso:*\n` +
+            `> \`${prefix}nuke\`\n\n` +
+            `⚠️ *Requisitos:* Apenas *Dono* pode executar e o bot precisa ser *ADM* do grupo.`
+          );
+          break;
+        }
+
+        case "infoblockcmd": {
+          reply(
+            `ℹ️ *INFO · BLOCKCMD 2.0*\n\n` +
+            `Bloqueia ou libera comandos específicos no grupo ou globalmente.\n\n` +
+            `📌 *Comandos:*\n` +
+            `> \`${prefix}blockcmd\` comando — Bloqueia no grupo\n` +
+            `> \`${prefix}unblockcmd\` comando — Libera no grupo\n` +
+            `> \`${prefix}listblockcmd\` — Lista os bloqueados\n\n` +
+            `👤 *Quem usa:* ADMs do grupo ou Dono.`
+          );
+          break;
+        }
+
+        case "infoduvida": {
+          reply(
+            `ℹ️ *INFO · APRESENTAÇÃO EM ÁUDIO*\n\n` +
+            `Envia uma nota de voz oficial apresentando o *Aleatory Bot v9.0*, sua equipe e a *BronxysHost*.\n\n` +
+            `📌 *Uso:*\n` +
+            `> \`${prefix}duvida\` (ou \`${prefix}sobrebot\`)`
+          );
+          break;
+        }
+
+        case "infonovidades": {
+          reply(
+            `ℹ️ *INFO · NOVIDADES v9.0*\n\n` +
+            `Mostra o banner e o resumo completo das novidades da versão 9.0.\n\n` +
+            `📌 *Comandos:*\n` +
+            `> \`${prefix}novidades\` — Exibe no chat atual\n` +
+            `> \`${prefix}bcnovidades\` — Dispara banner + áudio em todos os grupos (Dono)`
+          );
           break;
         }
 
@@ -22909,6 +22887,28 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
 
                   setTimeout(async () => {
                     try {
+                      // ═══ VOZ OFICIAL ALEATORY — Áudios pré-gravados (instantâneo, sem API key) ═══
+                      const {
+                        matchPresetAudio,
+                        shouldReplyWithDynamicAudio,
+                        synthesizeGeminiVoice,
+                      } = require("./dados/org/funcoes/ia_voz.js");
+
+                      const _presetAud = matchPresetAudio(_iaText);
+                      if (_presetAud) {
+                        const _connAud = global.conn || conn;
+                        await _connAud.sendPresenceUpdate("recording", _iaFrom).catch(() => { });
+                        await sleep(600);
+                        await _connAud.sendMessage(
+                          _iaFrom,
+                          { audio: _presetAud.buffer, mimetype: _presetAud.mimetype, ptt: true },
+                          { quoted: _iaInfo },
+                        );
+                        await _connAud.sendPresenceUpdate("paused", _iaFrom).catch(() => { });
+                        await _connAud.sendMessage(_iaFrom, { react: { text: "", key: _iaInfo.key } }).catch(() => { });
+                        return;
+                      }
+
                       if (!global._iaMemory) global._iaMemory = new Map();
                       const _iaMemKey = _iaSender + "_" + _iaFrom;
                       const _iaHist = global._iaMemory.get(_iaMemKey) || [];
@@ -23027,7 +23027,28 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                       global._iaMemory.set(_iaMemKey, _iaHist);
 
                       const _conn = global.conn || conn;
-                      await _conn.sendMessage(_iaFrom, { text: _iaReply }, { quoted: _iaInfo });
+                      let _sentAsVoice = false;
+
+                      // Se o usuário pediu áudio ou na chance espontânea (20%), sintetiza com a voz Orus (Gemini TTS)
+                      if (shouldReplyWithDynamicAudio(_iaText, _iaReply)) {
+                        try {
+                          await _conn.sendPresenceUpdate("recording", _iaFrom).catch(() => { });
+                          const _dynAud = await synthesizeGeminiVoice(_iaReply);
+                          if (_dynAud) {
+                            await _conn.sendMessage(
+                              _iaFrom,
+                              { audio: _dynAud.buffer, mimetype: _dynAud.mimetype, ptt: true },
+                              { quoted: _iaInfo },
+                            );
+                            _sentAsVoice = true;
+                          }
+                        } catch { }
+                        await _conn.sendPresenceUpdate("paused", _iaFrom).catch(() => { });
+                      }
+
+                      if (!_sentAsVoice) {
+                        await _conn.sendMessage(_iaFrom, { text: _iaReply }, { quoted: _iaInfo });
+                      }
                       await _conn.sendMessage(_iaFrom, { react: { text: "", key: _iaInfo.key } }).catch(() => { });
                     } catch (e) {
                       // Erro: ignorar silenciosamente, apenas limpar reação
@@ -23400,21 +23421,62 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           hora2 = moment.tz("America/Sao_Paulo").format("HH:mm:ss");
 
           if (isCmd) {
-            uptime = process.uptime();
+            // Sugestão inteligente de comando parecido (cache leve calculado 1 única vez)
+            let _sugestao = "";
+            try {
+              if (!global._allCmdsCache) {
+                const _src = fs.readFileSync(__filename, "utf-8");
+                const _set = new Set();
+                const _re = /\bcase\s+["']([a-z0-9_-]{2,25})["']\s*:/gi;
+                let _m;
+                while ((_m = _re.exec(_src)) !== null) _set.add(_m[1].toLowerCase());
+                global._allCmdsCache = Array.from(_set);
+              }
+              const _typed = String(command || "").toLowerCase();
+              if (_typed.length >= 2 && _typed.length <= 25) {
+                let _best = "";
+                let _bestDist = 3; // aceita até 2 erros de digitação
+                for (const _cand of global._allCmdsCache) {
+                  if (Math.abs(_cand.length - _typed.length) > 2) continue;
+                  // Levenshtein rápido
+                  const _a = _typed, _b = _cand;
+                  const _dp = Array.from({ length: _b.length + 1 }, (_, i) => i);
+                  for (let i = 1; i <= _a.length; i++) {
+                    let _prev = _dp[0];
+                    _dp[0] = i;
+                    for (let j = 1; j <= _b.length; j++) {
+                      const _tmp = _dp[j];
+                      _dp[j] = _a[i - 1] === _b[j - 1] ? _prev : 1 + Math.min(_prev, _dp[j], _dp[j - 1]);
+                      _prev = _tmp;
+                    }
+                  }
+                  const _d = _dp[_b.length];
+                  if (_d > 0 && _d < _bestDist) {
+                    _bestDist = _d;
+                    _best = _cand;
+                    if (_d === 1) break;
+                  }
+                }
+                if (_best) _sugestao = _best;
+              }
+            } catch { }
+
+            const _linhaSugestao = _sugestao
+              ? `│ 🔍 Quis dizer: *${prefix}${_sugestao}*?\n`
+              : "";
+            const _notFoundMsg =
+              `╭─「 🎄 *ᴀʟᴇᴀᴛᴏʀʏ* ❄ 」─╮\n` +
+              `│ 👤 @${sender2}\n` +
+              `│ ⏳ ${tempo}\n` +
+              `│\n` +
+              `│ ❌ Comando não encontrado\n` +
+              _linhaSugestao +
+              `│ 💡 Use: *${prefix}menu*\n` +
+              `╰───────────────╯`;
+
             conn.sendMessage(
               from,
-              {
-                text: `
-╭─❖ 🧊🔥 ❖─╮
-│ ⏳ ${tempo} 
-│ 👤 @${sender2}
-│
-│ 🚫 Não achado 🥱
-│ 💡 Use: ${prefix}Menu
-╰──────────╯
-`,
-                mentions: [sender],
-              },
+              { text: _notFoundMsg, mentions: [sender] },
               { quoted: selo },
             );
           }

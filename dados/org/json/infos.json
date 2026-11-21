@@ -412,8 +412,8 @@
     "info": "Para baixar vídeo do kwai, só usar: #prefixo#kwai e um link do kwai, Boa sorte."
   },
   {
-  "comando": "transcrever",
-  "info": "Você só deve marcar um áudio no whatsapp, com o comando: #prefixo#transcrever, e o que a pessoa falou, será transformado em texto, saiba que algumas vezes, talvez não funcione, só tentar novamente, se não for, creio que não está aceitando o formato do áudio."
+    "comando": "transcrever",
+    "info": "Você só deve marcar um áudio no whatsapp, com o comando: #prefixo#transcrever, e o que a pessoa falou, será transformado em texto, saiba que algumas vezes, talvez não funcione, só tentar novamente, se não for, creio que não está aceitando o formato do áudio."
   },
   {
     "comando": "autobaixar",
@@ -422,5 +422,85 @@
   {
     "comando": "ifunny",
     "info": "Este comando, serve para baixar vídeos do ifunny, saiba que é apenas vídeos, site do ifunny: https://br.ifunny.co/, um exemplo para baixar um vídeo: #prefixo#ifunny https://br.ifunny.co/video/w9Eaa2bOB?s=cl"
+  },
+  {
+    "comando": "votarban",
+    "info": "🗳️ *Votação de Ban*\n\nQualquer membro pode abrir uma votação para banir alguém do grupo (exceto ADMs, dono e o bot).\n\n• Iniciar: #prefixo#votarban @usuario\n• Votar sim: #prefixo#votoban sim\n• Votar não: #prefixo#votoban nao\n• Ver placar: #prefixo#statusvoto\n• Cancelar (ADM): #prefixo#cancelarvoto\n\nMeta fixa: 5 votos em até 5 minutos. Use #prefixo#infoban para ver o resumo."
+  },
+  {
+    "comando": "votoban",
+    "info": "🗳️ *Votar na Votação de Ban*\n\nRegistra seu voto em uma votação ativa no grupo:\n• #prefixo#votoban sim — Vota para BANIR\n• #prefixo#votoban nao — Vota para MANTER\n\nCada membro vota 1 vez. Meta fixa: 5 votos."
+  },
+  {
+    "comando": "cancelarvoto",
+    "info": "🛑 *Cancelar Votação de Ban*\n\nComando exclusivo de ADMs para encerrar imediatamente uma votação ativa no grupo.\nUso: #prefixo#cancelarvoto"
+  },
+  {
+    "comando": "statusvoto",
+    "info": "📊 *Status da Votação*\n\nExibe o placar atual, barra de progresso, tempo restante e quem votou na votação ativa.\nUso: #prefixo#statusvoto"
+  },
+  {
+    "comando": "avisar",
+    "info": "📡 *Aviso Global (Dono)*\n\nEnvia texto, foto ou vídeo para todos os grupos onde o bot está, com delay anti-ban automático.\n• #prefixo#avisar sua mensagem\n• #prefixo#avisoflood 3 | mensagem (repete 1–10×)\n• #prefixo#statusaviso / #prefixo#cancelaraviso"
+  },
+  {
+    "comando": "avisoglobal",
+    "info": "📡 *Aviso Global (Dono)*\n\nMesmo que #prefixo#avisar: envia um comunicado (texto, foto ou vídeo) para todos os grupos com proteção anti-ban."
+  },
+  {
+    "comando": "avisoflood",
+    "info": "📡 *Aviso Global com Repetição (Dono)*\n\nEnvia o aviso de 1 a 10 vezes por grupo.\nExemplo: #prefixo#avisoflood 3 | Atenção grupo!\nUse #prefixo#cancelaraviso para parar."
+  },
+  {
+    "comando": "cancelaraviso",
+    "info": "🛑 *Cancelar Aviso Global (Dono)*\n\nInterrompe imediatamente um disparo de #prefixo#avisar ou #prefixo#avisoflood em andamento."
+  },
+  {
+    "comando": "statusaviso",
+    "info": "📊 *Status do Aviso Global (Dono)*\n\nMostra se existe uma transmissão global em andamento e o progresso do envio."
+  },
+  {
+    "comando": "ia",
+    "info": "🤖 *IA Aleatory*\n\nFaça qualquer pergunta direta à inteligência artificial do bot.\nExemplo: #prefixo#ia me explique o que é JavaScript"
+  },
+  {
+    "comando": "iaaleatory",
+    "info": "🤖 *IA Aleatory (Modo Conversa + Voz)*\n\nLiga ou desliga o modo conversa da IA no grupo (ou no PV, para o dono).\nQuando ativa, basta chamar 'Aleatory' ou responder o bot — saudações, piadas, Natal e elogios respondem com nota de voz oficial!"
+  },
+  {
+    "comando": "nuke",
+    "info": "💥 *Nuke (Dono)*\n\nRemove todos os membros não-ADMs do grupo de uma vez. Requer que o bot seja ADM e só pode ser usado pelo dono."
+  },
+  {
+    "comando": "blockcmd",
+    "info": "🔒 *BlockCMD 2.0*\n\nBloqueia comandos específicos no grupo.\n• #prefixo#blockcmd comando — Bloqueia\n• #prefixo#unblockcmd comando — Libera\n• #prefixo#listblockcmd — Lista bloqueados"
+  },
+  {
+    "comando": "unblockcmd",
+    "info": "🔓 *Desbloquear Comando*\n\nLibera um comando bloqueado anteriormente com #prefixo#blockcmd.\nExemplo: #prefixo#unblockcmd play"
+  },
+  {
+    "comando": "listblockcmd",
+    "info": "📋 *Comandos Bloqueados*\n\nLista todos os comandos atualmente bloqueados no grupo via #prefixo#blockcmd."
+  },
+  {
+    "comando": "duvida",
+    "info": "🎙️ *Apresentação em Áudio*\n\nEnvia uma nota de voz oficial apresentando o Aleatory Bot v9.0, sua equipe (Josival, M.Scheyot, Luana e Rafael) e a BronxysHost (bronxyshost.com)."
+  },
+  {
+    "comando": "novidades",
+    "info": "🎄 *Novidades v9.0*\n\nEnvia o banner comemorativo de Natal e o resumo de todas as novidades da versão 9.0.\nDono pode transmitir para todos os grupos (com áudio) usando #prefixo#bcnovidades."
+  },
+  {
+    "comando": "bcnovidades",
+    "info": "📢 *Transmissão de Novidades (Dono)*\n\nEnvia o banner da v9.0 + o áudio oficial de apresentação para todos os grupos e para o PV do dono."
+  },
+  {
+    "comando": "aceitar",
+    "info": "🛡️ *Aceitar Solicitações (ADM)*\n\nAprova pedidos pendentes de entrada no grupo.\n• #prefixo#aceitar (todos) | #prefixo#aceitar 5 | #prefixo#aceitar @user\nVeja mais em #prefixo#infoaceitar."
+  },
+  {
+    "comando": "recusar",
+    "info": "🛡️ *Recusar Solicitações (ADM)*\n\nRecusa pedidos pendentes de entrada no grupo.\nVeja mais em #prefixo#inforecusar."
   }
 ]
