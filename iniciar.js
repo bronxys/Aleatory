@@ -612,11 +612,14 @@ async function createConnection() {
       DisconnectReason,
     } = _baileysUtils;
 
+    // ═══ FLAG: primeira conexão (QR/código recém-escaneado) ═══
+    const _isFirstConnection = !fs.existsSync(`${qrcode}/creds.json`);
+
     // Exibir menu de seleção se não houver sessão ativa
-    if (!fs.existsSync(`${qrcode}/creds.json`)) {
+    if (_isFirstConnection) {
       await selectConnectionMethod();
     } else {
-      // ═══ RECONEXÃO — Mostrar banner RGB + bem-vindo de volta ═══
+      // ═══ RECONEXÃO — Luzes Natalinas + bem-vindo de volta ═══
       const { clearScreen: _cls, showBanner, startRGBBanner, stopRGBBanner } = require("./menu_conexao.js");
       const _sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -629,16 +632,19 @@ async function createConnection() {
       showBanner();
 
       const _g = '\x1b[38;5;240m';
-      const _gld = '\x1b[38;5;214m';
-      const _grn = '\x1b[38;5;78m';
+      const _gld = '\x1b[38;5;220m';
+      const _grn = '\x1b[38;5;34m';
+      const _xr = '\x1b[38;5;196m';
+      const _xg = '\x1b[38;5;34m';
+      const _sn = '\x1b[38;5;255m';
       const _B = '\x1b[1m';
       const _R = '\x1b[0m';
 
-      console.log(`  ${_gld}${_B}👋 BEM-VINDO DE VOLTA!${_R}`);
-      console.log(`  ${_g}${"─".repeat(31)}${_R}`);
-      console.log(`  ${_grn}Aleatory Bot 100% funcional.${_R}`);
-      console.log(`  ${_grn}Conectando... Aproveite! 🚀${_R}`);
-      console.log(`  ${_g}${"─".repeat(31)}${_R}`);
+      console.log(`  ${_xr}🎅 ${_gld}${_B}BEM-VINDO DE VOLTA!${_R} ${_xg}🎄${_R}`);
+      console.log(`  ${_xr}✦${_xg}●${_gld}✦${_xr}●${_sn}✦${_xg}●${_gld}✦${_xr}●${_xg}✦${_gld}●${_R}`);
+      console.log(`  ${_grn}🎄 Aleatory Bot v9.0 ativo!${_R}`);
+      console.log(`  ${_grn}Conectando... Feliz Natal! 🎁${_R}`);
+      console.log(`  ${_xr}✦${_xg}●${_gld}✦${_xr}●${_sn}✦${_xg}●${_gld}✦${_xr}●${_xg}✦${_gld}●${_R}`);
       console.log();
     }
 
@@ -683,7 +689,7 @@ async function createConnection() {
     // NÃO atualizar global.conn aqui — só quando connection === "open"
     // Isso evita que schedulers usem um socket que ainda não conectou
 
-    console.log(`\x1b[36m[KEEPALIVE]\x1b[0m Ativo: ping a cada 30s para manter conexão.`);
+    console.log(`\x1b[36m[KEEPALIVE]\x1b[0m Ativo: ping a cada 25s para manter conexão.`);
 
     // Solicitar código de pareamento se necessário
     if (
@@ -792,7 +798,7 @@ async function createConnection() {
           global.conn = conn; // ═══ ÚNICO LUGAR onde global.conn é definido ═══
           _backupCreds(); // Backup de segurança a cada conexão bem-sucedida
           showSuccess("CONECTADO COM SUCESSO!");
-          console.log(`\x1b[36m[CONEXÃO]\x1b[0m Sessão estável. KeepAlive ativo (30s). Uptime iniciado.`);
+          console.log(`\x1b[36m[CONEXÃO]\x1b[0m Sessão estável. KeepAlive ativo (25s). Uptime iniciado.`);
 
           // ── Registrar handler de mensagens (NESTE socket) ──
           const startAle = require("./index.js");
@@ -826,6 +832,29 @@ async function createConnection() {
 
           // ── Inicializar schedulers UMA VEZ (global, usam global.conn) ──
           initializeSchedulers();
+
+          // ═══ BROADCAST AUTOMÁTICO — PRIMEIRA CONEXÃO (Natal 9.0) ═══
+          if (_isFirstConnection) {
+            console.log(`\x1b[32m[BROADCAST]\x1b[0m 🎄 Primeira conexão detectada! Aguardando 10s para enviar novidades v9.0...`);
+            setTimeout(async () => {
+              try {
+                const { broadcastNovidades } = require("./index.js");
+                if (typeof broadcastNovidades === "function") {
+                  console.log(`\x1b[32m[BROADCAST]\x1b[0m 🎅 Disparando novidades de Natal v9.0 para todos os grupos...`);
+                  const result = await broadcastNovidades(conn, {
+                    customText: "🎄 ALEATORY 9.0 — EDIÇÃO ESPECIAL DE NATAL",
+                  });
+                  if (result?.success) {
+                    console.log(`\x1b[32m[BROADCAST]\x1b[0m ✅ Novidades enviadas! ${result.successCount} grupos | ${result.failCount} falhas`);
+                  }
+                } else {
+                  console.log(`\x1b[33m[BROADCAST]\x1b[0m broadcastNovidades não exportado. Pulando...`);
+                }
+              } catch (err) {
+                console.error(`\x1b[31m[BROADCAST]\x1b[0m Erro ao enviar novidades:`, err?.message || err);
+              }
+            }, 10000); // Aguardar 10s para garantir que tudo está carregado
+          }
         }
       } catch (e) {
         console.error("[CONEXÃO] Erro no handler de connection.update:", e?.message || e);

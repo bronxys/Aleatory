@@ -1,6 +1,6 @@
 /**
  * ALEATORY BOT — BRONXYS ENGINE
- * Sistema de Menu v5.0 — Premium
+ * Sistema de Menu v9.0 — Edição Especial de Natal 🎄
  * bronxyshost.com | Desde 2021
  */
 
@@ -10,27 +10,32 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 const fs = require('fs');
 
-// ═══ CORES ═══
+// ═══ CORES — PALETA NATALINA ═══
 const colors = {
   reset: '\x1b[0m', bold: '\x1b[1m', dim: '\x1b[2m',
   italic: '\x1b[3m', underline: '\x1b[4m',
-  green: '\x1b[38;5;78m', brightGreen: '\x1b[38;5;120m',
+  green: '\x1b[38;5;34m', brightGreen: '\x1b[38;5;46m',
   blue: '\x1b[38;5;75m', brightBlue: '\x1b[38;5;117m',
   cyan: '\x1b[38;5;87m', brightCyan: '\x1b[38;5;123m',
-  yellow: '\x1b[38;5;222m', brightYellow: '\x1b[38;5;228m',
-  red: '\x1b[38;5;210m', brightRed: '\x1b[38;5;217m',
+  yellow: '\x1b[38;5;226m', brightYellow: '\x1b[38;5;228m',
+  red: '\x1b[38;5;196m', brightRed: '\x1b[38;5;9m',
   magenta: '\x1b[38;5;177m', brightMagenta: '\x1b[38;5;219m',
   white: '\x1b[37m', brightWhite: '\x1b[97m',
   gray: '\x1b[38;5;245m', darkGray: '\x1b[38;5;240m',
-  orange: '\x1b[38;5;208m', gold: '\x1b[38;5;214m',
+  orange: '\x1b[38;5;208m', gold: '\x1b[38;5;220m',
   lime: '\x1b[38;5;118m', purple: '\x1b[38;5;141m',
   pink: '\x1b[38;5;205m',
+  bgRed: '\x1b[48;5;52m', bgGreen: '\x1b[48;5;22m',
   bgBlue: '\x1b[48;5;24m', bgPurple: '\x1b[48;5;54m',
-  bgGreen: '\x1b[48;5;28m', bgGray: '\x1b[48;5;236m',
+  bgGray: '\x1b[48;5;236m',
   black: '\x1b[30m',
+  // Natalinas extras
+  xmasRed: '\x1b[38;5;160m', xmasGreen: '\x1b[38;5;28m',
+  xmasGold: '\x1b[38;5;178m', snow: '\x1b[38;5;255m',
+  holly: '\x1b[38;5;34m', candy: '\x1b[38;5;210m',
 };
 
-const symbols = { check: '✓', cross: '✗', warning: '⚠', arrow: '➤', bullet: '▸' };
+const symbols = { check: '✓', cross: '✗', warning: '⚠', arrow: '➤', bullet: '▸', star: '★', snow: '❄', tree: '🎄', gift: '🎁', bell: '🔔', light: '✦' };
 const R = colors.reset;
 const B = colors.bold;
 const D = colors.dim;
@@ -48,18 +53,33 @@ function typeWriter(text, speed = 25) {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function clearScreen() { process.stdout.write('\x1Bc'); }
 
-// ═══ RGB PALETTE ═══
-const RGB = [
-  '\x1b[38;5;196m','\x1b[38;5;202m','\x1b[38;5;208m',
-  '\x1b[38;5;214m','\x1b[38;5;220m','\x1b[38;5;226m',
-  '\x1b[38;5;118m','\x1b[38;5;46m', '\x1b[38;5;48m',
-  '\x1b[38;5;51m', '\x1b[38;5;45m', '\x1b[38;5;39m',
-  '\x1b[38;5;33m', '\x1b[38;5;63m', '\x1b[38;5;99m',
-  '\x1b[38;5;135m','\x1b[38;5;171m','\x1b[38;5;207m',
-  '\x1b[38;5;205m','\x1b[38;5;199m',
+// ═══ CHRISTMAS LIGHT PALETTE ═══
+const XMAS_LIGHTS = [
+  '\x1b[38;5;196m', // vermelho
+  '\x1b[38;5;46m',  // verde
+  '\x1b[38;5;226m', // amarelo/dourado
+  '\x1b[38;5;196m', // vermelho
+  '\x1b[38;5;255m', // branco/neve
+  '\x1b[38;5;46m',  // verde
+  '\x1b[38;5;208m', // laranja
+  '\x1b[38;5;196m', // vermelho
+  '\x1b[38;5;46m',  // verde
+  '\x1b[38;5;226m', // dourado
 ];
 
-// ═══ BANNER ASCII — ALEATORY (2 linhas, moderno) ═══
+// ═══ CHRISTMAS LIGHT STRING (animated) ═══
+function generateLightString(offset = 0, length = 37) {
+  const bulbs = ['✦', '●', '◆', '★', '●', '✦'];
+  let str = '';
+  for (let i = 0; i < length; i++) {
+    const ci = (i + offset) % XMAS_LIGHTS.length;
+    const bi = (i + offset) % bulbs.length;
+    str += `${XMAS_LIGHTS[ci]}${bulbs[bi]}${R}`;
+  }
+  return str;
+}
+
+// ═══ BANNER ASCII — ALEATORY NATAL 🎄 ═══
 const BANNER_ART = [
   ' ▄▀█ █   █▀▀ ▄▀█ ▀█▀ █▀█ █▀█ █▄█',
   ' █▀█ █▄▄ ██▄ █▀█  █  █▄█ █▀▄  █ ',
@@ -67,62 +87,76 @@ const BANNER_ART = [
 
 let _rgbInterval = null;
 
-// ═══ BANNER COM RGB ANIMADO ═══
+// ═══ BANNER COM LUZES NATALINAS ANIMADAS ═══
 function showBannerRGB() {
   if (_rgbInterval) clearInterval(_rgbInterval);
   const g = colors.darkGray;
-  const totalLines = BANNER_ART.length + 4; // art + separadores + bronxys + info
   let offset = 0;
 
-  // Linhas completas do banner
-  const allLines = [
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    ...BANNER_ART,
-    '       ◆ B R O N X Y S ◆',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-  ];
+  const xr = colors.xmasRed;
+  const xg = colors.xmasGreen;
+  const gld = colors.xmasGold;
+  const sn = colors.snow;
 
-  // Desenhar inicial
+  // Desenho inicial
   console.log();
-  for (let i = 0; i < allLines.length; i++) {
-    const ci = (offset + i * 3) % RGB.length;
-    console.log(`  ${RGB[ci]}${B}${allLines[i]}${R}`);
-  }
-  console.log(`  ${g}  ⚡ bronxyshost.com | v${R}\x1b[1;38;5;226m8.6\x1b[0m\x1b[1;38;5;214m✨\x1b[0m`);
+  console.log(`  ${generateLightString(0)}`);
+  console.log(`  ${xr}${B}${BANNER_ART[0]}${R}`);
+  console.log(`  ${xg}${B}${BANNER_ART[1]}${R}`);
+  console.log(`  ${gld}${B}    🎄 B R O N X Y S 🎄${R}`);
+  console.log(`  ${generateLightString(5)}`);
+  console.log(`  ${g}  ⚡ bronxyshost.com | v${R}\x1b[1;38;5;226m9.0\x1b[0m \x1b[38;5;196m🎄\x1b[0m`);
   console.log(`  ${g}  👨‍💻 Josival & M.Scheyot${R}`);
+  console.log(`  ${sn}${D}  ❄ Edição Especial de Natal ❄${R}`);
   console.log();
 
-  // Animação RGB contínua
+  // Animação de luzes natalinas
   const startRow = 2;
   _rgbInterval = setInterval(() => {
-    offset = (offset + 1) % RGB.length;
+    offset = (offset + 1) % XMAS_LIGHTS.length;
+
+    // Mover cursor para o topo do banner
     process.stdout.write(`\x1b[${startRow};0H`);
-    for (let i = 0; i < allLines.length; i++) {
-      const ci = (offset + i * 3) % RGB.length;
-      process.stdout.write(`  ${RGB[ci]}${B}${allLines[i]}${R}\x1b[K\n`);
-    }
-  }, 100);
+
+    // Linha de luzes superior
+    process.stdout.write(`  ${generateLightString(offset)}\x1b[K\n`);
+
+    // Banner art alternando vermelho/verde
+    const c1 = offset % 2 === 0 ? xr : xg;
+    const c2 = offset % 2 === 0 ? xg : xr;
+    process.stdout.write(`  ${c1}${B}${BANNER_ART[0]}${R}\x1b[K\n`);
+    process.stdout.write(`  ${c2}${B}${BANNER_ART[1]}${R}\x1b[K\n`);
+
+    // Bronxys com estrela piscante
+    const starColor = offset % 3 === 0 ? gld : (offset % 3 === 1 ? sn : xr);
+    process.stdout.write(`  ${starColor}${B}    🎄 B R O N X Y S 🎄${R}\x1b[K\n`);
+
+    // Linha de luzes inferior
+    process.stdout.write(`  ${generateLightString(offset + 5)}\x1b[K\n`);
+  }, 150);
 }
 
 function stopRGBBanner() {
   if (_rgbInterval) { clearInterval(_rgbInterval); _rgbInterval = null; }
 }
 
-// ═══ BANNER ESTÁTICO (reconexão) ═══
+// ═══ BANNER ESTÁTICO NATALINO (reconexão) ═══
 function showBanner() {
-  const c1 = '\x1b[38;5;51m';
-  const c2 = '\x1b[38;5;45m';
-  const m = '\x1b[38;5;135m';
+  const xr = colors.xmasRed;
+  const xg = colors.xmasGreen;
+  const gld = colors.xmasGold;
+  const sn = colors.snow;
   const g = colors.darkGray;
 
   console.log();
-  console.log(`  ${c1}${B}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${R}`);
-  console.log(`  ${c1}${B}${BANNER_ART[0]}${R}`);
-  console.log(`  ${c2}${B}${BANNER_ART[1]}${R}`);
-  console.log(`  ${m}${B}       ◆ B R O N X Y S ◆${R}`);
-  console.log(`  ${m}${B}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${R}`);
-  console.log(`  ${g}  ⚡ bronxyshost.com | v${R}\x1b[1;38;5;226m8.6\x1b[0m\x1b[1;38;5;214m✨\x1b[0m`);
+  console.log(`  ${generateLightString(3)}`);
+  console.log(`  ${xr}${B}${BANNER_ART[0]}${R}`);
+  console.log(`  ${xg}${B}${BANNER_ART[1]}${R}`);
+  console.log(`  ${gld}${B}    🎄 B R O N X Y S 🎄${R}`);
+  console.log(`  ${generateLightString(7)}`);
+  console.log(`  ${g}  ⚡ bronxyshost.com | v${R}\x1b[1;38;5;226m9.0\x1b[0m \x1b[38;5;196m🎄\x1b[0m`);
   console.log(`  ${g}  👨‍💻 Josival & M.Scheyot${R}`);
+  console.log(`  ${sn}${D}  ❄ Edição Especial de Natal ❄${R}`);
   console.log();
 }
 
@@ -149,54 +183,75 @@ async function showSystemInfo() {
   console.log();
 }
 
-// ═══ MENU ═══
+// ═══ MENU NATALINO ═══
 function showMenu() {
   const g = colors.darkGray;
-  console.log(`  ${colors.cyan}${B}🔌 CONEXÃO${R}`);
-  console.log(`  ${g}${"─".repeat(31)}${R}`);
+  const xr = colors.xmasRed;
+  const xg = colors.xmasGreen;
+  const gld = colors.xmasGold;
+  const sn = colors.snow;
+
+  // Header natalino
+  console.log(`  ${xr}🎄 ${xg}${B}CONEXÃO${R} ${gld}${B}NATALINA${R} ${xr}🎄${R}`);
+  console.log(`  ${xr}✦${xg}●${gld}✦${xr}●${sn}✦${xg}●${gld}✦${xr}●${xg}✦${gld}●${xr}✦${xg}●${gld}✦${xr}●${xg}✦${gld}●${xr}✦${xg}●${R}`);
   console.log();
-  console.log(`  ${colors.brightWhite}${B}1.${R} ${colors.blue}📱 Código de Pareamento${R}`);
+
+  // Option 1
+  console.log(`  ${sn}${B}1.${R} ${xg}🎁 Código de Pareamento${R}`);
   console.log(`     ${g}Conecte sem outro celular${R}`);
   console.log();
-  console.log(`  ${colors.brightWhite}${B}2.${R} ${colors.green}📷 QR Code${R}`);
+
+  // Option 2
+  console.log(`  ${sn}${B}2.${R} ${xr}🎅 QR Code${R}`);
   console.log(`     ${g}Escaneie com o WhatsApp${R}`);
   console.log();
-  console.log(`  ${colors.brightWhite}${B}3.${R} ${colors.yellow}❓ Tenho Dúvidas${R}`);
+
+  // Option 3
+  console.log(`  ${sn}${B}3.${R} ${gld}⭐ Tenho Dúvidas${R}`);
   console.log(`     ${g}Tutorial em vídeo${R}`);
   console.log();
-  console.log(`  ${colors.brightWhite}${B}4.${R} ${colors.purple}🛡️ Devo Confiar?${R}`);
+
+  // Option 4
+  console.log(`  ${sn}${B}4.${R} ${xg}🛡️ Devo Confiar?${R}`);
   console.log(`     ${g}Conheça a BronxysHost${R}`);
   console.log();
-  console.log(`  ${colors.brightWhite}${B}5.${R} ${colors.red}🚪 Sair${R}`);
+
+  // Option 5
+  console.log(`  ${sn}${B}5.${R} ${xr}🚪 Sair${R}`);
+  console.log();
+  console.log(`  ${xr}✦${xg}●${gld}✦${xr}●${sn}✦${xg}●${gld}✦${xr}●${xg}✦${gld}●${xr}✦${xg}●${gld}✦${xr}●${xg}✦${gld}●${xr}✦${xg}●${R}`);
   console.log();
 }
 
-// ═══ PRIMEIRA VEZ — ANIMADO ═══
+// ═══ PRIMEIRA VEZ — NATAL ANIMADO 🎄 ═══
 async function showFirstTimeWelcome() {
   clearScreen();
 
   const g = colors.darkGray;
-  const gld = colors.gold;
+  const gld = colors.xmasGold;
+  const xr = colors.xmasRed;
+  const xg = colors.xmasGreen;
+  const sn = colors.snow;
   const w = colors.brightWhite;
 
-  // Banner RGB animado por 3s
+  // Banner com luzes natalinas animadas por 3s
   showBannerRGB();
   await sleep(3000);
   stopRGBBanner();
 
-  // Tela final com banner estático
+  // Tela final com banner estático natalino
   clearScreen();
   showBanner();
 
-  console.log(`  ${gld}${B}🎉 PRIMEIRA CONEXÃO DETECTADA${R}`);
-  console.log(`  ${g}${"─".repeat(31)}${R}`);
+  console.log(`  ${xr}🎅 ${gld}${B}PRIMEIRA CONEXÃO DETECTADA${R} ${xg}🎄${R}`);
+  console.log(`  ${xr}✦${xg}●${gld}✦${xr}●${sn}✦${xg}●${gld}✦${xr}●${xg}✦${gld}●${xr}✦${xg}●${gld}✦${xr}●${R}`);
   console.log();
 
   await sleep(300);
 
-  // Typing boas-vindas
-  await typeWriter(`  ${colors.green}`, 0);
-  await typeWriter(`Bem-vindo ao Aleatory Bot!\n`, 25);
+  // Typing boas-vindas natalinas
+  await typeWriter(`  ${xg}`, 0);
+  await typeWriter(`🎄 Bem-vindo ao Aleatory Bot v9.0!\n`, 25);
   await typeWriter(`  O bot oficial da BronxysHost.\n\n`, 25);
   process.stdout.write(R);
 
@@ -216,7 +271,7 @@ async function showFirstTimeWelcome() {
   process.stdout.write(R);
 
   console.log();
-  console.log(`  ${g}${"─".repeat(31)}${R}`);
+  console.log(`  ${xr}✦${xg}●${gld}✦${xr}●${sn}✦${xg}●${gld}✦${xr}●${xg}✦${gld}●${xr}✦${xg}●${gld}✦${xr}●${R}`);
   console.log(`  ${gld}${B}▸ Selecione o método abaixo${R}`);
   console.log();
 
@@ -306,10 +361,10 @@ function askQuestion(prompt) {
 }
 
 function showLoading(msg) {
-  const f = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+  const f = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
   let i = 0;
   process.stdout.write(`\n  ${colors.cyan}${f[0]}${R} ${msg}`);
-  return setInterval(() => { i=(i+1)%f.length; process.stdout.write(`\r  ${colors.cyan}${f[i]}${R} ${msg}`); }, 80);
+  return setInterval(() => { i = (i + 1) % f.length; process.stdout.write(`\r  ${colors.cyan}${f[i]}${R} ${msg}`); }, 80);
 }
 
 function stopLoading(interval, msg = '') {
@@ -328,7 +383,7 @@ async function showWelcomeScreen() {
   if (isFirstTime) {
     await showFirstTimeWelcome();
   } else {
-    // ═══ RECONEXÃO — RGB + BEM-VINDO DE VOLTA ═══
+    // ═══ RECONEXÃO — LUZES NATALINAS + BEM-VINDO DE VOLTA ═══
     clearScreen();
     showBannerRGB();
     await sleep(3000);
@@ -338,16 +393,19 @@ async function showWelcomeScreen() {
     showBanner();
 
     const g = colors.darkGray;
-    const gld = colors.gold;
+    const gld = colors.xmasGold;
+    const xr = colors.xmasRed;
+    const xg = colors.xmasGreen;
+    const sn = colors.snow;
 
-    console.log(`  ${gld}${B}👋 BEM-VINDO DE VOLTA!${R}`);
-    console.log(`  ${g}${"─".repeat(31)}${R}`);
+    console.log(`  ${xr}🎅 ${gld}${B}BEM-VINDO DE VOLTA!${R} ${xg}🎄${R}`);
+    console.log(`  ${xr}✦${xg}●${gld}✦${xr}●${sn}✦${xg}●${gld}✦${xr}●${xg}✦${gld}●${xr}✦${xg}●${gld}✦${xr}●${R}`);
     console.log();
 
     await typeWriter(`  ${colors.green}`, 0);
-    await typeWriter(`Olá! Seu Aleatory Bot está\n`, 25);
+    await typeWriter(`🎄 Aleatory Bot v9.0 ativo!\n`, 25);
     await typeWriter(`  100% funcional e pronto.\n`, 25);
-    await typeWriter(`  Aproveite! 🚀\n`, 25);
+    await typeWriter(`  Feliz Natal! 🎁\n`, 25);
     process.stdout.write(R);
     console.log();
   }

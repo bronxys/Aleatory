@@ -1,6 +1,6 @@
 /*==========\\
 
-ALEATORY 4.7
+ALEATORY 9.0 – Versão Especial de Natal
 
 //==========*/
 
@@ -381,7 +381,7 @@ var {
   rnkpau,
 } = require("./dados/links.json");
 
-var { NomeDoBot, NickDono, prefix } = require("./dados/settings.json");
+var { NomeDoBot, NickDono, prefix, iaAleatoryPV } = require("./dados/settings.json");
 
 const { TEXTOS_GERAL } = require("./dono/textos.js");
 
@@ -858,12 +858,56 @@ function getNovidadesBroadcastText(customHeader = "", pfx = "!") {
   const _header = customHeader ? `📢 *${customHeader}*\n\n` : "";
 
   return `┏━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🎉 𝗘𝗕𝗔𝗔𝗔! 𝗡𝗢𝗩𝗔 𝗔𝗧𝗨𝗔𝗟𝗜𝗭𝗔𝗖̧𝗔̃𝗢! 🎉
-┃  🚀 𝗔 𝗟 𝗘 𝗔 𝗧 𝗢 𝗥 𝗬  𝗕 𝗢 𝗧  𝘃𝟴.𝟲 🚀
+┃  🎄 𝗙𝗘𝗟𝗜𝗭 𝗡𝗔𝗧𝗔𝗟! 🎄
+┃  🎅 𝗔 𝗟 𝗘 𝗔 𝗧 𝗢 𝗥 𝗬  𝗕 𝗢 𝗧  𝘃𝟵.𝟬 🎅
+┃  ❄ 𝗘𝗱𝗶𝗰̧𝗮̃𝗼 𝗘𝘀𝗽𝗲𝗰𝗶𝗮𝗹 𝗱𝗲 𝗡𝗮𝘁𝗮𝗹 ❄
 ┗━━━━━━━━━━━━━━━━━━━━━━━┛
 
-${_header}✨ *SUPER ATUALIZAÇÃO LIBERADA COM SUCESSO!*
-🎊 *Sistemas revisados, otimizados e 100% funcionais!*
+${_header}🎁 *GRANDE ATUALIZAÇÃO DE NATAL v9.0!*
+⭐ *O maior presente para nossos grupos!*
+🎊 *Tudo revisado, otimizado e 100% funcional!*
+
+🎄✦🔴✦🟢✦⭐✦🔴✦🟢✦⭐✦🎄
+
+╭─「 🎅 *ᴛᴇᴍᴀ ɴᴀᴛᴀʟɪɴᴏ ᴇxᴄʟᴜsɪᴠᴏ* 」
+│ ✦ Terminal com luzes natalinas animadas 🎄
+│ ✦ Banner com efeitos de luzes piscantes
+│ ✦ Menu de conexão temático verde & vermelho
+│ ✦ Versão 9.0 — Edição Especial de Natal
+╰──────────────────────╯
+
+╭─「 🗳️ *ᴠᴏᴛᴀᴄ̧ᴀ̃ᴏ ᴅᴇ ʙᴀɴɪᴍᴇɴᴛᴏ — ɴᴏᴠᴏ!* 」
+│ ✦ *${pfx}votarban @user* — Qualquer membro inicia votação
+│ ✦ *${pfx}votoban sim/nao* — Vote para banir ou manter
+│ ✦ *${pfx}statusvoto* — Veja o placar em tempo real
+│ ✦ *${pfx}cancelarvoto* — ADMs cancelam a votação
+│ ✦ Timer de 5 min com encerramento automático
+│ ✦ Quorum justo: 30% dos membros (mínimo 3)
+│ ✦ ADMs notificados invisivelmente no grupo
+│ ✦ Alerta privado aos ADMs quando há remoção
+│ ✦ Proteção: ADMs, donos e bot são imunes
+╰──────────────────────╯
+
+╭─「 🔒 *ʙʟᴏᴄᴋᴄᴍᴅ 2.0 — ʀᴇᴇsᴄʀɪᴛᴏ* 」
+│ ✦ Correção crítica: comandos bloqueiam de verdade
+│ ✦ *${pfx}blockcmd play* — Bloqueia no grupo
+│ ✦ *${pfx}unblockcmd play* — Desbloqueia no grupo
+│ ✦ *${pfx}limparblockcmd* — Remove TODOS os bloqueios
+│ ✦ *${pfx}listblockcmd* — Lista formatada com contagem
+│ ✦ *${pfx}blockcmdg* / *${pfx}unblockcmdg* — Bloqueio global
+│ ✦ Proteção contra bloquear comandos essenciais
+│ ✦ Compatível com dados antigos (migração automática)
+╰──────────────────────╯
+
+╭─「 🛡️ *sᴏʟɪᴄɪᴛᴀᴄ̧ᴏ̃ᴇs ᴅᴇ ᴇɴᴛʀᴀᴅᴀ 2.0* 」
+│ ✦ *${pfx}aceitar* — Aprova todos os pendentes
+│ ✦ *${pfx}aceitar 5* — Aprova os N primeiros
+│ ✦ *${pfx}aceitar @membro* — Aprova específico
+│ ✦ *${pfx}recusar* — Recusa todos / específico
+│ ✦ *${pfx}solicitacoes* — Fila com tempo de espera
+│ ✦ Notificação inteligente em tempo real
+│ ✦ Compatível Baileys 7.x & WhatsApp Privacy
+╰──────────────────────╯
 
 ╭─「 🌐 *ᴄᴏɴᴇxᴀ̃ᴏ & ᴇsᴛᴀʙɪʟɪᴅᴀᴅᴇ* 」
 │ ✦ Baileys 7.x turbinado com reconexão imediata
@@ -886,8 +930,8 @@ ${_header}✨ *SUPER ATUALIZAÇÃO LIBERADA COM SUCESSO!*
 ╰──────────────────────╯
 
 ╭─「 🏆 *ʀᴀɴᴋɪɴɢs & ᴀᴛɪᴠɪᴅᴀᴅᴇ* 」
-│ ✦ *${pfx}rankativo* — Contagem de mensagens em tempo real
-│ ✦ *${pfx}rankinativos* — Identificação precisa de inativos
+│ ✦ *${pfx}rankativo* — Contagem em tempo real
+│ ✦ *${pfx}rankinativos* — Identificação de inativos
 │ ✦ Histórico e estatísticas sem travamentos
 ╰──────────────────────╯
 
@@ -897,18 +941,31 @@ ${_header}✨ *SUPER ATUALIZAÇÃO LIBERADA COM SUCESSO!*
 ╰──────────────────────╯
 
 ╭─「 🤖 *ɪᴀs 100% ᴏᴘᴇʀᴀᴄɪᴏɴᴀɪs* 」
-│ ✦ *${pfx}ia* — Inteligência Artificial Aleatory sem limites
+│ ✦ *${pfx}ia* — Inteligência Artificial sem limites
 │ ✦ *${pfx}simih* — Sem erro 411, super rápida
 ╰──────────────────────╯
 
 ╭─「 📢 *ᴀᴠɪsᴏs ᴀᴜᴛᴏᴍᴀ́ᴛɪᴄᴏs* 」
-│ ✦ *${pfx}aviso* — Agende avisos com foto, áudio ou texto
+│ ✦ *${pfx}aviso* — Agende avisos com foto/áudio/texto
 │ ✦ Repetição periódica e sistema 100% estável
 ╰──────────────────────╯
 
+╭─「 📡 *ᴀᴠɪsᴏ ɢʟᴏʙᴀʟ — ɴᴏᴠᴏ!* 」
+│ ✦ *${pfx}avisar* — Envia aviso para TODOS os grupos
+│ ✦ *${pfx}avisoflood [1-10]* — Repete X vezes por grupo
+│ ✦ Suporte a texto, imagem e vídeo
+│ ✦ *${pfx}cancelaraviso* — Cancela envio em tempo real
+│ ✦ *${pfx}statusaviso* — Painel com status do envio
+│ ✦ Anti-ban com delay inteligente entre grupos
+│ ✦ Relatório final de sucessos e falhas
+╰──────────────────────╯
+
+🎄✦🔴✦🟢✦⭐✦🔴✦🟢✦⭐✦🎄
+
 ┏━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ 🎈 𝗨𝘀𝗲 *${pfx}𝗺𝗲𝗻𝘂* 𝗲 𝗮𝗽𝗿𝗼𝘃𝗲𝗶𝘁𝗲 𝘁𝘂𝗱𝗼! 🎈
-┃ 🌐 𝗯𝗿𝗼𝗻𝘅𝘆𝘀𝗵𝗼𝘀𝘁.𝗰𝗼𝗺 | 𝗯𝘆 𝗠.𝗦𝗰𝗵𝗲𝘆𝗼𝘁 ⚡
+┃ 🎁 𝗨𝘀𝗲 *${pfx}𝗺𝗲𝗻𝘂* 𝗲 𝗮𝗽𝗿𝗼𝘃𝗲𝗶𝘁𝗲 𝘁𝘂𝗱𝗼! 🎁
+┃ 🎄 𝗯𝗿𝗼𝗻𝘅𝘆𝘀𝗵𝗼𝘀𝘁.𝗰𝗼𝗺 | 𝗯𝘆 𝗠.𝗦𝗰𝗵𝗲𝘆𝗼𝘁 ⭐
+┃ 🎅 𝗙𝗲𝗹𝗶𝘇 𝗡𝗮𝘁𝗮𝗹 𝗲 𝗕𝗼𝗮𝘀 𝗙𝗲𝘀𝘁𝗮𝘀! ❄
 ┗━━━━━━━━━━━━━━━━━━━━━━━┛`;
 }
 
@@ -960,11 +1017,11 @@ async function broadcastNovidades(sock, options = {}) {
 
     if (replyChat) {
       await sock.sendMessage(replyChat, {
-        text: `🚀 *Iniciando Transmissão de Novidades v8.6!*\n\n` +
-              `👥 *Grupos identificados:* ${groupList.length}\n` +
-              `👤 *PV do Dono:* ${cleanDonoNum || "Não configurado"}\n` +
-              `🛡️ *Modo seguro anti-spam:* delay inteligente de ~2s por grupo para total segurança da sua conta.\n\n` +
-              `_Aguarde... Você receberá o relatório final assim que concluir!_`,
+        text: `🚀 *Iniciando Transmissão de Novidades v9.0!*\n\n` +
+          `👥 *Grupos identificados:* ${groupList.length}\n` +
+          `👤 *PV do Dono:* ${cleanDonoNum || "Não configurado"}\n` +
+          `🛡️ *Modo seguro anti-spam:* delay inteligente de ~2s por grupo para total segurança da sua conta.\n\n` +
+          `_Aguarde... Você receberá o relatório final assim que concluir!_`,
       });
     }
 
@@ -1022,9 +1079,9 @@ async function broadcastNovidades(sock, options = {}) {
     // 5. Relatório final ao solicitante
     const reportMsg =
       `┏━━━━━━━━━━━━━━━━━━━━━┓\n` +
-      `┃  🎉 *TRANSMISSÃO CONCLUÍDA!* 🚀\n` +
+      `┃  🎄 *TRANSMISSÃO CONCLUÍDA!* 🎅\n` +
       `┗━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
-      `📊 *Relatório de Envio (Novidades 8.6):*\n` +
+      `📊 *Relatório de Envio (Novidades 9.0 — Natal):*\n` +
       `✅ *Grupos entregues com sucesso:* ${successCount}\n` +
       `⚠️ *Falhas / Grupos bloqueados:* ${failCount}\n` +
       `👥 *Total de grupos processados:* ${groupList.length}\n` +
@@ -1070,7 +1127,7 @@ async function webp_mp4(imageBuffer) {
 
       // Pegar a URL correta após redirecionamento (ex: https://s6.ezgif.com/webp-to-mp4)
       const formUrl = res.request.res.responseUrl;
-      
+
       const convertForm = new FormData();
       convertForm.append("file", file);
       convertForm.append("convert", "Convert WebP to MP4!");
@@ -1238,30 +1295,44 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
             try {
               await delay(800);
 
-              const reqData = JSON.parse(info.messageStubParameters[0] || "{}");
-              const acao = info.messageStubParameters[1]; // 'created' | 'revoked' | 'rejected'
+              let reqData = {};
+              const rawReq = info.messageStubParameters?.[0];
+              if (typeof rawReq === "object" && rawReq !== null) {
+                reqData = rawReq;
+              } else if (typeof rawReq === "string") {
+                try {
+                  reqData = JSON.parse(rawReq);
+                } catch {
+                  reqData = { pn: rawReq, id: rawReq };
+                }
+              }
+
+              const acao = info.messageStubParameters?.[1]; // 'created' | 'revoked' | 'rejected'
               const admJid = info.participant; // ADM que agiu (null se o próprio solicitante cancelou)
 
-              // Número do solicitante (preferir phoneNumber/pn sobre lid)
-              const solicitanteNum = reqData.pn
-                ? String(reqData.pn).split("@")[0]
-                : reqData.lid
-                  ? String(reqData.lid).split("@")[0]
-                  : null;
+              // Número do solicitante (suporte a pn, phoneNumber, id, lid)
+              const solicitanteNum = reqData.phoneNumber
+                ? String(reqData.phoneNumber).split("@")[0].replace(/\D/g, "")
+                : reqData.pn
+                  ? String(reqData.pn).split("@")[0].replace(/\D/g, "")
+                  : reqData.id
+                    ? String(reqData.id).split("@")[0].replace(/\D/g, "")
+                    : reqData.lid
+                      ? String(reqData.lid).split("@")[0].replace(/\D/g, "")
+                      : null;
 
               const solicitanteJid = solicitanteNum
                 ? `${solicitanteNum}@s.whatsapp.net`
                 : null;
 
               if (acao === "created") {
-                // Desativado para evitar flood no grupo
-                // const mentions = solicitanteJid ? [solicitanteJid] : [];
-                // await conn.sendMessage(info.key.remoteJid, {
-                //   text: solicitanteJid
-                //     ? `📨 O usuário @${solicitanteNum} solicitou entrar no grupo e está aguardando aprovação de um ADM.`
-                //     : `📨 Um usuário solicitou entrar no grupo e está aguardando aprovação de um ADM.`,
-                //   mentions,
-                // });
+                const mentions = solicitanteJid ? [solicitanteJid] : [];
+                await conn.sendMessage(info.key.remoteJid, {
+                  text: solicitanteJid
+                    ? `📩 *NOVA SOLICITAÇÃO DE ENTRADA*\n\n👤 Usuário: @${solicitanteNum}\n📋 Aguardando aprovação de um administrador.\n\n💡 *Comandos rápidos:*\n▸ *!aceitar* — Aprova todos ou o solicitante\n▸ *!recusar* — Recusa todos ou o solicitante\n▸ *!solicitacoes* — Ver fila de pedidos`
+                    : `📩 *NOVA SOLICITAÇÃO DE ENTRADA*\n\n📋 Um usuário solicitou entrar no grupo e aguarda aprovação de um administrador.\n\n💡 *Comandos rápidos:*\n▸ *!aceitar* — Aprovar\n▸ *!recusar* — Recusar`,
+                  mentions,
+                });
               } else if (acao === "revoked") {
                 // O próprio solicitante cancelou o pedido
                 const mentions = solicitanteJid ? [solicitanteJid] : [];
@@ -1273,9 +1344,9 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
                 });
               } else if (acao === "rejected") {
                 // ADM recusou o pedido — pular se foi o próprio bot (!recusar já enviou a mensagem)
-                const admNum = admJid ? admJid.split("@")[0] : null;
-                const botId172 = conn.user?.id?.split(":")[0] || "";
-                const botLid172 = conn.user?.lid?.split(":")[0] || "";
+                const admNum = admJid ? String(admJid).split("@")[0].replace(/\D/g, "") : null;
+                const botId172 = conn.user?.id?.split(":")[0]?.replace(/\D/g, "") || "";
+                const botLid172 = conn.user?.lid?.split(":")[0]?.replace(/\D/g, "") || "";
                 const recusadoPeloBot =
                   admNum && (admNum === botId172 || admNum === botLid172);
 
@@ -1305,41 +1376,56 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
             // GROUP_PARTICIPANT_ADD_REQUEST_JOIN
             // Disparado quando um ADM APROVA uma solicitação de entrada no grupo.
             // info.participant = JID do ADM que aprovou
-            // info.messageStubParameters = array de JSONs dos membros aprovados
+            // info.messageStubParameters = array de JSONs ou strings dos membros aprovados
             try {
               await delay(800);
 
               const admJid71 = info.participant;
-              const admNum71 = admJid71 ? admJid71.split("@")[0] : null;
+              const admNum71 = admJid71 ? String(admJid71).split("@")[0].replace(/\D/g, "") : null;
+
+              const botNum71 = conn.user?.id?.split(":")[0]?.replace(/\D/g, "") || "";
+              const botLid71 = conn.user?.lid?.split(":")[0]?.replace(/\D/g, "") || "";
+              const aprovadoPeloBot = admNum71 && (admNum71 === botNum71 || admNum71 === botLid71);
+
+              // Se foi aprovado pelo bot no comando !aceitar, pular para não duplicar anúncio
+              if (aprovadoPeloBot) break;
 
               const membrosAprovados = (info.messageStubParameters || [])
                 .map((p) => {
+                  if (typeof p === "object" && p !== null) return p;
                   try {
                     return JSON.parse(p);
                   } catch {
-                    return null;
+                    return { id: p, phoneNumber: p };
                   }
                 })
                 .filter(Boolean);
 
               for (const membro of membrosAprovados) {
                 const membroNum = membro.phoneNumber
-                  ? String(membro.phoneNumber).split("@")[0]
-                  : membro.id
-                    ? String(membro.id).split("@")[0]
-                    : null;
+                  ? String(membro.phoneNumber).split("@")[0].replace(/\D/g, "")
+                  : membro.pn
+                    ? String(membro.pn).split("@")[0].replace(/\D/g, "")
+                    : membro.id
+                      ? String(membro.id).split("@")[0].replace(/\D/g, "")
+                      : null;
 
                 const membroJid = membroNum
                   ? `${membroNum}@s.whatsapp.net`
                   : null;
 
-                // Não revelar se o ADM adicionou a si mesmo ou não há info
-                if (!admNum71 || !membroJid || admNum71 === membroNum) continue;
+                if (!membroJid) continue;
 
-                const mentions = [membroJid, admJid71].filter(Boolean);
+                // Não revelar se o ADM adicionou a si mesmo
+                if (admNum71 && admNum71 === membroNum) continue;
+
+                const mentions = [membroJid];
+                if (admJid71) mentions.push(admJid71);
 
                 await conn.sendMessage(info.key.remoteJid, {
-                  text: `✅ A entrada de @${membroNum} foi *aprovada* pelo ADM @${admNum71}. Bem-vindo(a)! 🎉`,
+                  text: admNum71
+                    ? `✅ A entrada de @${membroNum} foi *aprovada* pelo ADM @${admNum71}. Bem-vindo(a)! 🎉`
+                    : `✅ Entrada de @${membroNum} aprovada. Bem-vindo(a)! 🎉`,
                   mentions,
                 });
               }
@@ -2906,15 +2992,15 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         isGroup &&
         isCmd &&
         !SoDono &&
-        dataGp[0]?.comandosB?.includes(command)
+        dataGp[0]?.comandosB?.some(c => c === command || c === (prefix + command))
       )
         return reply(
-          "Passar o pix. Depois você usar meus comandos.!\nPix na conta calcinha no chão 😏",
+          "🔒 Este comando está *bloqueado* neste grupo.\n\n_Apenas admins podem desbloquear._",
         );
 
-      if (isCmd && !SoDono && bloq_global.includes(command))
+      if (isCmd && !SoDono && (bloq_global.includes(command) || bloq_global.includes(prefix + command)))
         return reply(
-          "Este comando está bloqueado pelo meu dono, e não pode ser utilizado em lugar nenhum.",
+          "🔒 Este comando está *bloqueado globalmente* pelo dono do bot e não pode ser utilizado.",
         );
 
       ////FIMMMMMMMMM///// ANTNMSCVRS
@@ -3356,13 +3442,13 @@ ${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
 
               await conn.sendMessage(from, {
                 text: `┏━━━━━━━━━━━━━━━┓\n` +
-                      `┃ 🎉 *ACERTOU!*\n` +
-                      `┗━━━━━━━━━━━━━━━┛\n\n` +
-                      `> 👏 Parabéns @${_qNum}!\n` +
-                      `> ✅ Resposta: *${_quizResult.resposta}*\n` +
-                      `> 🎯 Em *${_quizResult.tentativas}* tentativa(s)\n` +
-                      `> ${_qNivelTxt} *+${_qXP} XP* adicionado ao perfil!\n\n` +
-                      `> ⏳ Próximo quiz em *5 segundos*...`,
+                  `┃ 🎉 *ACERTOU!*\n` +
+                  `┗━━━━━━━━━━━━━━━┛\n\n` +
+                  `> 👏 Parabéns @${_qNum}!\n` +
+                  `> ✅ Resposta: *${_quizResult.resposta}*\n` +
+                  `> 🎯 Em *${_quizResult.tentativas}* tentativa(s)\n` +
+                  `> ${_qNivelTxt} *+${_qXP} XP* adicionado ao perfil!\n\n` +
+                  `> ⏳ Próximo quiz em *5 segundos*...`,
                 mentions: [sender],
               }, { quoted: info });
 
@@ -5998,6 +6084,445 @@ Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/y
             console.log(e);
           }
           break;
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  🗳️ SISTEMA DE VOTAÇÃO DE BANIMENTO — ALEATORY 9.0
+        //  Qualquer membro pode iniciar. Votação por mensagem.
+        //  ADMs notificados invisivelmente. Timer de 5 minutos.
+        // ═══════════════════════════════════════════════════════════
+        case "votarban":
+        case "voteban":
+        case "votekick":
+        case "votarremover": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!isBotGroupAdmins) return reply("❌ Preciso ser *administrador* do grupo para executar remoções!");
+
+          // Verificar se já existe uma votação ativa neste grupo
+          const _vbDir = "./dados/org/json/VOTARBAN";
+          if (!fs.existsSync(_vbDir)) fs.mkdirSync(_vbDir, { recursive: true });
+          const _vbFile = `${_vbDir}/voteban_${from}.json`;
+
+          if (fs.existsSync(_vbFile)) {
+            const _vbAtiva = JSON.parse(fs.readFileSync(_vbFile));
+            return reply(
+              `⚠️ *Já existe uma votação ativa neste grupo!*\n\n` +
+              `👤 Alvo: @${_vbAtiva.alvo.split("@")[0]}\n` +
+              `⏳ Aguarde o término ou peça a um ADM para cancelar com *${prefix}cancelarvoto*`,
+            );
+          }
+
+          // Verificar se marcou alguém
+          if (!menc_os2) {
+            return reply(
+              `╭─────────────────────╮\n` +
+              `│  🗳️ *VOTAÇÃO DE BANIMENTO*\n` +
+              `╰─────────────────────╯\n\n` +
+              `❌ *Marque o usuário que deseja votar para banir!*\n\n` +
+              `💡 *Como usar:*\n` +
+              `• *${prefix}votarban @usuario*\n` +
+              `• Ou responda a mensagem dele com *${prefix}votarban*`
+            );
+          }
+
+          // Não pode votar contra o bot
+          if (botNumber.includes(menc_os2)) return reply("🤖 Não dá pra me banir por votação, sou o juiz aqui! 😎");
+          // Não pode votar contra o dono
+          if (JSON.stringify(numerodono).indexOf(menc_os2) >= 0) return reply("👑 Não é possível abrir votação contra o dono do bot!");
+          // Não pode votar contra ADMs
+          if (groupAdmins.includes(menc_os2)) return reply("🛡️ Não é possível abrir votação contra um *administrador* do grupo!");
+          // Verificar se o alvo está no grupo
+          if (!JSON.stringify(groupMembers).includes(menc_os2)) return reply("❌ Esse usuário não está no grupo!");
+          // Não pode votar contra si mesmo
+          if (menc_os2 === sender) return reply("🤦 Você não pode abrir votação contra si mesmo!");
+
+          // Calcular quorum necessário (mínimo 3, máximo baseado em membros não-admin)
+          const _vbMembrosNaoAdmin = groupMembers.filter(m => !groupAdmins.includes(m.id)).length;
+          const _vbQuorum = Math.max(3, Math.ceil(_vbMembrosNaoAdmin * 0.3)); // 30% dos membros não-admin, mínimo 3
+
+          // Criar dados da votação
+          const _vbDados = {
+            alvo: menc_os2,
+            iniciador: sender,
+            grupo: from,
+            votos_sim: [sender], // quem iniciou automaticamente vota sim
+            votos_nao: [],
+            quorum: _vbQuorum,
+            totalMembros: _vbMembrosNaoAdmin,
+            inicio: Date.now(),
+            duracao: 300000, // 5 minutos
+            msgId: null, // será preenchido após enviar
+          };
+
+          fs.writeFileSync(_vbFile, JSON.stringify(_vbDados, null, 2));
+
+          // Montar lista de ADMs para menção invisível
+          const _vbAdmJids = groupAdmins.filter(a => !botNumber.includes(a));
+          // Criar menções invisíveis usando caractere zero-width
+          const _vbAdmMencoes = _vbAdmJids.map(a => `\u200B@${a.split("@")[0]}\u200B`).join("");
+
+          // Mensagem de votação
+          const _vbTexto =
+            `╔══════════════════════════════╗\n` +
+            `║   🗳️ *VOTAÇÃO DE BANIMENTO* 🗳️\n` +
+            `╠══════════════════════════════╣\n` +
+            `║\n` +
+            `║  👤 *Acusado:* @${menc_os2.split("@")[0]}\n` +
+            `║  🧑‍⚖️ *Solicitante:* @${sender.split("@")[0]}\n` +
+            `║\n` +
+            `║  ━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `║\n` +
+            `║  📊 *Como votar:*\n` +
+            `║  ✅ Digite *${prefix}votoban sim* para BANIR\n` +
+            `║  ❌ Digite *${prefix}votoban nao* para MANTER\n` +
+            `║\n` +
+            `║  ━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `║\n` +
+            `║  📈 *Votos necessários:* ${_vbQuorum} votos\n` +
+            `║  👥 *Membros votantes:* ${_vbMembrosNaoAdmin}\n` +
+            `║  ⏱️ *Tempo:* 5 minutos\n` +
+            `║\n` +
+            `║  ⚠️ _Cada membro pode votar apenas 1 vez_\n` +
+            `║  ⚠️ _ADMs podem cancelar com ${prefix}cancelarvoto_\n` +
+            `║\n` +
+            `╚══════════════════════════════╝\n` +
+            `\u200E${_vbAdmMencoes}`; // menções invisíveis dos ADMs
+
+          // Enviar mensagem de votação
+          const _vbMsg = await conn.sendMessage(from, {
+            text: _vbTexto,
+            mentions: [menc_os2, sender, ..._vbAdmJids],
+          }, { quoted: info });
+
+          // Salvar ID da mensagem de votação
+          _vbDados.msgId = _vbMsg?.key?.id || null;
+          fs.writeFileSync(_vbFile, JSON.stringify(_vbDados, null, 2));
+
+          // Log no console
+          console.log(`[VOTARBAN] 🗳️ Votação iniciada no grupo ${from} contra ${menc_os2} por ${sender} | Quorum: ${_vbQuorum}`);
+
+          // Timer de 5 minutos para encerrar votação automaticamente
+          setTimeout(async () => {
+            try {
+              if (!fs.existsSync(_vbFile)) return; // votação já foi cancelada ou finalizada
+              const _vbFinal = JSON.parse(fs.readFileSync(_vbFile));
+              const _vbSimCount = _vbFinal.votos_sim.length;
+              const _vbNaoCount = _vbFinal.votos_nao.length;
+              const _vbAprovado = _vbSimCount >= _vbFinal.quorum && _vbSimCount > _vbNaoCount;
+
+              // Montar lista de votantes
+              let _vbListaVotos = "";
+              if (_vbFinal.votos_sim.length > 0) {
+                _vbListaVotos += `\n✅ *Votaram SIM (${_vbSimCount}):*\n`;
+                _vbFinal.votos_sim.forEach(v => { _vbListaVotos += `  • @${v.split("@")[0]}\n`; });
+              }
+              if (_vbFinal.votos_nao.length > 0) {
+                _vbListaVotos += `\n❌ *Votaram NÃO (${_vbNaoCount}):*\n`;
+                _vbFinal.votos_nao.forEach(v => { _vbListaVotos += `  • @${v.split("@")[0]}\n`; });
+              }
+
+              const _vbTodosVotantes = [..._vbFinal.votos_sim, ..._vbFinal.votos_nao, _vbFinal.alvo, ..._vbAdmJids];
+
+              if (_vbAprovado) {
+                // BANIR o usuário
+                await conn.sendMessage(from, {
+                  text:
+                    `╔══════════════════════════════╗\n` +
+                    `║  ⚖️ *RESULTADO DA VOTAÇÃO* ⚖️\n` +
+                    `╠══════════════════════════════╣\n` +
+                    `║\n` +
+                    `║  🔨 *BANIMENTO APROVADO!*\n` +
+                    `║\n` +
+                    `║  👤 *Banido:* @${_vbFinal.alvo.split("@")[0]}\n` +
+                    `║  ✅ *A favor:* ${_vbSimCount} votos\n` +
+                    `║  ❌ *Contra:* ${_vbNaoCount} votos\n` +
+                    `║  📊 *Quorum:* ${_vbFinal.quorum} necessários\n` +
+                    `║\n` +
+                    `║  🗳️ *Detalhes dos votos:*\n` +
+                    `║${_vbListaVotos.split("\n").join("\n║  ")}\n` +
+                    `║\n` +
+                    `║  _O membro será removido agora._\n` +
+                    `║\n` +
+                    `╚══════════════════════════════╝`,
+                  mentions: _vbTodosVotantes,
+                });
+
+                // Remover o alvo do grupo
+                try {
+                  await conn.groupParticipantsUpdate(from, [_vbFinal.alvo], "remove");
+                  console.log(`[VOTARBAN] ✅ ${_vbFinal.alvo} removido do grupo ${from} por votação`);
+                } catch (errKick) {
+                  console.error(`[VOTARBAN] ❌ Erro ao remover ${_vbFinal.alvo}:`, errKick);
+                  await conn.sendMessage(from, { text: "⚠️ *Erro ao remover o usuário!* Peça a um ADM para remover manualmente." });
+                }
+
+                // Notificar ADMs no PV (discretamente)
+                for (const _adm of _vbAdmJids) {
+                  try {
+                    await conn.sendMessage(_adm, {
+                      text:
+                        `🔔 *[ALERTA ADM — VOTAÇÃO]*\n\n` +
+                        `O membro @${_vbFinal.alvo.split("@")[0]} foi *removido por votação popular* do grupo.\n\n` +
+                        `📊 Votos: ✅ ${_vbSimCount} × ❌ ${_vbNaoCount}\n` +
+                        `🧑‍⚖️ Solicitado por: @${_vbFinal.iniciador.split("@")[0]}\n\n` +
+                        `_Esta é uma notificação automática do Aleatory Bot._`,
+                      mentions: [_vbFinal.alvo, _vbFinal.iniciador],
+                    });
+                  } catch { /* ADM pode ter bloqueado o bot */ }
+                }
+              } else {
+                // NÃO banir
+                await conn.sendMessage(from, {
+                  text:
+                    `╔══════════════════════════════╗\n` +
+                    `║  ⚖️ *RESULTADO DA VOTAÇÃO* ⚖️\n` +
+                    `╠══════════════════════════════╣\n` +
+                    `║\n` +
+                    `║  ✋ *BANIMENTO NEGADO!*\n` +
+                    `║\n` +
+                    `║  👤 *Acusado:* @${_vbFinal.alvo.split("@")[0]} fica no grupo\n` +
+                    `║  ✅ *A favor:* ${_vbSimCount} votos\n` +
+                    `║  ❌ *Contra:* ${_vbNaoCount} votos\n` +
+                    `║  📊 *Quorum:* ${_vbFinal.quorum} necessários\n` +
+                    `║\n` +
+                    `║  🗳️ *Detalhes dos votos:*\n` +
+                    `║${_vbListaVotos.split("\n").join("\n║  ")}\n` +
+                    `║\n` +
+                    `║  _Quorum não atingido ou maioria optou por manter._\n` +
+                    `║\n` +
+                    `╚══════════════════════════════╝`,
+                  mentions: _vbTodosVotantes,
+                });
+              }
+
+              // Limpar arquivo de votação
+              try { fs.unlinkSync(_vbFile); } catch { }
+            } catch (errTimer) {
+              console.error("[VOTARBAN] Erro no timer de votação:", errTimer);
+              try { fs.unlinkSync(_vbFile); } catch { }
+            }
+          }, 300000); // 5 minutos
+          break;
+        }
+
+        // ═══ VOTO INDIVIDUAL — Membro vota SIM ou NÃO ═══
+        case "votoban":
+        case "votebanvote":
+        case "votarbanvoto": {
+          if (!isGroup) return reply(Res_SoGrupo);
+
+          const _vbDir2 = "./dados/org/json/VOTARBAN";
+          const _vbFile2 = `${_vbDir2}/voteban_${from}.json`;
+
+          if (!fs.existsSync(_vbFile2)) {
+            return reply("❌ *Nenhuma votação de banimento ativa neste grupo!*");
+          }
+
+          const _vbDados2 = JSON.parse(fs.readFileSync(_vbFile2));
+
+          // O alvo não pode votar
+          if (sender === _vbDados2.alvo) return reply("⚠️ Você é o acusado e não pode votar na própria votação!");
+          // ADMs não votam (são juízes)
+          if (groupAdmins.includes(sender) && !SoDono) return reply("🛡️ *ADMs não participam da votação.* Use *" + prefix + "cancelarvoto* para cancelar se necessário.");
+
+          // Verificar se já votou
+          if (_vbDados2.votos_sim.includes(sender) || _vbDados2.votos_nao.includes(sender)) {
+            return reply("⚠️ Você já votou nesta votação! Aguarde o resultado.");
+          }
+
+          const _vbVoto = q?.trim()?.toLowerCase()?.normalize("NFD")?.replace(/[\u0300-\u036f]/g, "");
+
+          if (!_vbVoto || (!["sim", "s", "yes", "si", "ban", "banir", "remover"].includes(_vbVoto) && !["nao", "n", "no", "nope", "manter", "ficar", "fica"].includes(_vbVoto))) {
+            return reply(
+              `🗳️ *Como votar:*\n\n` +
+              `✅ *${prefix}votoban sim* — para BANIR\n` +
+              `❌ *${prefix}votoban nao* — para MANTER\n\n` +
+              `👤 Alvo atual: @${_vbDados2.alvo.split("@")[0]}`,
+            );
+          }
+
+          const _vbEhSim = ["sim", "s", "yes", "si", "ban", "banir", "remover"].includes(_vbVoto);
+
+          if (_vbEhSim) {
+            _vbDados2.votos_sim.push(sender);
+          } else {
+            _vbDados2.votos_nao.push(sender);
+          }
+
+          fs.writeFileSync(_vbFile2, JSON.stringify(_vbDados2, null, 2));
+
+          const _vbSimAtual = _vbDados2.votos_sim.length;
+          const _vbNaoAtual = _vbDados2.votos_nao.length;
+          const _vbRestante = Math.max(0, _vbDados2.quorum - _vbSimAtual);
+          const _vbTempoRestante = Math.max(0, Math.ceil((_vbDados2.inicio + _vbDados2.duracao - Date.now()) / 60000));
+
+          // Reagir na mensagem de votação
+          try {
+            await conn.sendMessage(from, {
+              react: { text: _vbEhSim ? "✅" : "❌", key: info.key }
+            });
+          } catch { }
+
+          await conn.sendMessage(from, {
+            text:
+              `🗳️ *Voto registrado!*\n\n` +
+              `👤 @${sender.split("@")[0]} votou: ${_vbEhSim ? "✅ *BANIR*" : "❌ *MANTER*"}\n\n` +
+              `📊 *Placar atual:*\n` +
+              `  ✅ Banir: *${_vbSimAtual}* votos\n` +
+              `  ❌ Manter: *${_vbNaoAtual}* votos\n` +
+              `  🎯 Necessários: *${_vbDados2.quorum}* votos a favor\n` +
+              (_vbRestante > 0 ? `  ⏳ Faltam *${_vbRestante}* votos para banir\n` : "") +
+              `  ⏱️ Tempo restante: ~${_vbTempoRestante} min`,
+            mentions: [sender],
+          });
+
+          // Verificar se atingiu quorum antecipadamente
+          if (_vbSimAtual >= _vbDados2.quorum && _vbSimAtual > _vbNaoAtual) {
+            // Encerrar votação antecipadamente — BANIR
+            const _vbAdmJids2 = groupAdmins.filter(a => !botNumber.includes(a));
+            let _vbListaFinal = "";
+            _vbListaFinal += `\n✅ *Votaram SIM (${_vbSimAtual}):*\n`;
+            _vbDados2.votos_sim.forEach(v => { _vbListaFinal += `  • @${v.split("@")[0]}\n`; });
+            if (_vbDados2.votos_nao.length > 0) {
+              _vbListaFinal += `\n❌ *Votaram NÃO (${_vbNaoAtual}):*\n`;
+              _vbDados2.votos_nao.forEach(v => { _vbListaFinal += `  • @${v.split("@")[0]}\n`; });
+            }
+
+            const _vbTodosF = [..._vbDados2.votos_sim, ..._vbDados2.votos_nao, _vbDados2.alvo, ..._vbAdmJids2];
+
+            await conn.sendMessage(from, {
+              text:
+                `╔══════════════════════════════╗\n` +
+                `║  ⚖️ *RESULTADO DA VOTAÇÃO* ⚖️\n` +
+                `╠══════════════════════════════╣\n` +
+                `║\n` +
+                `║  🔨 *BANIMENTO APROVADO!*\n` +
+                `║  ⚡ *Quorum atingido antes do prazo!*\n` +
+                `║\n` +
+                `║  👤 *Banido:* @${_vbDados2.alvo.split("@")[0]}\n` +
+                `║  ✅ *A favor:* ${_vbSimAtual} votos\n` +
+                `║  ❌ *Contra:* ${_vbNaoAtual} votos\n` +
+                `║${_vbListaFinal.split("\n").join("\n║  ")}\n` +
+                `║\n` +
+                `║  _O membro será removido agora._\n` +
+                `║\n` +
+                `╚══════════════════════════════╝`,
+              mentions: _vbTodosF,
+            });
+
+            try {
+              await conn.groupParticipantsUpdate(from, [_vbDados2.alvo], "remove");
+              console.log(`[VOTARBAN] ✅ ${_vbDados2.alvo} removido por quorum antecipado`);
+            } catch (errK) {
+              console.error("[VOTARBAN] Erro ao remover:", errK);
+              await conn.sendMessage(from, { text: "⚠️ *Erro ao remover!* Peça a um ADM para remover manualmente." });
+            }
+
+            // Notificar ADMs no PV
+            for (const _adm2 of _vbAdmJids2) {
+              try {
+                await conn.sendMessage(_adm2, {
+                  text:
+                    `🔔 *[ALERTA ADM — VOTAÇÃO]*\n\n` +
+                    `O membro @${_vbDados2.alvo.split("@")[0]} foi *removido por votação popular*.\n\n` +
+                    `📊 ✅ ${_vbSimAtual} × ❌ ${_vbNaoAtual}\n` +
+                    `🧑‍⚖️ Iniciado por: @${_vbDados2.iniciador.split("@")[0]}\n\n` +
+                    `_Notificação automática do Aleatory Bot._`,
+                  mentions: [_vbDados2.alvo, _vbDados2.iniciador],
+                });
+              } catch { }
+            }
+
+            try { fs.unlinkSync(_vbFile2); } catch { }
+          }
+          break;
+        }
+
+        // ═══ CANCELAR VOTAÇÃO — Apenas ADMs ═══
+        case "cancelarvoto":
+        case "cancelarban":
+        case "cancelvote": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!isGroupAdmins) return reply(Res_SoAdm);
+
+          const _vbDir3 = "./dados/org/json/VOTARBAN";
+          const _vbFile3 = `${_vbDir3}/voteban_${from}.json`;
+
+          if (!fs.existsSync(_vbFile3)) {
+            return reply("❌ *Nenhuma votação ativa para cancelar!*");
+          }
+
+          const _vbDados3 = JSON.parse(fs.readFileSync(_vbFile3));
+          try { fs.unlinkSync(_vbFile3); } catch { }
+
+          await conn.sendMessage(from, {
+            text:
+              `╔══════════════════════════════╗\n` +
+              `║  🛑 *VOTAÇÃO CANCELADA* 🛑\n` +
+              `╠══════════════════════════════╣\n` +
+              `║\n` +
+              `║  👤 Alvo: @${_vbDados3.alvo.split("@")[0]}\n` +
+              `║  🛡️ Cancelado por: @${sender.split("@")[0]}\n` +
+              `║  ✅ Votos sim: ${_vbDados3.votos_sim.length}\n` +
+              `║  ❌ Votos não: ${_vbDados3.votos_nao.length}\n` +
+              `║\n` +
+              `║  _A votação foi cancelada por um ADM._\n` +
+              `║\n` +
+              `╚══════════════════════════════╝`,
+            mentions: [_vbDados3.alvo, sender],
+          });
+          console.log(`[VOTARBAN] 🛑 Votação cancelada pelo ADM ${sender} no grupo ${from}`);
+          break;
+        }
+
+        // ═══ STATUS DA VOTAÇÃO ═══
+        case "statusvoto":
+        case "statusban":
+        case "votostatus": {
+          if (!isGroup) return reply(Res_SoGrupo);
+
+          const _vbDir4 = "./dados/org/json/VOTARBAN";
+          const _vbFile4 = `${_vbDir4}/voteban_${from}.json`;
+
+          if (!fs.existsSync(_vbFile4)) {
+            return reply("❌ *Nenhuma votação ativa neste grupo!*");
+          }
+
+          const _vbDados4 = JSON.parse(fs.readFileSync(_vbFile4));
+          const _vbTempo4 = Math.max(0, Math.ceil((_vbDados4.inicio + _vbDados4.duracao - Date.now()) / 60000));
+          const _vbFalta4 = Math.max(0, _vbDados4.quorum - _vbDados4.votos_sim.length);
+
+          let _vbDetalhe4 = "";
+          if (_vbDados4.votos_sim.length > 0) {
+            _vbDetalhe4 += `\n✅ *Votaram BANIR (${_vbDados4.votos_sim.length}):*\n`;
+            _vbDados4.votos_sim.forEach(v => { _vbDetalhe4 += `  • @${v.split("@")[0]}\n`; });
+          }
+          if (_vbDados4.votos_nao.length > 0) {
+            _vbDetalhe4 += `\n❌ *Votaram MANTER (${_vbDados4.votos_nao.length}):*\n`;
+            _vbDados4.votos_nao.forEach(v => { _vbDetalhe4 += `  • @${v.split("@")[0]}\n`; });
+          }
+
+          await conn.sendMessage(from, {
+            text:
+              `╔══════════════════════════════╗\n` +
+              `║  📊 *STATUS DA VOTAÇÃO* 📊\n` +
+              `╠══════════════════════════════╣\n` +
+              `║\n` +
+              `║  👤 *Acusado:* @${_vbDados4.alvo.split("@")[0]}\n` +
+              `║  🧑‍⚖️ *Iniciador:* @${_vbDados4.iniciador.split("@")[0]}\n` +
+              `║\n` +
+              `║  ✅ A favor: *${_vbDados4.votos_sim.length}* votos\n` +
+              `║  ❌ Contra: *${_vbDados4.votos_nao.length}* votos\n` +
+              `║  🎯 Necessários: *${_vbDados4.quorum}* votos\n` +
+              (_vbFalta4 > 0 ? `║  ⏳ Faltam: *${_vbFalta4}* votos para banir\n` : `║  ⚡ *Quorum atingido!*\n`) +
+              `║  ⏱️ Tempo restante: ~${_vbTempo4} min\n` +
+              `║${_vbDetalhe4.split("\n").join("\n║  ")}\n` +
+              `║\n` +
+              `╚══════════════════════════════╝`,
+            mentions: [_vbDados4.alvo, _vbDados4.iniciador, ..._vbDados4.votos_sim, ..._vbDados4.votos_nao],
+          });
+          break;
+        }
 
         case "promover":
           if (Os_Returns(true, true, true).true)
@@ -11361,6 +11886,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
                 mentionArray.push(uscnt.id);
                 teks += `*• Membro:* @${participantNumber}\n*• Comandos:* ${uscnt.cmd_messages || 0
                   }*\n*• Mensagens:* ${uscnt.messages || 0}*\n*• Aparelho:* ${uscnt.aparelho || "Desconhecido"
+                  }*\n*• Total:* ${(uscnt.messages || 0) + (uscnt.figurinhas || 0)}*\n*• Aparelho:* ${uscnt.aparelho || "Desconhecido"
                   }*\n\n----------------------------------\n\n`;
               }
             }
@@ -11506,18 +12032,9 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
 
             reply(
               `👑 *Número do Dono configurado para:* ${_numDono}\n\n` +
-              `🚀 *Disparando transmissão automática de novidades v8.6:*\n` +
-              `• Enviando anúncio oficial no seu PV (${_numDono})\n` +
-              `• Enviando para todos os grupos em que o bot está com a imagem ALEATORY 8.6!`
+              `✅ *Dono atualizado com sucesso!*\n` +
+              `🎄 _As novidades v9.0 serão enviadas automaticamente na próxima conexão do bot._`
             );
-
-            broadcastNovidades(conn, {
-              targetDono: _numDono,
-              replyChat: from,
-              customText: "ATUALIZAÇÃO DE DONO & SISTEMA",
-            }).catch((errBc) => {
-              console.error("Erro na transmissão ao definir dono:", errBc);
-            });
           }
           break;
 
@@ -11712,6 +12229,292 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             reply("Grupo de transmissão bem-sucedido");
           }
           break;
+
+        // ═══════════════════════════════════════════════════════════════
+        // SISTEMA DE AVISO GLOBAL — BROADCAST PARA TODOS OS GRUPOS
+        // Apenas donos podem usar. Suporta flood e envio múltiplo.
+        // ═══════════════════════════════════════════════════════════════
+        case "avisoglobal":
+        case "avisar":
+        case "avisargp":
+        case "avisartodos": {
+          if (!SoDono && !isnit && !issupre && !ischyt && !info.key.fromMe)
+            return reply(Res_SoDono);
+
+          // ── VERIFICAR SE TEM MENSAGEM ──
+          const _avisoQuoted = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+          const _avisoTexto = q?.trim();
+          const _avisoHasImage = (isMedia && !info.message.videoMessage) || isQuotedImage;
+          const _avisoHasVideo = (isMedia && info.message.videoMessage) || isQuotedVideo;
+
+          if (!_avisoTexto && !_avisoQuoted && !_avisoHasImage && !_avisoHasVideo) {
+            return reply(
+              `📢 *SISTEMA DE AVISO GLOBAL*\n\n` +
+              `Use de uma das formas:\n\n` +
+              `✉️ *Texto simples:*\n` +
+              `${prefix}avisar Sua mensagem aqui\n\n` +
+              `🖼️ *Com imagem/vídeo:*\n` +
+              `Envie ou marque a mídia + ${prefix}avisar Legenda\n\n` +
+              `🔁 *Modo flood (repetir):*\n` +
+              `${prefix}avisoflood [qtd] Mensagem\n` +
+              `Ex: ${prefix}avisoflood 3 Atenção todos!\n\n` +
+              `📊 *Ver status:*\n` +
+              `${prefix}statusaviso\n\n` +
+              `⏹️ *Cancelar envio:*\n` +
+              `${prefix}cancelaraviso`
+            );
+          }
+
+          // ── BUSCAR TODOS OS GRUPOS ──
+          let _avisoGroups;
+          try {
+            const _avisoAllGp = await conn.groupFetchAllParticipating();
+            _avisoGroups = Object.keys(_avisoAllGp).filter(id => id.endsWith("@g.us"));
+          } catch (e) {
+            return reply("❌ Erro ao buscar grupos: " + (e?.message || e));
+          }
+
+          if (_avisoGroups.length === 0) return reply("❌ O bot não está em nenhum grupo.");
+
+          // ── FLAG GLOBAL PARA CANCELAMENTO ──
+          if (!global._avisoAtivo) global._avisoAtivo = {};
+          const _avisoId = Date.now().toString();
+          global._avisoAtivo[_avisoId] = true;
+          global._ultimoAvisoId = _avisoId;
+
+          const _totalGp = _avisoGroups.length;
+          await reply(
+            `📢 *AVISO GLOBAL INICIADO*\n\n` +
+            `📨 Enviando para *${_totalGp}* grupos...\n` +
+            `⏱️ Tempo estimado: ~${Math.ceil(_totalGp * 2.5 / 60)} min\n` +
+            `⏹️ Cancelar: ${prefix}cancelaraviso\n\n` +
+            `_Aguarde a confirmação final..._`
+          );
+
+          let _avisoSucesso = 0;
+          let _avisoFalha = 0;
+
+          for (const gpId of _avisoGroups) {
+            // Checar cancelamento
+            if (!global._avisoAtivo[_avisoId]) {
+              await reply(`⏹️ *AVISO CANCELADO*\n\n✅ Enviados: ${_avisoSucesso}\n❌ Falhas: ${_avisoFalha}\n📋 Restantes: ${_totalGp - _avisoSucesso - _avisoFalha}`);
+              delete global._avisoAtivo[_avisoId];
+              return;
+            }
+
+            try {
+              if (_avisoHasImage) {
+                // Enviar com imagem
+                let _avisoImgBuf;
+                try {
+                  const _qMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage || info.message?.imageMessage;
+                  if (_qMsg) {
+                    _avisoImgBuf = await conn.downloadMediaMessage({ message: { imageMessage: _qMsg }, type: "image" }).catch(() => null);
+                    if (!_avisoImgBuf) {
+                      const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
+                      const stream = await downloadContentFromMessage(_qMsg, "image");
+                      let buffer = Buffer.from([]);
+                      for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+                      _avisoImgBuf = buffer;
+                    }
+                  }
+                } catch { _avisoImgBuf = null; }
+
+                if (_avisoImgBuf) {
+                  await conn.sendMessage(gpId, {
+                    image: _avisoImgBuf,
+                    caption: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || ""}`,
+                  });
+                } else {
+                  await conn.sendMessage(gpId, {
+                    text: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || "(imagem não carregada)"}`,
+                  });
+                }
+              } else if (_avisoHasVideo) {
+                let _avisoVidBuf;
+                try {
+                  const _qVMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage || info.message?.videoMessage;
+                  if (_qVMsg) {
+                    const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
+                    const stream = await downloadContentFromMessage(_qVMsg, "video");
+                    let buffer = Buffer.from([]);
+                    for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+                    _avisoVidBuf = buffer;
+                  }
+                } catch { _avisoVidBuf = null; }
+
+                if (_avisoVidBuf) {
+                  await conn.sendMessage(gpId, {
+                    video: _avisoVidBuf,
+                    caption: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || ""}`,
+                  });
+                } else {
+                  await conn.sendMessage(gpId, {
+                    text: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || "(vídeo não carregado)"}`,
+                  });
+                }
+              } else {
+                // Texto puro
+                await conn.sendMessage(gpId, {
+                  text: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto}`,
+                });
+              }
+              _avisoSucesso++;
+            } catch (e) {
+              _avisoFalha++;
+              console.error(`[AVISO] Falha em ${gpId}: ${e?.message || e}`);
+            }
+
+            // Delay anti-ban (2-3s aleatório)
+            await new Promise(r => setTimeout(r, 2000 + Math.floor(Math.random() * 1000)));
+          }
+
+          delete global._avisoAtivo[_avisoId];
+          await reply(
+            `✅ *AVISO GLOBAL CONCLUÍDO*\n\n` +
+            `📨 Enviados: *${_avisoSucesso}* de *${_totalGp}*\n` +
+            `❌ Falhas: *${_avisoFalha}*`
+          );
+          break;
+        }
+
+        // ═══ AVISO FLOOD — ENVIAR MESMA MENSAGEM VÁRIAS VEZES ═══
+        case "avisoflood":
+        case "avisarflood":
+        case "floodaviso": {
+          if (!SoDono && !isnit && !issupre && !ischyt && !info.key.fromMe)
+            return reply(Res_SoDono);
+
+          // Parsear: !avisoflood [qtd] [mensagem]
+          const _flArgs = q?.trim()?.split(" ") || [];
+          const _flQtd = parseInt(_flArgs[0]);
+          const _flTexto = _flArgs.slice(1).join(" ").trim();
+
+          if (!_flQtd || _flQtd < 1 || _flQtd > 10) {
+            return reply(
+              `🔁 *AVISO FLOOD*\n\n` +
+              `Envia a mesma mensagem várias vezes em todos os grupos.\n\n` +
+              `📝 *Uso:*\n` +
+              `${prefix}avisoflood [1-10] [mensagem]\n\n` +
+              `📌 *Exemplo:*\n` +
+              `${prefix}avisoflood 3 Atenção, nova regra!\n\n` +
+              `⚠️ Máximo: 10 repetições por grupo.`
+            );
+          }
+
+          if (!_flTexto) return reply("❌ Cadê a mensagem? Use: " + prefix + "avisoflood " + _flQtd + " Sua mensagem");
+
+          // Buscar grupos
+          let _flGroups;
+          try {
+            const _flAllGp = await conn.groupFetchAllParticipating();
+            _flGroups = Object.keys(_flAllGp).filter(id => id.endsWith("@g.us"));
+          } catch (e) {
+            return reply("❌ Erro ao buscar grupos: " + (e?.message || e));
+          }
+
+          if (_flGroups.length === 0) return reply("❌ O bot não está em nenhum grupo.");
+
+          // Flag de cancelamento
+          if (!global._avisoAtivo) global._avisoAtivo = {};
+          const _flId = Date.now().toString();
+          global._avisoAtivo[_flId] = true;
+          global._ultimoAvisoId = _flId;
+
+          const _flTotal = _flGroups.length;
+          const _flTotalMsgs = _flTotal * _flQtd;
+
+          await reply(
+            `🔁 *FLOOD GLOBAL INICIADO*\n\n` +
+            `📨 *${_flQtd}x* em *${_flTotal}* grupos = *${_flTotalMsgs}* mensagens\n` +
+            `⏱️ Tempo estimado: ~${Math.ceil(_flTotalMsgs * 1.5 / 60)} min\n` +
+            `⏹️ Cancelar: ${prefix}cancelaraviso\n\n` +
+            `_Aguarde..._`
+          );
+
+          let _flSucesso = 0;
+          let _flFalha = 0;
+
+          for (const gpId of _flGroups) {
+            if (!global._avisoAtivo[_flId]) {
+              await reply(`⏹️ *FLOOD CANCELADO*\n\n✅ Msgs enviadas: ${_flSucesso}\n❌ Falhas: ${_flFalha}`);
+              delete global._avisoAtivo[_flId];
+              return;
+            }
+
+            for (let _flI = 0; _flI < _flQtd; _flI++) {
+              if (!global._avisoAtivo[_flId]) break;
+              try {
+                await conn.sendMessage(gpId, {
+                  text: `📢 *AVISO DO DONO* 📢\n\n${_flTexto}`,
+                });
+                _flSucesso++;
+              } catch {
+                _flFalha++;
+              }
+              // Delay menor entre repetições no mesmo grupo (1-1.5s)
+              if (_flI < _flQtd - 1) {
+                await new Promise(r => setTimeout(r, 1000 + Math.floor(Math.random() * 500)));
+              }
+            }
+            // Delay entre grupos (2-3s)
+            await new Promise(r => setTimeout(r, 2000 + Math.floor(Math.random() * 1000)));
+          }
+
+          delete global._avisoAtivo[_flId];
+          await reply(
+            `✅ *FLOOD GLOBAL CONCLUÍDO*\n\n` +
+            `📨 Mensagens enviadas: *${_flSucesso}* de *${_flTotalMsgs}*\n` +
+            `❌ Falhas: *${_flFalha}*`
+          );
+          break;
+        }
+
+        // ═══ CANCELAR AVISO EM ANDAMENTO ═══
+        case "cancelaraviso":
+        case "pararaviso":
+        case "stopaviso": {
+          if (!SoDono && !isnit && !issupre && !ischyt && !info.key.fromMe)
+            return reply(Res_SoDono);
+
+          if (!global._avisoAtivo || !global._ultimoAvisoId || !global._avisoAtivo[global._ultimoAvisoId]) {
+            return reply("❌ Nenhum aviso em andamento para cancelar.");
+          }
+
+          global._avisoAtivo[global._ultimoAvisoId] = false;
+          reply("⏹️ Cancelando aviso... Aguarde a confirmação.");
+          break;
+        }
+
+        // ═══ STATUS DO AVISO ═══
+        case "statusaviso": {
+          if (!SoDono && !isnit && !issupre && !ischyt && !info.key.fromMe)
+            return reply(Res_SoDono);
+
+          const _stHasActive = global._avisoAtivo && global._ultimoAvisoId && global._avisoAtivo[global._ultimoAvisoId];
+
+          if (_stHasActive) {
+            reply("📢 *AVISO EM ANDAMENTO*\n\n⏱️ Um envio está ativo no momento.\nUse " + prefix + "cancelaraviso para parar.");
+          } else {
+            // Contar grupos
+            let _stGpCount = 0;
+            try {
+              const _stAllGp = await conn.groupFetchAllParticipating();
+              _stGpCount = Object.keys(_stAllGp).filter(id => id.endsWith("@g.us")).length;
+            } catch { }
+
+            reply(
+              `📊 *STATUS DO SISTEMA DE AVISO*\n\n` +
+              `📋 Grupos do bot: *${_stGpCount}*\n` +
+              `📢 Nenhum envio ativo.\n\n` +
+              `*Comandos:*\n` +
+              `• ${prefix}aviso [texto] — Enviar aviso\n` +
+              `• ${prefix}avisoflood [1-10] [texto] — Flood\n` +
+              `• ${prefix}cancelaraviso — Cancelar`
+            );
+          }
+          break;
+        }
 
         case "dono1":
           if (args.length < 1) return;
@@ -12633,17 +13436,32 @@ Dono Oficial do bot: ${numerodono_ofc}
           {
             if (Os_Returns(true, true, true).true)
               return reply(Os_Returns(true, true, true).txt);
-            const q_A = q_2.replaceAll(
-              command,
-              "Não pode bloquear esse comando",
-            );
+            // ══ Lista de comandos protegidos que NÃO podem ser bloqueados ══
+            const _cmdProtegidos = [
+              "blockcmd", "bloqcmd", "bloquearcmd", "bloquearcomando",
+              "unblockcmd", "desblockcmd", "unbloqcmd", "desbloqcmd", "desbloquearcmd", "desbloquearcomando",
+              "blockcmdg", "bloqcmdg", "bloquearcmdg", "bloquearcomandog",
+              "unblockcmdg", "desblockcmdg", "unbloqcmdg", "desbloqcmdg", "desbloquearcmdg", "desbloquearcomandog",
+              "listblockcmd", "listablockcmd", "listacomandos", "comandosbloqueado", "comandosblock", "comandobloqueado",
+              "listblockcmdg", "listablockcmdg", "listacomandosg", "comandosbloqueadog", "comandosblockg", "comandobloqueadog",
+              "limparblockcmd", "clearblockcmd",
+              "menu", "menudono", "menuadm", "menuadmin", "menufig", "menugp", "help", "ajuda",
+            ];
+            // Sanitizar: remover prefixo, trim, lowercase
+            let q_A = q_2.trim().toLowerCase();
+            if (q_A.startsWith(prefix)) q_A = q_A.slice(prefix.length).trim();
+            if (!q_A) return reply(`⚠️ Informe o comando para bloquear!\n\n📌 Exemplo: ${prefix}blockcmd play`);
+            if (_cmdProtegidos.includes(q_A))
+              return reply("🛡️ Este comando é essencial do sistema e não pode ser bloqueado!");
             if (dataGp[0]?.comandosB?.includes(q_A))
-              return reply("Este comando já está bloqueado.");
-            !dataGp[0]["comandosB"]
-              ? (dataGp[0]["comandosB"] = [q_A])
-              : dataGp[0]["comandosB"].push(q_A);
+              return reply(`⚠️ O comando *${q_A}* já está bloqueado neste grupo.`);
+            if (!dataGp[0]["comandosB"]) {
+              dataGp[0]["comandosB"] = [q_A];
+            } else {
+              dataGp[0]["comandosB"].push(q_A);
+            }
             setGp(dataGp);
-            reply(`O comando ${q_A} foi Bloqueado com sucesso.`);
+            reply(`✅ O comando *${prefix}${q_A}* foi bloqueado com sucesso neste grupo.`);
           }
           break;
 
@@ -12653,19 +13471,30 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "bloquearcomandog":
           {
             if (!SoDono) return reply(Res_SoDono);
-            const q_A = q_2.replaceAll(
-              command,
-              "Não pode bloquear esse comando",
-            );
+            const _cmdProtegidosG = [
+              "blockcmd", "bloqcmd", "bloquearcmd", "bloquearcomando",
+              "unblockcmd", "desblockcmd", "unbloqcmd", "desbloqcmd", "desbloquearcmd", "desbloquearcomando",
+              "blockcmdg", "bloqcmdg", "bloquearcmdg", "bloquearcomandog",
+              "unblockcmdg", "desblockcmdg", "unbloqcmdg", "desbloqcmdg", "desbloquearcmdg", "desbloquearcomandog",
+              "listblockcmd", "listablockcmd", "listacomandos", "comandosbloqueado", "comandosblock", "comandobloqueado",
+              "listblockcmdg", "listablockcmdg", "listacomandosg", "comandosbloqueadog", "comandosblockg", "comandobloqueadog",
+              "limparblockcmd", "clearblockcmd",
+              "menu", "menudono", "menuadm", "menuadmin", "menufig", "menugp", "help", "ajuda",
+            ];
+            let q_A = q_2.trim().toLowerCase();
+            if (q_A.startsWith(prefix)) q_A = q_A.slice(prefix.length).trim();
+            if (!q_A) return reply(`⚠️ Informe o comando para bloquear globalmente!\n\n📌 Exemplo: ${prefix}blockcmdg play`);
+            if (_cmdProtegidosG.includes(q_A))
+              return reply("🛡️ Este comando é essencial do sistema e não pode ser bloqueado!");
             if (bloq_global.includes(q_A))
-              return reply("Este comando já está bloqueado.");
+              return reply(`⚠️ O comando *${q_A}* já está bloqueado globalmente.`);
             bloq_global.push(q_A);
             fs.writeFileSync(
               "./dados/global/bloqueargb.json",
               JSON.stringify(bloq_global, null, 2),
             );
             reply(
-              `O comando ${q_A} foi Bloqueado com sucesso para todos os grupos e privado.`,
+              `✅ O comando *${prefix}${q_A}* foi bloqueado globalmente (todos os grupos e privado).`,
             );
           }
           break;
@@ -12678,19 +13507,18 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "desbloquearcomandog":
           {
             if (!SoDono) return reply(Res_SoDono);
-            const q_A = q_2.replaceAll(
-              command,
-              "Não pode bloquear esse comando",
-            );
+            let q_A = q_2.trim().toLowerCase();
+            if (q_A.startsWith(prefix)) q_A = q_A.slice(prefix.length).trim();
+            if (!q_A) return reply(`⚠️ Informe o comando para desbloquear globalmente!\n\n📌 Exemplo: ${prefix}unblockcmdg play`);
             if (!bloq_global.includes(q_A))
-              return reply("Este comando já está desbloqueado.");
+              return reply(`⚠️ O comando *${q_A}* não está bloqueado globalmente.`);
             bloq_global.splice(bloq_global.indexOf(q_A), 1);
             fs.writeFileSync(
               "./dados/global/bloqueargb.json",
               JSON.stringify(bloq_global, null, 2),
             );
             reply(
-              `O comando ${q_A} foi Desbloqueado com sucesso para todos os grupos e privado.`,
+              `✅ O comando *${prefix}${q_A}* foi desbloqueado globalmente.`,
             );
           }
           break;
@@ -12704,18 +13532,31 @@ Dono Oficial do bot: ${numerodono_ofc}
           {
             if (Os_Returns(true, true, true).true)
               return reply(Os_Returns(true, true, true).txt);
-            const q_A = q_2.replaceAll(
-              command,
-              "Não pode bloquear esse comando",
-            );
+            let q_A = q_2.trim().toLowerCase();
+            if (q_A.startsWith(prefix)) q_A = q_A.slice(prefix.length).trim();
+            if (!q_A) return reply(`⚠️ Informe o comando para desbloquear!\n\n📌 Exemplo: ${prefix}unblockcmd play`);
             if (!dataGp[0]?.comandosB?.includes(q_A))
-              return reply("Este comando já está desbloqueado.");
+              return reply(`⚠️ O comando *${q_A}* não está bloqueado neste grupo.`);
             dataGp[0]["comandosB"].splice(
               dataGp[0]["comandosB"].indexOf(q_A),
               1,
             );
             setGp(dataGp);
-            reply(`O comando ${q_A} foi Desbloqueado com sucesso.`);
+            reply(`✅ O comando *${prefix}${q_A}* foi desbloqueado neste grupo.`);
+          }
+          break;
+
+        case "limparblockcmd":
+        case "clearblockcmd":
+          {
+            if (Os_Returns(true, true, true).true)
+              return reply(Os_Returns(true, true, true).txt);
+            if (!dataGp[0]?.comandosB?.length)
+              return reply("⚠️ Não há comandos bloqueados neste grupo.");
+            const qtd = dataGp[0].comandosB.length;
+            dataGp[0]["comandosB"] = [];
+            setGp(dataGp);
+            reply(`✅ Todos os *${qtd}* comandos bloqueados foram removidos deste grupo.`);
           }
           break;
 
@@ -12727,12 +13568,13 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "comandobloqueado":
           {
             if (!isGroup) return reply(Res_SoGrupo);
-            if (!dataGp[0]?.comandosB?.length > 0)
-              return reply("Não contém nenhum comando bloqueado.");
-            let bla = "";
+            if (!dataGp[0]?.comandosB || dataGp[0].comandosB.length === 0)
+              return reply("⚠️ Não há nenhum comando bloqueado neste grupo.");
+            let bla = `╭─── 🔒 *Comandos Bloqueados (Grupo)* ───\n│\n`;
             for (let V = 0; V < dataGp[0].comandosB.length; V++) {
-              bla += `│ ${V}: ${dataGp[0].comandosB[V]} \n`;
+              bla += `│ ${V + 1}. ${prefix}${dataGp[0].comandosB[V]}\n`;
             }
+            bla += `│\n╰─── Total: ${dataGp[0].comandosB.length} comando(s) ───`;
             conn.sendMessage(from, { text: bla }, { quoted: info });
           }
           break;
@@ -12744,14 +13586,13 @@ Dono Oficial do bot: ${numerodono_ofc}
         case "comandosblockg":
         case "comandobloqueadog":
           {
-            if (!isGroup) return reply(Res_SoGrupo);
-            if (!bloq_global.length > 0)
-              return reply("Não contém nenhum comando bloqueado.");
-            let bla =
-              "Comandos que estão bloqueado para todos os grupos e privado:\n\n";
+            if (bloq_global.length === 0)
+              return reply("⚠️ Não há nenhum comando bloqueado globalmente.");
+            let bla = `╭─── 🔒 *Comandos Bloqueados (Global)* ───\n│\n`;
             for (let V = 0; V < bloq_global.length; V++) {
-              bla += `│ ${V}: ${bloq_global[V]} \n`;
+              bla += `│ ${V + 1}. ${prefix}${bloq_global[V]}\n`;
             }
+            bla += `│\n╰─── Total: ${bloq_global.length} comando(s) ───\n\n⚠️ Estes comandos estão bloqueados em todos os grupos e no privado.`;
             conn.sendMessage(from, { text: bla }, { quoted: info });
           }
           break;
@@ -13143,9 +13984,7 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${dl_JsOn.u
             conn
               .sendMessage(from, {
                 image: { url: reqapi.duelo(bl_up, bl_up2, txtimg) },
-                caption: `[ ATENÇÃO ]:\n\n@${menc_jid2[0].split("@")[0]
-                  }\n\t\t\t\t\t~ VS ~\n@${menc_jid2[1].split("@")[0]
-                  }\n\n[ Combate iniciado ] - Respeitem os Combatentes. Os dois participantes irão combater no momento. Posteriormente um ADM vai iniciar a votação. Digitando: !iniciar_votação. Atenção a votação, avalie com responsabilidade. Não atrapalhem o momento do combate para não serem removidos.`,
+                caption: `[ ATENÇÃO ]:\n\n@${menc_jid2[0].split("@")[0]}\n\t\t\t\t\t~ VS ~\n@${menc_jid2[1].split("@")[0]}\n\n[Combate iniciado] - Respeitem os Combatentes. Os dois participantes irão combater no momento. Posteriormente um ADM vai iniciar a votação. Digite: !iniciar_votação. Atenção à votação, avalie com responsabilidade. Não atrapalhem o combate para não serem removidos.`,
                 mentions: menc_jid2,
               })
               .catch((e) => {
@@ -13153,7 +13992,7 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${dl_JsOn.u
               });
             await sleep(1000);
             fs.writeFileSync(
-              `./dados/org/json/DUELO/duelo_${from}.json`,
+              `./ dados / org / json / DUELO / duelo_${from}.json`,
               JSON.stringify(
                 {
                   usu1: menc_jid2[0],
@@ -13178,87 +14017,87 @@ https://wa.me/${botNumber.split("@")[0]}?text=${prefix}votar_duelo%20${dl_JsOn.u
             if (!isGroup) return reply(Res_SoGrupo);
 
             // Verificar se tem duelo ativo
-            const _duelPath = `./dados/org/json/DUELO/duelo_${from}.json`;
+            const _duelPath = `./ dados / org / json / DUELO / duelo_${from}.json`;
             let _duelStatus = "❌ Nenhum duelo ativo";
             let _duelInfo = "";
             if (fs.existsSync(_duelPath)) {
               try {
                 const _duelData = JSON.parse(fs.readFileSync(_duelPath, "utf8"));
                 _duelStatus = "✅ Duelo em andamento!";
-                _duelInfo = `\n│  🔴 Lutador 1: @${_duelData.usu1?.split("@")[0] || "?"}\n│  🔵 Lutador 2: @${_duelData.usu2?.split("@")[0] || "?"}\n│  📊 Votos: ${_duelData.voto_usu1?.length || 0} vs ${_duelData.voto_usu2?.length || 0}`;
+                _duelInfo = `\n│  🔴 Lutador 1: @${_duelData.usu1?.split("@")[0] || "?"} \n│  🔵 Lutador 2: @${_duelData.usu2?.split("@")[0] || "?"} \n│  📊 Votos: ${_duelData.voto_usu1?.length || 0} vs ${_duelData.voto_usu2?.length || 0} `;
               } catch { }
             }
 
             const _infoDuelTxt = `╭━━━━━━━━━━━━━━━━━━━━╮
-┃  ⚔️ *GUIA: DUELO DE FIGURINHAS*
+┃  ⚔️ * GUIA: DUELO DE FIGURINHAS *
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 O duelo de figurinhas é uma competição
-entre *2 membros* do grupo! Eles enviam
+entre * 2 membros * do grupo! Eles enviam
 suas melhores figurinhas e o grupo
 vota em quem mandou melhor! 🏆
 
-╭──── 📊 *STATUS* ────╮
+╭──── 📊 * STATUS * ────╮
 │
 │  ${_duelStatus}${_duelInfo}
 │
 ╰────────────────────╯
 
-╭──── 📋 *COMO FUNCIONA* ────╮
+╭──── 📋 * COMO FUNCIONA * ────╮
 │
-│  *1️⃣ CRIAR DUELO*
+│  * 1️⃣ CRIAR DUELO *
 │  O ADM marca 2 pessoas:
 │  ▸ ${prefix}duelo @user1 @user2
 │  O bot gera uma imagem VS
 │
-│  *2️⃣ COMBATE*
+│  * 2️⃣ COMBATE *
 │  Os 2 participantes enviam
 │  suas melhores figurinhas
-│  no grupo. O resto assiste!
+│  no grupo.O resto assiste!
 │
-│  *3️⃣ INICIAR VOTAÇÃO*
+│  * 3️⃣ INICIAR VOTAÇÃO *
 │  O ADM inicia a votação:
-│  ▸ ${prefix}iniciar_votacao
+│  ▸ ${prefix} iniciar_votacao
 │  O bot envia links de voto
 │  para todos no grupo
 │
-│  *4️⃣ VOTAR*
-│  Membros votam no *privado*
+│  * 4️⃣ VOTAR *
+│  Membros votam no * privado *
 │  do bot clicando no link
 │  do participante escolhido
 │
-│  *5️⃣ ENCERRAR*
+│  * 5️⃣ ENCERRAR *
 │  O ADM finaliza a votação:
-│  ▸ ${prefix}terminar_votacao
+│  ▸ ${prefix} terminar_votacao
 │  O bot revela o VENCEDOR! 🏆
 │
 ╰────────────────────╯
 
-╭──── ⚙️ *COMANDOS* ────╮
+╭──── ⚙️ * COMANDOS * ────╮
 │
-│  *Para ADMs:*
+│  * Para ADMs:*
 │  ▸ ${prefix}duelo @a @b — Criar duelo
-│  ▸ ${prefix}iniciar_votacao — Abrir votos
-│  ▸ ${prefix}terminar_votacao — Resultado
-│  ▸ ${prefix}zerar_duelo — Cancelar
+│  ▸ ${prefix} iniciar_votacao — Abrir votos
+│  ▸ ${prefix} terminar_votacao — Resultado
+│  ▸ ${prefix} zerar_duelo — Cancelar
 │
-│  *Para Membros:*
+│  * Para Membros:*
 │  ▸ ${prefix}votar — Ver como votar
-│  ▸ ${prefix}votar_duelo — Votar (PV)
+│  ▸ ${prefix} votar_duelo — Votar(PV)
 │
 ╰────────────────────╯
 
-╭──── 📜 *REGRAS* ────╮
+╭──── 📜 * REGRAS * ────╮
 │
-│  ⚠️ Cada pessoa vota *1 vez*
-│  ⚠️ Votação é feita no *privado*
+│  ⚠️ Cada pessoa vota * 1 vez *
+│  ⚠️ Votação é feita no * privado *
 │  ⚠️ Não atrapalhar o combate
 │  ⚠️ Apenas ADMs gerenciam
 │  ⚠️ 1 duelo por vez no grupo
 │
 ╰────────────────────╯
 
-╭──── 💡 *DICAS* ────╮
+╭──── 💡 * DICAS * ────╮
 │
 │  🎭 Envie figurinhas criativas
 │  😂 Humor sempre ganha votos
@@ -13268,7 +14107,7 @@ vota em quem mandou melhor! 🏆
 │
 ╰────────────────────╯
 
-📡 *${NomeDoBot}*`;
+📡 * ${NomeDoBot}* `;
 
             try {
               await conn.sendMessage(from, { react: { text: "⚔️", key: info.key } });
@@ -13334,7 +14173,7 @@ vota em quem mandou melhor! 🏆
               axps = pushname;
             }
             ab = await fkchat(axps, ppimg8, q);
-            base64ss = `data:image/jpeg;base64,${ab.image.toString("base64")}`;
+            base64ss = `data: image / jpeg; base64, ${ab.image.toString("base64")} `;
             mantap = await convertSticker(base64ss, axps, NomeDoBot);
             stiti = Buffer.from(mantap, "base64");
             await delay(1000);
@@ -14136,7 +14975,7 @@ vota em quem mandou melhor! 🏆
                 await conn.sendMessage(from, { react: { text: "✅", key: info.key } });
                 return reply(
                   `┏━━━━━━━━━━━━━━━━━━━━━┓\n` +
-                  `┃  🚀 *ALEATORY 8.6* 🚀\n` +
+                  `┃  🎄 *ALEATORY 9.0* 🎄\n` +
                   `┗━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
                   `✅ *Entrei no grupo com sucesso!*\n\n` +
                   `📌 *Grupo:* ${_gim.groupName || "Convite aceito"}\n` +
@@ -14193,7 +15032,7 @@ vota em quem mandou melhor! 🏆
 
               return reply(
                 `┏━━━━━━━━━━━━━━━━━━━━━┓\n` +
-                `┃  🚀 *ALEATORY 8.6* 🚀\n` +
+                `┃  🎄 *ALEATORY 9.0* 🎄\n` +
                 `┗━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
                 `✅ *Entrei no grupo com sucesso!*\n\n` +
                 `📌 *Grupo:* ${_gpName}\n` +
@@ -15221,7 +16060,7 @@ aqui, boa sorte..`);
                 responseType: "arraybuffer",
                 timeout: 60000,
                 maxRedirects: 10,
-                headers: { "User-Agent": "AleatoryBot/8.6" },
+                headers: { "User-Agent": "AleatoryBot/9.0" },
               }).then(r => Buffer.from(r.data)),
               new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout 60s")), 65000)),
             ]);
@@ -15323,12 +16162,28 @@ aqui, boa sorte..`);
 
         case "iaaleatory":
         case "ialeatory":
-        case "iabot": {
+        case "iabot":
+        case "iapv": {
           if (!isGroup) {
-            return reply("ℹ️ A IA do Aleatory já funciona automaticamente no privado!\n\n💡 Basta me chamar pelo nome: *Aleatory*");
+            // Toggle IA no PV
+            if (!SoDono && !isnit) return reply("👑 Apenas o *dono* pode ativar/desativar a IA no privado!");
+            try {
+              const _cfgIA = JSON.parse(fs.readFileSync("./dados/settings.json"));
+              _cfgIA.iaAleatoryPV = !_cfgIA.iaAleatoryPV;
+              fs.writeFileSync("./dados/settings.json", JSON.stringify(_cfgIA, null, 2));
+              iaAleatoryPV = _cfgIA.iaAleatoryPV;
+              return reply(
+                _cfgIA.iaAleatoryPV
+                  ? `🤖 *IA ALEATORY NO PV — ATIVADA!* ✅\n\n` +
+                    `Agora respondo mensagens no privado.\n` +
+                    `💬 Me chame por *"Aleatory"* ou responda uma msg minha.`
+                  : `🤖 *IA ALEATORY NO PV — DESATIVADA* ❌\n\n` +
+                    `Não responderei mais automaticamente no privado.`
+              );
+            } catch { return reply("❌ Erro ao alterar configuração."); }
           }
-          if (!isGroupAdmins) return reply(Res_SoAdm);
-          if (!dataGp[0].hasOwnProperty("iaAleatory")) dataGp[0].iaAleatory = false;
+          if (!SoDono) return reply(Res_SoDono);
+          if (!dataGp[0].hasOwnProperty("iaAleatory")) dataGp[0].iaAleatory = true; // default enabled
           dataGp[0].iaAleatory = !dataGp[0].iaAleatory;
           setGp(dataGp);
           reply(
@@ -15386,17 +16241,41 @@ aqui, boa sorte..`);
 
         case "bangp":
         case "unbangp":
-          if (!isGroup) return reply(Res_SoGrupo);
-          if (!SoDono) return reply(Res_SoDono);
+          // Se for no próprio grupo (comandos de admin)
+          if (isGroup) {
+            if (!SoDono) return reply(Res_SoDono);
+            if (command == "bangp") {
+              if (isBanchat) return reply(`Este grupo já está banido`);
+              dataGp[0].bangp = true;
+              setGp(dataGp);
+              reply(`Grupo banido com sucesso`);
+            } else {
+              if (!isBanchat) return reply(`Este grupo não está mais banido`);
+              dataGp[0].bangp = false;
+              setGp(dataGp);
+              reply(`Grupo desbanido...`);
+            }
+            break;
+          }
+          // Se vier em PV do bot (ban remoto)
+          if (!args[0]) return reply(`Manda assim no meu PV:\n!bangp 120363400949879608@g.us`);
+          let idAlvo = args[0].replace(/[^0-9]/g, "") + "@g.us";
+          let caminhoAlvo = `./dados/grupos/${idAlvo}.json`;
+          let grupoAlvo;
+          try {
+            grupoAlvo = JSON.parse(fs.readFileSync(caminhoAlvo, 'utf-8'));
+          } catch (e) {
+            return reply(`Não achei esse grupo no banco.\nID: ${idAlvo}`);
+          }
           if (command == "bangp") {
-            if (isBanchat) return reply(`Este grupo ja está banido`);
-            dataGp[0].bangp = true;
-            setGp(dataGp);
-            reply(`Grupo banido com sucesso`);
+            if (grupoAlvo[0].bangp) return reply(`Este grupo já está banido`);
+            grupoAlvo[0].bangp = true;
+            fs.writeFileSync(caminhoAlvo, JSON.stringify(grupoAlvo, null, 2) + "\n");
+            reply(`Grupo banido com sucesso\nID: ${idAlvo}`);
           } else {
-            if (!isBanchat) return reply(`Este grupo não está mais banido`);
-            dataGp[0].bangp = false;
-            setGp(dataGp);
+            if (!grupoAlvo[0].bangp) return reply(`Este grupo não está mais banido`);
+            grupoAlvo[0].bangp = false;
+            fs.writeFileSync(caminhoAlvo, JSON.stringify(grupoAlvo, null, 2) + "\n");
             reply(`Grupo desbanido...`);
           }
           break;
@@ -15778,25 +16657,25 @@ aqui, boa sorte..`);
           reply(`╭──── ℹ️ *INFO: !aceitar* ────╮
 ┃
 ┃ 📋 *O que faz:*
-┃ Aprova todos (ou N) pedidos pendentes
-┃ de entrada no grupo de uma vez.
+┃ Aprova solicitações de entrada
+┃ pendentes no grupo.
 ┃
 ┃ 👤 *Quem pode usar:*
 ┃ Apenas ADMs do grupo (e o bot
 ┃ precisa ser ADM também).
 ┃
 ┃ ⚙️ *Ativação:*
-┃ Funciona automaticamente quando o
-┃ grupo tem o modo de aprovação de
-┃ membros ativado.
+┃ Requer modo "Aprovação de novos
+┃ participantes" ativado no grupo.
 ┃
-┃ 📌 *Exemplos:*
-┃ ${prefix}aceitar → aprova TODOS
-┃ ${prefix}aceitar 5 → aprova os 5 primeiros
-┃ ${prefix}aceitar 10 → aprova os 10 primeiros
+┃ 📌 *Formas de uso:*
+┃ ▸ ${prefix}aceitar → Aprova TODOS
+┃ ▸ ${prefix}aceitar 5 → Aprova os 5 primeiros
+┃ ▸ ${prefix}aceitar @usuario → Aprova específico
+┃ ▸ ${prefix}aceitar 551199999999 → Aprova por número
 ┃
-┃ 💡 Os demais ficam pendentes.
-┃
+┃ 💡 Dica: Use *${prefix}solicitacoes* para
+┃ ver quem está na fila de espera!
 ╰──────────────────────────────╯`);
           break;
         }
@@ -15805,24 +16684,45 @@ aqui, boa sorte..`);
           reply(`╭──── ℹ️ *INFO: !recusar* ────╮
 ┃
 ┃ 📋 *O que faz:*
-┃ Recusa todos (ou N) pedidos pendentes
-┃ de entrada no grupo de uma vez.
+┃ Recusa solicitações de entrada
+┃ pendentes no grupo.
 ┃
 ┃ 👤 *Quem pode usar:*
 ┃ Apenas ADMs do grupo (e o bot
 ┃ precisa ser ADM também).
 ┃
 ┃ ⚙️ *Ativação:*
-┃ Funciona quando o grupo tem o modo
-┃ de aprovação de membros ativado.
+┃ Requer modo "Aprovação de novos
+┃ participantes" ativado no grupo.
 ┃
-┃ 📌 *Exemplos:*
-┃ ${prefix}recusar → recusa TODOS
-┃ ${prefix}recusar 3 → recusa os 3 primeiros
-┃ ${prefix}recusar 5 → recusa os 5 primeiros
+┃ 📌 *Formas de uso:*
+┃ ▸ ${prefix}recusar → Recusa TODOS
+┃ ▸ ${prefix}recusar 3 → Recusa os 3 primeiros
+┃ ▸ ${prefix}recusar @usuario → Recusa específico
+┃ ▸ ${prefix}recusar 551199999999 → Recusa por número
 ┃
-┃ 💡 Os demais ficam pendentes.
+┃ 💡 Dica: Use *${prefix}solicitacoes* para
+┃ ver quem está na fila de espera!
+╰──────────────────────────────╯`);
+          break;
+        }
+
+        case "infosolicitacoes":
+        case "pedidosinfo": {
+          reply(`╭──── ℹ️ *INFO: !solicitacoes* ────╮
 ┃
+┃ 📋 *O que faz:*
+┃ Exibe a lista completa de todos os
+┃ usuários aguardando aprovação para
+┃ entrar no grupo.
+┃
+┃ 👤 *Quem pode usar:*
+┃ Apenas ADMs do grupo.
+┃
+┃ 📌 *Comandos relacionados:*
+┃ ▸ ${prefix}solicitacoes — Lista a fila
+┃ ▸ ${prefix}aceitar — Aprova membros
+┃ ▸ ${prefix}recusar — Rejeita membros
 ╰──────────────────────────────╯`);
           break;
         }
@@ -15956,7 +16856,86 @@ aqui, boa sorte..`);
           break;
         }
 
-        // ─── ACEITAR TODOS OS PEDIDOS PENDENTES ───────────────────────
+        // ─── LISTAR SOLICITAÇÕES PENDENTES DE ENTRADA ────────────────
+        case "solicitacoes":
+        case "pedidos":
+        case "listasolicitacoes":
+        case "listapedidos": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          if (!isGroupAdmins) return reply(Res_SoAdm);
+          if (!isBotGroupAdmins) return reply(Res_BotADM);
+
+          try {
+            reply("⏳ Buscando solicitações pendentes...");
+            let pendentes = [];
+            try {
+              pendentes = await conn.groupRequestParticipantsList(from);
+            } catch (errReq) {
+              return reply(
+                `⚠️ *Modo de aprovação inativo ou erro na consulta!*\n\nVerifique se o recurso *"Aprovação de novos participantes"* está ligado nas configurações do grupo no WhatsApp.\n\nDetalhes: ${errReq?.message || errReq}`,
+              );
+            }
+
+            if (!Array.isArray(pendentes) || pendentes.length === 0) {
+              return reply(
+                `✅ *Nenhuma solicitação pendente!*\n\nNão há membros aguardando aprovação para entrar no grupo no momento.`,
+              );
+            }
+
+            let txt = `╭──── 📋 *SOLICITAÇÕES PENDENTES* ────╮\n`;
+            txt += `│ 👥 *Total na fila:* ${pendentes.length} usuário(s)\n`;
+            txt += `│ 📌 *Grupo:* ${groupName || "Este grupo"}\n`;
+            txt += `╰─────────────────────────────────────╯\n\n`;
+
+            const mentionsList = [];
+            const maxList = Math.min(pendentes.length, 30);
+
+            for (let i = 0; i < maxList; i++) {
+              const p = pendentes[i];
+              const pJid = typeof p === "string" ? p : (p?.jid || p?.phoneNumber || p?.pn || p?.id || "");
+              const pNum = String(pJid).split("@")[0].replace(/\D/g, "");
+              const fullJid = pNum ? `${pNum}@s.whatsapp.net` : null;
+
+              if (fullJid) mentionsList.push(fullJid);
+
+              let dataHora = "";
+              if (p?.request_time) {
+                try {
+                  const ts = parseInt(p.request_time) * 1000;
+                  if (!isNaN(ts)) {
+                    dataHora = ` _(${moment(ts).tz("America/Sao_Paulo").format("DD/MM HH:mm")})_`;
+                  }
+                } catch { }
+              }
+
+              txt += `*${i + 1}.* @${pNum || "desconhecido"}${dataHora}\n`;
+            }
+
+            if (pendentes.length > maxList) {
+              txt += `\n_... e mais ${pendentes.length - maxList} solicitação(ões)._\n`;
+            }
+
+            txt += `\n╭──── 💡 *COMO GERENCIAR* ────╮\n`;
+            txt += `│ ▸ *${prefix}aceitar* → Aprovar todos\n`;
+            txt += `│ ▸ *${prefix}aceitar 5* → Aprovar os 5 primeiros\n`;
+            txt += `│ ▸ *${prefix}aceitar @membro* → Aprovar um específico\n`;
+            txt += `│ ▸ *${prefix}recusar* → Recusar todos\n`;
+            txt += `│ ▸ *${prefix}recusar @membro* → Recusar um específico\n`;
+            txt += `╰─────────────────────────────╯`;
+
+            await conn.sendMessage(
+              from,
+              { text: txt, mentions: mentionsList },
+              { quoted: info },
+            );
+          } catch (e) {
+            console.error("[LISTA-PEDIDOS] Erro:", e);
+            reply(`❌ Erro ao listar solicitações: ${e.message || e}`);
+          }
+          break;
+        }
+
+        // ─── ACEITAR PEDIDOS PENDENTES (TODOS, QUANTIDADE OU ESPECÍFICO) ───
         case "aceitar":
         case "aceitar_todos":
         case "aprovartodos": {
@@ -15965,32 +16944,103 @@ aqui, boa sorte..`);
           if (!isBotGroupAdmins) return reply(Res_BotADM);
 
           try {
-            // Verificar se foi passado um número limite
-            const limiteAceitar =
-              q && /^\d+$/.test(q.trim()) ? parseInt(q.trim()) : null;
+            reply("⏳ Verificando solicitações pendentes...");
+            let pendentes = [];
+            try {
+              pendentes = await conn.groupRequestParticipantsList(from);
+            } catch (errReq) {
+              return reply(
+                `⚠️ *Modo de aprovação inativo ou erro na consulta!*\n\nCertifique-se de que a aprovação de membros está ativada no grupo.\n\nDetalhes: ${errReq?.message || errReq}`,
+              );
+            }
 
-            reply("⏳ Buscando pedidos pendentes...");
-            const pendentes = await conn.groupRequestParticipantsList(from);
-
-            if (!pendentes || pendentes.length === 0) {
+            if (!Array.isArray(pendentes) || pendentes.length === 0) {
               return reply(
                 `✅ *Nenhum pedido pendente!*\n\nNão há nenhuma solicitação de entrada aguardando aprovação neste grupo.`,
               );
             }
 
-            // Aplicar limite se informado
-            const pendentesSlice = limiteAceitar
-              ? pendentes.slice(0, limiteAceitar)
+            // Helper de extração segura de JID do item pendente
+            const getJidFromP = (p) => {
+              if (!p) return null;
+              if (typeof p === "string") {
+                return p.includes("@") ? p : `${p.replace(/\D/g, "")}@s.whatsapp.net`;
+              }
+              const raw = p.jid || p.phoneNumber || p.pn || p.id;
+              if (!raw) return null;
+              if (String(raw).includes("@")) return String(raw);
+              return `${String(raw).replace(/\D/g, "")}@s.whatsapp.net`;
+            };
+
+            const getNumFromP = (p) => {
+              const j = getJidFromP(p);
+              return j ? String(j).split("@")[0].replace(/\D/g, "") : "";
+            };
+
+            // 1. Verificar se o admin indicou um membro específico (@menção ou número de telefone)
+            let alvoEspecificoNum = null;
+            if (info.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+              alvoEspecificoNum = info.message.extendedTextMessage.contextInfo.mentionedJid[0]
+                .split("@")[0].replace(/\D/g, "");
+            } else if (q && /@(\d+)/.test(q)) {
+              alvoEspecificoNum = q.match(/@(\d+)/)[1].replace(/\D/g, "");
+            } else if (q && q.trim().replace(/\D/g, "").length >= 8) {
+              alvoEspecificoNum = q.trim().replace(/\D/g, "");
+            }
+
+            // 2. Se for alvo específico:
+            if (alvoEspecificoNum) {
+              const itemAlvo = pendentes.find((p) => {
+                const num = getNumFromP(p);
+                return num === alvoEspecificoNum || num.endsWith(alvoEspecificoNum.slice(-8));
+              });
+
+              if (!itemAlvo) {
+                return reply(
+                  `❌ O usuário @${alvoEspecificoNum} não foi encontrado na fila de solicitações pendentes!\n\n💡 Use *${prefix}solicitacoes* para ver a fila atual.`,
+                  { mentions: [`${alvoEspecificoNum}@s.whatsapp.net`] },
+                );
+              }
+
+              const jidAlvo = getJidFromP(itemAlvo);
+              const resUpdate = await conn.groupRequestParticipantsUpdate(
+                from,
+                [jidAlvo],
+                "approve",
+              );
+
+              const deuCerto = resUpdate.some((r) => r.status === "200" || !r.status || r.status === 200);
+              const admNum = sender.split("@")[0];
+
+              if (deuCerto) {
+                return await conn.sendMessage(
+                  from,
+                  {
+                    text: `✅ *Solicitação Aprovada!*\n\n👤 ADM responsável: @${admNum}\n🎉 Novo membro: @${alvoEspecificoNum}\n\nSeja muito bem-vindo(a) ao grupo! 🚀`,
+                    mentions: [sender, `${alvoEspecificoNum}@s.whatsapp.net`, jidAlvo].filter(Boolean),
+                  },
+                  { quoted: info },
+                );
+              } else {
+                return reply(`⚠️ Não foi possível aprovar @${alvoEspecificoNum}. Pode ser que a solicitação tenha expirado.`);
+              }
+            }
+
+            // 3. Se for quantidade/limite (ex: !aceitar 5)
+            const limiteQ = (q && /^\d+$/.test(q.trim()) && parseInt(q.trim()) <= 300)
+              ? parseInt(q.trim())
+              : null;
+
+            const pendentesSlice = limiteQ
+              ? pendentes.slice(0, limiteQ)
               : pendentes;
-            const restantes = limiteAceitar
-              ? Math.max(0, pendentes.length - limiteAceitar)
+            const restantes = limiteQ
+              ? Math.max(0, pendentes.length - limiteQ)
               : 0;
 
-            const jids = pendentesSlice.map((p) => p.jid).filter(Boolean);
+            const jids = pendentesSlice.map(getJidFromP).filter(Boolean);
             if (jids.length === 0) {
-              return reply(
-                `⚠️ Não foi possível obter os JIDs dos solicitantes.`,
-              );
+              return reply(`⚠️ Não foi possível obter os identificadores dos solicitantes.`);
             }
 
             const resultados = await conn.groupRequestParticipantsUpdate(
@@ -16014,27 +17064,26 @@ aqui, boa sorte..`);
             if (falhas.length > 0) txt += `⚠️ Falhas: *${falhas.length}*\n`;
             if (restantes > 0)
               txt += `⏳ Ainda pendentes: *${restantes}* solicitação(ões)\n`;
-            txt += `\n🎉 Bem-vindo(a/s) ao grupo!`;
+            txt += `\n🎉 Sejam todos muito bem-vindos ao grupo!`;
+
+            const aprovadosJids = aprovados.map((r) => r.jid).filter(Boolean);
 
             await conn.sendMessage(
               from,
               {
                 text: txt,
-                mentions: [
-                  sender,
-                  ...aprovados.map((r) => r.jid).filter(Boolean),
-                ],
+                mentions: [sender, ...aprovadosJids],
               },
               { quoted: info },
             );
           } catch (e) {
             console.error("[ACEITAR-PEDIDOS] Erro:", e);
-            reply(`❌ Erro ao processar pedidos: ${e.message || e}`);
+            reply(`❌ Erro ao processar aprovações: ${e.message || e}`);
           }
           break;
         }
 
-        // ─── RECUSAR TODOS OS PEDIDOS PENDENTES ───────────────────────
+        // ─── RECUSAR PEDIDOS PENDENTES (TODOS, QUANTIDADE OU ESPECÍFICO) ───
         case "recusar":
         case "recusar_todos":
         case "rejeitartodos": {
@@ -16043,20 +17092,93 @@ aqui, boa sorte..`);
           if (!isBotGroupAdmins) return reply(Res_BotADM);
 
           try {
-            // Verificar se foi passado um número limite
-            const limiteRecusar =
-              q && /^\d+$/.test(q.trim()) ? parseInt(q.trim()) : null;
+            reply("⏳ Verificando solicitações pendentes...");
+            let pendentes = [];
+            try {
+              pendentes = await conn.groupRequestParticipantsList(from);
+            } catch (errReq) {
+              return reply(
+                `⚠️ *Modo de aprovação inativo ou erro na consulta!*\n\nCertifique-se de que a aprovação de membros está ativada no grupo.\n\nDetalhes: ${errReq?.message || errReq}`,
+              );
+            }
 
-            reply("⏳ Buscando pedidos pendentes...");
-            const pendentes = await conn.groupRequestParticipantsList(from);
-
-            if (!pendentes || pendentes.length === 0) {
+            if (!Array.isArray(pendentes) || pendentes.length === 0) {
               return reply(
                 `✅ *Nenhum pedido pendente!*\n\nNão há nenhuma solicitação de entrada aguardando aprovação neste grupo.`,
               );
             }
 
-            // Aplicar limite se informado
+            // Helper de extração segura de JID do item pendente
+            const getJidFromP = (p) => {
+              if (!p) return null;
+              if (typeof p === "string") {
+                return p.includes("@") ? p : `${p.replace(/\D/g, "")}@s.whatsapp.net`;
+              }
+              const raw = p.jid || p.phoneNumber || p.pn || p.id;
+              if (!raw) return null;
+              if (String(raw).includes("@")) return String(raw);
+              return `${String(raw).replace(/\D/g, "")}@s.whatsapp.net`;
+            };
+
+            const getNumFromP = (p) => {
+              const j = getJidFromP(p);
+              return j ? String(j).split("@")[0].replace(/\D/g, "") : "";
+            };
+
+            // 1. Verificar se o admin indicou um membro específico (@menção ou número de telefone)
+            let alvoEspecificoNum = null;
+            if (info.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+              alvoEspecificoNum = info.message.extendedTextMessage.contextInfo.mentionedJid[0]
+                .split("@")[0].replace(/\D/g, "");
+            } else if (q && /@(\d+)/.test(q)) {
+              alvoEspecificoNum = q.match(/@(\d+)/)[1].replace(/\D/g, "");
+            } else if (q && q.trim().replace(/\D/g, "").length >= 8) {
+              alvoEspecificoNum = q.trim().replace(/\D/g, "");
+            }
+
+            // 2. Se for alvo específico:
+            if (alvoEspecificoNum) {
+              const itemAlvo = pendentes.find((p) => {
+                const num = getNumFromP(p);
+                return num === alvoEspecificoNum || num.endsWith(alvoEspecificoNum.slice(-8));
+              });
+
+              if (!itemAlvo) {
+                return reply(
+                  `❌ O usuário @${alvoEspecificoNum} não foi encontrado na fila de solicitações pendentes!\n\n💡 Use *${prefix}solicitacoes* para ver a fila atual.`,
+                  { mentions: [`${alvoEspecificoNum}@s.whatsapp.net`] },
+                );
+              }
+
+              const jidAlvo = getJidFromP(itemAlvo);
+              const resUpdate = await conn.groupRequestParticipantsUpdate(
+                from,
+                [jidAlvo],
+                "reject",
+              );
+
+              const deuCerto = resUpdate.some((r) => r.status === "200" || !r.status || r.status === 200);
+              const admNum = sender.split("@")[0];
+
+              if (deuCerto) {
+                return await conn.sendMessage(
+                  from,
+                  {
+                    text: `❌ *Solicitação Recusada!*\n\n👤 ADM responsável: @${admNum}\n🚫 Usuário recusado: @${alvoEspecificoNum}\n\nA solicitação de entrada foi rejeitada com sucesso.`,
+                    mentions: [sender, `${alvoEspecificoNum}@s.whatsapp.net`],
+                  },
+                  { quoted: info },
+                );
+              } else {
+                return reply(`⚠️ Não foi possível recusar @${alvoEspecificoNum}. Pode ser que o pedido já tenha sido alterado.`);
+              }
+            }
+
+            // 3. Se for quantidade/limite (ex: !recusar 3)
+            const limiteRecusar = (q && /^\d+$/.test(q.trim()) && parseInt(q.trim()) <= 300)
+              ? parseInt(q.trim())
+              : null;
+
             const pendentesSliceR = limiteRecusar
               ? pendentes.slice(0, limiteRecusar)
               : pendentes;
@@ -16064,11 +17186,9 @@ aqui, boa sorte..`);
               ? Math.max(0, pendentes.length - limiteRecusar)
               : 0;
 
-            const jids = pendentesSliceR.map((p) => p.jid).filter(Boolean);
+            const jids = pendentesSliceR.map(getJidFromP).filter(Boolean);
             if (jids.length === 0) {
-              return reply(
-                `⚠️ Não foi possível obter os JIDs dos solicitantes.`,
-              );
+              return reply(`⚠️ Não foi possível obter os identificadores dos solicitantes.`);
             }
 
             const resultados = await conn.groupRequestParticipantsUpdate(
@@ -16088,7 +17208,7 @@ aqui, boa sorte..`);
             let txt = `❌ *Pedidos de Entrada Recusados!*\n\n`;
             txt += `👤 ADM responsável: @${admNum}\n`;
             txt += `📊 Total processado: *${jids.length}* pedido(s)\n`;
-            txt += `❌ Recusados: *${recusados.length}*\n`;
+            txt += `❌ Recusados com sucesso: *${recusados.length}*\n`;
             if (falhas.length > 0) txt += `⚠️ Falhas: *${falhas.length}*\n`;
             if (restantesR > 0)
               txt += `⏳ Ainda pendentes: *${restantesR}* solicitação(ões)\n`;
@@ -16104,7 +17224,7 @@ aqui, boa sorte..`);
             );
           } catch (e) {
             console.error("[RECUSAR-PEDIDOS] Erro:", e);
-            reply(`❌ Erro ao processar pedidos: ${e.message || e}`);
+            reply(`❌ Erro ao processar recusas: ${e.message || e}`);
           }
           break;
         }
@@ -18087,9 +19207,9 @@ _Remove da lista negra global_
             const Crypto = require("crypto");
             const tmpFileIn = path.join(require("os").tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`);
             const tmpFileOut = path.join(require("os").tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`);
-            
+
             fs.writeFileSync(tmpFileIn, encmediats);
-            
+
             const img = new webpmux.Image();
             const json = {
               "sticker-pack-id": `Aleatory-Bot`,
@@ -18101,12 +19221,12 @@ _Remove da lista negra global_
             const jsonBuff = Buffer.from(JSON.stringify(json), "utf-8");
             const exif = Buffer.concat([exifAttr, jsonBuff]);
             exif.writeUIntLE(jsonBuff.length, 14, 4);
-            
+
             await img.load(tmpFileIn);
             fs.unlinkSync(tmpFileIn);
             img.exif = exif;
             await img.save(tmpFileOut);
-            
+
             var sti = fs.readFileSync(tmpFileOut);
             fs.unlinkSync(tmpFileOut);
             await conn.sendMessage(from, { sticker: sti }, { quoted: info });
@@ -18575,24 +19695,120 @@ _Remove da lista negra global_
 
         case "nuke":
         case "arquivargp":
+        case "nukargp": {
           if (!SoDono && !isnit)
-            return reply("Só dono pode utilizar este comando...");
+            return reply("👑 Apenas o *dono do bot* pode usar o comando nuke!");
           if (!isBotGroupAdmins) return reply(Res_BotADM);
+          if (!isGroup) return reply(Res_SoGrupo);
           if (info.key.fromMe) return;
-          blup = [];
-          for (i of groupMembers) {
-            if (
-              !numerodono.includes(i.id) &&
-              !numerodono.includes(i.phoneNumber)
-            )
-              blup.push(i.id);
-          }
-          blup.splice(blup.indexOf(botNumber), 1);
-          for (i = 0; i < blup.length; i++) {
-            await sleep(500);
-            conn.groupParticipantsUpdate(from, [blup[i]], "remove");
+
+          try {
+            // Buscar metadados atualizados do grupo
+            let _nukeMetadata;
+            try {
+              _nukeMetadata = await conn.groupMetadata(from);
+            } catch {
+              _nukeMetadata = groupMetadata;
+            }
+
+            const _nukeParticipants = _nukeMetadata?.participants || groupMembers || [];
+            if (_nukeParticipants.length <= 1) return reply("❌ O grupo já está vazio!");
+
+            // IDs protegidos (bot + donos)
+            const _nukeProtected = new Set();
+            _nukeProtected.add(botNumber);
+            _nukeProtected.add(botJid);
+            if (botLid) _nukeProtected.add(botLid);
+            // Adicionar todos os donos
+            [setting.numerodono, dono1, dono2, dono3, dono4, dono5, dono6].forEach(d => {
+              if (d) {
+                const _dClean = d.replace(/[()+-\/ +\/]/gi, "");
+                _nukeProtected.add(_dClean);
+                _nukeProtected.add(_dClean + SNET);
+              }
+            });
+            // Adicionar quem executou o comando
+            _nukeProtected.add(sender);
+
+            // Filtrar membros removíveis (excluir bot + donos + remetente)
+            const _nukeTargets = _nukeParticipants
+              .map(m => m.id)
+              .filter(id => {
+                const _numPart = id.split("@")[0].split(":")[0];
+                return !_nukeProtected.has(id) &&
+                       !_nukeProtected.has(_numPart) &&
+                       !_nukeProtected.has(_numPart + SNET);
+              });
+
+            if (_nukeTargets.length === 0) return reply("❌ Nenhum membro para remover! (todos são donos/bot)");
+
+            // Aviso inicial
+            await conn.sendMessage(from, {
+              text:
+                `╔══════════════════════════════╗\n` +
+                `║  ☢️ *NUKE ATIVADO* ☢️\n` +
+                `╠══════════════════════════════╣\n` +
+                `║\n` +
+                `║  🧑‍💻 *Executor:* @${sender.split("@")[0]}\n` +
+                `║  👥 *Membros no grupo:* ${_nukeParticipants.length}\n` +
+                `║  🎯 *Alvos para remoção:* ${_nukeTargets.length}\n` +
+                `║  🛡️ *Protegidos:* ${_nukeParticipants.length - _nukeTargets.length}\n` +
+                `║\n` +
+                `║  ⏳ *Removendo em lotes...*\n` +
+                `║\n` +
+                `╚══════════════════════════════╝`,
+              mentions: [sender],
+            });
+
+            // Remover em lotes de 5 (Baileys suporta múltiplos por chamada)
+            const _nukeBatchSize = 5;
+            let _nukeRemoved = 0;
+            let _nukeFailed = 0;
+
+            for (let _i = 0; _i < _nukeTargets.length; _i += _nukeBatchSize) {
+              const _batch = _nukeTargets.slice(_i, _i + _nukeBatchSize);
+              try {
+                await conn.groupParticipantsUpdate(from, _batch, "remove");
+                _nukeRemoved += _batch.length;
+              } catch (errBatch) {
+                // Se lote falhar, tentar um por um
+                for (const _single of _batch) {
+                  try {
+                    await conn.groupParticipantsUpdate(from, [_single], "remove");
+                    _nukeRemoved++;
+                  } catch {
+                    _nukeFailed++;
+                  }
+                  await sleep(300);
+                }
+              }
+              // Pausa entre lotes para evitar rate limit
+              if (_i + _nukeBatchSize < _nukeTargets.length) await sleep(1500);
+            }
+
+            // Relatório final
+            await conn.sendMessage(from, {
+              text:
+                `╔══════════════════════════════╗\n` +
+                `║  ☢️ *NUKE CONCLUÍDO* ☢️\n` +
+                `╠══════════════════════════════╣\n` +
+                `║\n` +
+                `║  ✅ *Removidos:* ${_nukeRemoved} membros\n` +
+                `║  ❌ *Falhas:* ${_nukeFailed}\n` +
+                `║  🛡️ *Protegidos:* ${_nukeParticipants.length - _nukeTargets.length}\n` +
+                `║\n` +
+                `║  _Operação finalizada._\n` +
+                `║\n` +
+                `╚══════════════════════════════╝`,
+            });
+
+            console.log(`[NUKE] ☢️ ${sender} executou nuke no grupo ${from}: ${_nukeRemoved} removidos, ${_nukeFailed} falhas`);
+          } catch (errNuke) {
+            console.error("[NUKE] Erro:", errNuke);
+            reply(`❌ *Erro ao executar nuke:* ${errNuke?.message || "Erro desconhecido"}`);
           }
           break;
+        }
 
         // ═════ SISTEMA DE AVISOS AUTOMÁTICOS ═════
 
@@ -19110,11 +20326,11 @@ _→ Áudio enviado todo dia às 14:30_
           if (_revResp) {
             await conn.sendMessage(from, {
               text: `┏━━━━━━━━━━━━━━━┓\n` +
-                    `┃ 👁️ *REVELADO!*\n` +
-                    `┗━━━━━━━━━━━━━━━┛\n\n` +
-                    `> 🔓 A resposta era: *${_revResp}*\n` +
-                    `> 👤 Revelado por @${sender2}\n\n` +
-                    `> ⏳ Próximo quiz em *5 segundos*...`,
+                `┃ 👁️ *REVELADO!*\n` +
+                `┗━━━━━━━━━━━━━━━┛\n\n` +
+                `> 🔓 A resposta era: *${_revResp}*\n` +
+                `> 👤 Revelado por @${sender2}\n\n` +
+                `> ⏳ Próximo quiz em *5 segundos*...`,
               mentions: [sender],
             }, { quoted: info });
 
@@ -21058,11 +22274,13 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           );
           await sleep(1000);
           reply(
-            `Use ${prefix}entrar cnvt ou ${prefix}recusar ${sender}, alguem enviou convite para entrar no grupo dele.`,
+            `Use ${prefix}entrar cnvt ou ${prefix}recusarconvite ${sender}, alguem enviou convite para entrar no grupo dele.`,
           );
           break;
 
-        case "recusar":
+        case "recusarconvite":
+        case "recusarcnvt":
+        case "recusarbot":
           if (!SoDono) return reply(Res_SoDono);
           conn.sendMessage(q, {
             text: `Olá Amigo(a), sinto muito dizer, mas seu convite foi recusado 🥺`,
@@ -21185,9 +22403,9 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
               if (_abType && _extractedUrl) {
                 try {
                   console.log(`[AUTOBAIXAR] Detectado: ${_abType} → ${_extractedUrl}`);
-                  
+
                   // Reação visual para o usuário saber que detectou
-                  conn.sendMessage(from, { react: { text: "📥", key: info.key } }).catch(() => {});
+                  conn.sendMessage(from, { react: { text: "📥", key: info.key } }).catch(() => { });
 
                   switch (_abType) {
                     case "spotify":
@@ -21202,15 +22420,15 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                             }, { quoted: info })
                             .catch((e) => {
                               console.error("[AUTOBAIXAR] Spotify envio erro:", e?.message || e);
-                              conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                              conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                             });
                         } else {
                           console.error("[AUTOBAIXAR] Spotify: buffer vazio");
-                          conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                          conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                         }
                       } catch (e) {
                         console.error("[AUTOBAIXAR] Spotify erro:", e?.message || e);
-                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                       }
                       break;
 
@@ -21238,15 +22456,15 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                             };
                           conn.sendMessage(from, _igMsg, { quoted: info }).catch((e) => {
                             console.error("[AUTOBAIXAR] Instagram envio erro:", e?.message || e);
-                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                           });
                         } else {
                           console.error("[AUTOBAIXAR] Instagram retornou sem mídia:", JSON.stringify(_igData).slice(0, 200));
-                          conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                          conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                         }
                       } catch (e) {
                         console.error("[AUTOBAIXAR] Instagram erro:", e?.message || e);
-                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                       }
                       break;
 
@@ -21259,7 +22477,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                           }, { quoted: info })
                           .catch((e) => {
                             console.error("[AUTOBAIXAR] YouTube vídeo erro:", e?.message || e);
-                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                           });
                       } catch (e) {
                         console.error("[AUTOBAIXAR] YouTube erro:", e?.message || e);
@@ -21289,7 +22507,7 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
                           }, { quoted: info })
                           .catch((e) => {
                             console.error(`[AUTOBAIXAR] ${_abType} envio erro:`, e?.message || e);
-                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                           });
                       } catch (e) {
                         console.error(`[AUTOBAIXAR] ${_abType} erro:`, e?.message || e);
@@ -21613,210 +22831,206 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
           }
 
           // ═══════════════════════════════════════════════
-          // 🧠 IA ALEATORY — Sistema com Rate Limit + Fallbacks
+          // 🧠 IA ALEATORY — Sistema com Rate Limit + Fallbacks (Texto)
           // ═══════════════════════════════════════════════
-          if (!isCmd && budy && !info.key.fromMe && (type === "conversation" || type === "extendedTextMessage")) {
-            const _iaText = (budy || "").trim();
-            const _iaTextLow = _iaText.toLowerCase();
-            const _iaAtivado = isGroup ? (dataGp[0]?.iaAleatory === true) : true;
+          {
+            const _iaIsText = type === "conversation" || type === "extendedTextMessage";
 
-            if (_iaAtivado && _iaText.length > 1) {
-              const _iaMencionou = /\b(aleatory|aleatori)\b/i.test(_iaTextLow);
+            if (!isCmd && !info.key.fromMe && _iaIsText) {
+              const _iaAtivado = isGroup ? (dataGp[0]?.iaAleatory === true) : (iaAleatoryPV === true);
 
-              let _iaRespondeuBot = false;
-              if (type === "extendedTextMessage") {
-                try {
-                  const _iaCtx = info.message?.extendedTextMessage?.contextInfo;
-                  if (_iaCtx?.quotedMessage) {
-                    const _iaQuotedParticipant = _iaCtx.participant || "";
-                    const _iaQuotedNum = _iaQuotedParticipant.split("@")[0].split(":")[0];
-                    _iaRespondeuBot = _iaCtx.fromMe === true ||
-                      _iaQuotedNum === botNumber ||
-                      (botLid && _iaQuotedNum === botLid.split("@")[0]);
-                  }
-                } catch { }
-              }
+              if (_iaAtivado) {
+                let _iaText = (budy || "").trim();
+                const _iaTextLow = _iaText.toLowerCase();
 
-              if (_iaMencionou || _iaRespondeuBot) {
-                // ═══ RATE LIMIT GLOBAL (proteção contra 429) ═══
-                if (!global._iaRateLimit) global._iaRateLimit = { blocked: false, until: 0, backoff: 60000, activeRequests: 0 };
-                const _rl = global._iaRateLimit;
+                const _iaMencionou = _iaText.length > 1 && (!isGroup || /\b(aleatory|aleatori)\b/i.test(_iaTextLow));
 
-                // Verificar se está em período de bloqueio por rate limit
-                if (_rl.blocked && Date.now() < _rl.until) {
-                  const _rlRestante = Math.ceil((_rl.until - Date.now()) / 1000);
-                  const _conn0 = global.conn || conn;
-                  await _conn0.sendMessage(from, {
-                    text: `⏳ *A IA está descansando!*\n\n_Muitas mensagens foram enviadas. Aguarde *${_rlRestante}s* e tente novamente._`,
-                  }, { quoted: info });
-                  continue;
-                }
-
-                // Reset do bloqueio se já passou o tempo
-                if (_rl.blocked && Date.now() >= _rl.until) {
-                  _rl.blocked = false;
-                  _rl.backoff = 60000; // Reset backoff
-                }
-
-                // Limitar requisições simultâneas (máx 2)
-                if (_rl.activeRequests >= 2) continue;
-
-                // Cooldown por usuário (15s normal, 30s se teve rate limit recente)
-                if (!global._iaCooldown) global._iaCooldown = new Map();
-                const _iaCooldownMs = _rl.backoff > 60000 ? 30000 : 15000;
-                const _iaLast = global._iaCooldown.get(sender) || 0;
-                if (Date.now() - _iaLast < _iaCooldownMs) continue;
-                global._iaCooldown.set(sender, Date.now());
-
-                // ═══ EXECUÇÃO ISOLADA — não pode derrubar o bot ═══
-                const _iaFrom = from;
-                const _iaSender = sender;
-                const _iaPush = pushname;
-                const _iaIsGroup = isGroup;
-                const _iaInfo = info;
-                const _iaQuotedCtx = _iaRespondeuBot ? info.message?.extendedTextMessage?.contextInfo : null;
-
-                _rl.activeRequests++;
-
-                setTimeout(async () => {
+                let _iaRespondeuBot = false;
+                if (type === "extendedTextMessage") {
                   try {
-                    if (!global._iaMemory) global._iaMemory = new Map();
-                    const _iaMemKey = _iaSender + "_" + _iaFrom;
-                    const _iaHist = global._iaMemory.get(_iaMemKey) || [];
-
-                    let _iaQuery = _iaText.replace(/\b(aleatory|aleatori|hey|ei|oi|ola|olá)[,.:!?]?\s*/gi, "").trim();
-                    if (_iaQuery.length < 2) _iaQuery = _iaText;
-
-                    // Contexto da msg citada
-                    if (_iaQuotedCtx && _iaHist.length === 0) {
-                      const _qt = _iaQuotedCtx.quotedMessage?.conversation ||
-                        _iaQuotedCtx.quotedMessage?.extendedTextMessage?.text || "";
-                      if (_qt) _iaHist.push({ role: "assistant", content: _qt });
+                    const _iaCtx = info.message?.extendedTextMessage?.contextInfo;
+                    if (_iaCtx?.quotedMessage) {
+                      const _iaQuotedParticipant = _iaCtx.participant || "";
+                      const _iaQuotedNum = _iaQuotedParticipant.split("@")[0].split(":")[0];
+                      _iaRespondeuBot = _iaCtx.fromMe === true ||
+                        _iaQuotedNum === botNumber ||
+                        (botLid && _iaQuotedNum === botLid.split("@")[0]);
                     }
+                  } catch { }
+                }
 
-                    _iaHist.push({ role: "user", content: _iaQuery });
-                    if (_iaHist.length > 6) _iaHist.splice(0, _iaHist.length - 6);
+                if (_iaMencionou || _iaRespondeuBot) {
+                  // ═══ RATE LIMIT GLOBAL (proteção contra 429) ═══
+                  if (!global._iaRateLimit) global._iaRateLimit = { blocked: false, until: 0, backoff: 60000, activeRequests: 0 };
+                  const _rl = global._iaRateLimit;
 
-                    const _iaSys = `Você é Aleatory Bot v8.6, assistente de WhatsApp da BronxysHost. Responda em pt-BR, amigável, direto (máx 150 palavras). Use emojis com moderação. NUNCA diga que usa API externa, Gemini, OpenAI ou Pollinations. Seu nome é Aleatory. Usuário: ${_iaPush || "amigo"}. ${_iaIsGroup ? "Chat de grupo." : "Chat privado."}`;
+                  if (_rl.blocked && Date.now() < _rl.until) {
+                    // Rate limit ativo: ignorar silenciosamente
+                    continue;
+                  }
 
-                    let _iaReply = "";
+                  if (_rl.blocked && Date.now() >= _rl.until) {
+                    _rl.blocked = false;
+                    _rl.backoff = 60000;
+                  }
 
-                    // ═══ TENTATIVA 1: POLLINATIONS (sem chave, gratuito) ═══
+                  if (_rl.activeRequests >= 2) continue;
+
+                  if (!global._iaCooldown) global._iaCooldown = new Map();
+                  const _iaCooldownMs = _rl.backoff > 60000 ? 30000 : 15000;
+                  const _iaLast = global._iaCooldown.get(sender) || 0;
+                  if (Date.now() - _iaLast < _iaCooldownMs) continue;
+                  global._iaCooldown.set(sender, Date.now());
+
+                  const _iaFrom = from;
+                  const _iaSender = sender;
+                  const _iaPush = pushname;
+                  const _iaIsGroup = isGroup;
+                  const _iaInfo = info;
+                  const _iaQuotedCtx = _iaRespondeuBot && type === "extendedTextMessage"
+                    ? info.message?.extendedTextMessage?.contextInfo : null;
+
+                  _rl.activeRequests++;
+
+                  const _connReact = global.conn || conn;
+                  // Reação de "pensando" apenas às vezes (40% de chance) para não ser intrusivo
+                  if (Math.random() < 0.4) {
+                    await _connReact.sendMessage(from, { react: { text: "🤔", key: info.key } }).catch(() => { });
+                  }
+
+                  setTimeout(async () => {
                     try {
-                      const _polRes = await axios.post("https://text.pollinations.ai/v1/chat/completions", {
-                        messages: [{ role: "system", content: _iaSys }, ..._iaHist],
-                        model: "openai",
-                        jsonMode: false,
-                        seed: Math.floor(Math.random() * 99999),
-                      }, {
-                        headers: { "Content-Type": "application/json" },
-                        timeout: 25000,
-                      });
-                      if (_polRes?.data?.choices?.[0]?.message?.content) {
-                        _iaReply = _polRes.data.choices[0].message.content;
-                        console.log("[IA-ALEATORY] ✅ Pollinations respondeu");
-                      }
-                    } catch (_e1) {
-                      const _statusCode = _e1?.response?.status;
-                      console.log("[IA-ALEATORY] Pollinations falhou:", _statusCode || _e1?.message || "erro");
+                      if (!global._iaMemory) global._iaMemory = new Map();
+                      const _iaMemKey = _iaSender + "_" + _iaFrom;
+                      const _iaHist = global._iaMemory.get(_iaMemKey) || [];
 
-                      // ═══ DETECTAR 429 E ATIVAR BACKOFF GLOBAL ═══
-                      if (_statusCode === 429) {
-                        _rl.blocked = true;
-                        _rl.until = Date.now() + _rl.backoff;
-                        console.log(`[IA-ALEATORY] ⚠️ Rate limit! Bloqueando por ${_rl.backoff / 1000}s`);
-                        _rl.backoff = Math.min(_rl.backoff * 2, 300000);
-                      }
-                    }
+                      let _iaQuery = _iaText.replace(/\b(aleatory|aleatori|hey|ei|oi|ola|olá)[,.:!?]?\s*/gi, "").trim();
+                      if (_iaQuery.length < 2) _iaQuery = _iaText;
 
-                    // ═══ TENTATIVA 2: GEMINI (se tiver chave configurada) ═══
-                    if (!_iaReply) {
+                      // Contexto da msg citada
+                      if (_iaQuotedCtx && _iaHist.length === 0) {
+                        const _qt = _iaQuotedCtx.quotedMessage?.conversation ||
+                          _iaQuotedCtx.quotedMessage?.extendedTextMessage?.text || "";
+                        if (_qt) _iaHist.push({ role: "assistant", content: _qt });
+                      }
+
+                      _iaHist.push({ role: "user", content: _iaQuery });
+                      if (_iaHist.length > 6) _iaHist.splice(0, _iaHist.length - 6);
+
+                      const _iaSys = `Você é Aleatory Bot v9.0, assistente de WhatsApp da BronxysHost. Responda em pt-BR, amigável, direto (máx 150 palavras). Use emojis com moderação. NUNCA diga que usa API externa, Gemini, OpenAI ou Pollinations. Seu nome é Aleatory. Usuário: ${_iaPush || "amigo"}. ${_iaIsGroup ? "Chat de grupo." : "Chat privado."}`;
+
+                      let _iaReply = "";
+
+                      // ═══ TENTATIVA 1: POLLINATIONS ═══
                       try {
-                        const _gemKey = setting?.gemini_api_key || "";
-                        if (_gemKey && _gemKey.length > 10) {
-                          const _gemContents = [
-                            { role: "user", parts: [{ text: _iaSys }] },
-                            { role: "model", parts: [{ text: "Entendido!" }] },
-                          ];
-                          for (const h of _iaHist) {
-                            _gemContents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.content }] });
-                          }
-                          const _gemRes = await axios.post(
-                            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${_gemKey}`,
-                            { contents: _gemContents },
-                            { headers: { "Content-Type": "application/json" }, timeout: 15000 }
-                          );
-                          const _gemText = _gemRes?.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                          if (_gemText && _gemText.length > 1) {
-                            _iaReply = _gemText.trim();
-                            console.log("[IA-ALEATORY] ✅ Gemini respondeu (backup)");
-                          }
-                        }
-                      } catch (_eGem) {
-                        console.log("[IA-ALEATORY] Gemini falhou:", _eGem?.response?.status || _eGem?.message || "erro");
-                      }
-                    }
-
-                    // ═══ TENTATIVA 3: BLACKBOX AI (sem chave, gratuito, confiável) ═══
-                    if (!_iaReply) {
-                      try {
-                        const _bbRes = await axios.post("https://api.blackbox.ai/api/chat", {
-                          messages: [{ role: "user", content: _iaSys + "\n\nUsuário disse: " + _iaQuery }],
-                          agentMode: {},
-                          trendingAgentMode: {},
-                          isMicMode: false,
-                          maxTokens: 300,
+                        const _polRes = await axios.post("https://text.pollinations.ai/v1/chat/completions", {
+                          messages: [{ role: "system", content: _iaSys }, ..._iaHist],
+                          model: "openai",
+                          jsonMode: false,
+                          seed: Math.floor(Math.random() * 99999),
                         }, {
                           headers: { "Content-Type": "application/json" },
-                          timeout: 15000,
+                          timeout: 25000,
                         });
-                        const _bbText = typeof _bbRes.data === "string" ? _bbRes.data : _bbRes.data?.message || "";
-                        // Limpar prefixos de markdown que Blackbox pode adicionar
-                        const _bbClean = _bbText.replace(/^\$@\$v=[^\n]*\n?/g, "").replace(/\[?\*?\*?\s*Sources?\s*[\]:].*$/gms, "").trim();
-                        if (_bbClean && _bbClean.length > 1 && _bbClean.length < 2000) {
-                          _iaReply = _bbClean;
-                          console.log("[IA-ALEATORY] ✅ Blackbox respondeu (backup 2)");
+                        if (_polRes?.data?.choices?.[0]?.message?.content) {
+                          _iaReply = _polRes.data.choices[0].message.content;
                         }
-                      } catch (_eBB) {
-                        console.log("[IA-ALEATORY] Blackbox falhou:", _eBB?.message || "erro");
+                      } catch (_e1) {
+                        const _statusCode = _e1?.response?.status;
+                        if (_statusCode === 429) {
+                          _rl.blocked = true;
+                          _rl.until = Date.now() + _rl.backoff;
+                          _rl.backoff = Math.min(_rl.backoff * 2, 300000);
+                        }
                       }
-                    }
 
-                    // ═══ TENTATIVA 4: SIMI LOCAL (último recurso) ═══
-                    if (!_iaReply) {
-                      try {
-                        const _simiLocal = await simih(_iaQuery);
-                        if (_simiLocal && _simiLocal.length > 0) {
-                          _iaReply = _simiLocal;
-                          console.log("[IA-ALEATORY] ✅ Simi local respondeu (último recurso)");
+                      // ═══ TENTATIVA 2: GEMINI ═══
+                      if (!_iaReply) {
+                        try {
+                          const _gemKey = setting?.gemini_api_key || "";
+                          if (_gemKey && _gemKey.length > 10) {
+                            const _gemContents = [
+                              { role: "user", parts: [{ text: _iaSys }] },
+                              { role: "model", parts: [{ text: "Entendido!" }] },
+                            ];
+                            for (const h of _iaHist) {
+                              _gemContents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.content }] });
+                            }
+                            const _gemRes = await axios.post(
+                              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${_gemKey}`,
+                              { contents: _gemContents },
+                              { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+                            );
+                            const _gemText = _gemRes?.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (_gemText && _gemText.length > 1) {
+                              _iaReply = _gemText.trim();
+                            }
+                          }
+                        } catch (_eGem) { }
+                      }
+
+                      // ═══ TENTATIVA 3: POLLINATIONS modelo alternativo ═══
+                      if (!_iaReply) {
+                        try {
+                          const _pol2Res = await axios.post("https://text.pollinations.ai/v1/chat/completions", {
+                            messages: [{ role: "system", content: _iaSys }, ..._iaHist],
+                            model: "mistral",
+                            jsonMode: false,
+                            seed: Math.floor(Math.random() * 99999),
+                          }, {
+                            headers: { "Content-Type": "application/json" },
+                            timeout: 25000,
+                          });
+                          if (_pol2Res?.data?.choices?.[0]?.message?.content) {
+                            _iaReply = _pol2Res.data.choices[0].message.content;
+                          }
+                        } catch (_ePol2) { }
+                      }
+
+                      // ═══ TENTATIVA 4: SIMI LOCAL ═══
+                      if (!_iaReply) {
+                        try {
+                          const _simiLocal = await simih(_iaQuery);
+                          if (_simiLocal && _simiLocal.length > 0) {
+                            _iaReply = _simiLocal;
+                          }
+                        } catch { }
+                      }
+
+                      // ═══ ENVIAR RESPOSTA ═══
+                      if (!_iaReply) {
+                        // Sem resposta: ignorar silenciosamente ou reagir com emoji de dúvida (30% de chance)
+                        if (Math.random() < 0.3) {
+                          const _conn = global.conn || conn;
+                          await _conn.sendMessage(_iaFrom, { react: { text: "🤷", key: _iaInfo.key } }).catch(() => { });
+                        } else {
+                          // Remover reação de "pensando" se houver
+                          const _conn = global.conn || conn;
+                          await _conn.sendMessage(_iaFrom, { react: { text: "", key: _iaInfo.key } }).catch(() => { });
                         }
-                      } catch { }
-                    }
+                        return;
+                      }
 
-                    // Enviar resposta se tiver
-                    if (_iaReply && _iaReply.length > 0) {
-                      // Limitar tamanho da resposta
                       if (_iaReply.length > 3000) _iaReply = _iaReply.slice(0, 3000) + "...";
-                      
+
                       _iaHist.push({ role: "assistant", content: _iaReply });
                       if (_iaHist.length > 6) _iaHist.splice(0, _iaHist.length - 6);
                       global._iaMemory.set(_iaMemKey, _iaHist);
 
                       const _conn = global.conn || conn;
                       await _conn.sendMessage(_iaFrom, { text: _iaReply }, { quoted: _iaInfo });
-                    } else {
-                      // Todas as APIs falharam — avisar o usuário UMA vez
-                      const _conn = global.conn || conn;
-                      await _conn.sendMessage(_iaFrom, {
-                        text: `😴 _Estou com dificuldade para responder agora. Tenta de novo em alguns segundos!_`,
-                      }, { quoted: _iaInfo });
+                      await _conn.sendMessage(_iaFrom, { react: { text: "", key: _iaInfo.key } }).catch(() => { });
+                    } catch (e) {
+                      // Erro: ignorar silenciosamente, apenas limpar reação
+                      try {
+                        const _conn = global.conn || conn;
+                        await _conn.sendMessage(_iaFrom, { react: { text: "", key: _iaInfo.key } }).catch(() => { });
+                      } catch { }
+                    } finally {
+                      _rl.activeRequests = Math.max(0, _rl.activeRequests - 1);
                     }
-                  } catch (e) {
-                    console.log("[IA-ALEATORY] Erro isolado:", e?.message || e);
-                  } finally {
-                    _rl.activeRequests = Math.max(0, _rl.activeRequests - 1);
-                  }
-                }, 0);
+                  }, 0);
+                }
               }
             }
           }
@@ -22204,3 +23418,4 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
 };
 
 module.exports = startAle;
+module.exports.broadcastNovidades = broadcastNovidades;
