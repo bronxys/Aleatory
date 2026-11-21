@@ -98,6 +98,9 @@ importers:
       request:
         specifier: ^2.88.2
         version: 2.88.2
+      uuid:
+        specifier: 3.4.0
+        version: 3.4.0
       wa-sticker-formatter:
         specifier: ^4.4.4
         version: 4.4.4(debug@4.4.3(supports-color@8.1.1))
