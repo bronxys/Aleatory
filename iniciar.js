@@ -94,19 +94,15 @@ const _groupMetadataCache = new NodeCache({ stdTTL: 300, useClones: false }); //
 async function getWAVersionFromWPP() {
   // ═══ TENTATIVA 1: fetchLatestBaileysVersion (fonte oficial do Baileys) ═══
   try {
-    // Carregar Baileys se necessário para pegar a função
     const baileys = await import("@whiskeysockets/baileys");
     const fetchVer = baileys.fetchLatestBaileysVersion;
     if (fetchVer) {
-      const { version, isLatest } = await fetchVer();
+      const { version } = await fetchVer();
       if (version && Array.isArray(version)) {
-        console.log(`\x1b[32m✅ [VERSION] Versão WA Web (Baileys oficial): ${JSON.stringify(version)} (isLatest: ${isLatest})\x1b[0m`);
         return version;
       }
     }
-  } catch (err) {
-    console.log(`\x1b[33m⚠️ [VERSION] Erro ao buscar via fetchLatestBaileysVersion: ${err.message}\x1b[0m`);
-  }
+  } catch { }
 
   // ═══ TENTATIVA 2: WPPConnect (scraping de versão) ═══
   try {
@@ -124,18 +120,11 @@ async function getWAVersionFromWPP() {
     const match = response.data.match(regex);
 
     if (match?.[1]) {
-      const version = [2, 3000, +match[1]];
-      console.log(`\x1b[32m✅ [VERSION] Versão WA Web (WPPConnect): ${JSON.stringify(version)}\x1b[0m`);
-      return version;
+      return [2, 3000, +match[1]];
     }
-
-    console.log('\x1b[33m⚠️ [VERSION] Não foi possível extrair versão do WPPConnect.\x1b[0m');
-  } catch (err) {
-    console.log(`\x1b[33m⚠️ [VERSION] Erro ao buscar versão do WPPConnect: ${err.message}\x1b[0m`);
-  }
+  } catch { }
 
   // ═══ FALLBACK: versão fixa segura ═══
-  console.log('\x1b[33m⚠️ [VERSION] Usando versão fallback.\x1b[0m');
   return null;
 }
 
@@ -144,6 +133,8 @@ const {
   clearScreen,
   showBanner,
   showWelcomeScreen,
+  showConnectingCard,
+  showOnlineDashboard,
   showHelpScreen,
   showTrustScreen,
   showPairingInstructions,
@@ -469,60 +460,69 @@ async function loadBaileys() {
 // ═══════════════════════════════════════════════════════════
 // INICIALIZAR SCHEDULERS (UMA VEZ, USAM global.conn)
 // ═══════════════════════════════════════════════════════════
+let _schedulerSummary = { modulesActive: 0, modulesTotal: 5, aluguelAtivo: false };
+
 function initializeSchedulers() {
-  if (_schedulersInitialized) return;
+  if (_schedulersInitialized) return _schedulerSummary;
   _schedulersInitialized = true;
 
-  // ── Horários (abrir/fechar grupo novo sistema) ──
-  try {
-    const { initHorariosScheduler } = require("./dados/org/funcoes/horarios_grupo.js");
-    initHorariosScheduler(); // Sem parâmetro — usa global.conn
-  } catch (e) {
-    console.error("[HORÁRIOS] Erro ao iniciar scheduler:", e.message);
-  }
+  let active = 0;
+  let aluguelAtivo = false;
+  // Silencia apenas os 5 logs verbosos síncronos de inicialização para exibir no painel consolidado
+  const _origLog = console.log;
+  console.log = () => {};
 
-  // ── Avisos automáticos ──
   try {
-    const { initAvisosScheduler } = require("./operacao/avisos-automaticos/index.js");
-    initAvisosScheduler(); // Sem parâmetro — usa global.conn
-  } catch (e) {
-    console.error("[AVISOS] Erro ao iniciar scheduler:", e.message);
-  }
-
-  // ── Abrir/Fechar grupo (sistema antigo) ──
-  try {
-    const { initAbrirFecharScheduler } = require("./operacao/abrir-fechar-grupo/index.js");
-    initAbrirFecharScheduler(); // Sem parâmetro — usa global.conn
-  } catch (e) {
-    console.error("[ABRIR/FECHAR] Erro ao iniciar scheduler:", e.message);
-  }
-
-  // ── Aniversário ──
-  try {
-    const { initBirthdayScheduler } = require("./dados/org/funcoes/aniversario.js");
-    initBirthdayScheduler(); // Sem parâmetro — usa global.conn
-  } catch (e) {
-    console.error("[ANIVERSÁRIO] Erro ao iniciar scheduler:", e.message);
-  }
-
-  // ── Aluguel ──
-  try {
-    const { initAluguelScheduler } = require("./dados/org/funcoes/aluguel.js");
-    // FIX: Ler de settings.json (nescessario.json NÃO tem o campo numerodono!)
-    const _settingAluguel = JSON.parse(fs.readFileSync("./dados/settings.json", "utf-8"));
-    const _numerodonoAluguel = String(_settingAluguel?.numerodono || "")
-      .replace(/\D/g, "");
-    if (_numerodonoAluguel) {
-      initAluguelScheduler(null, _numerodonoAluguel); // conn ignorado — usa global.conn
-      console.log("🏘️ Sistema de aluguel v2.0 iniciado! (verificação a cada 15min)");
-    } else {
-      console.error("[ALUGUEL] ⚠️ Número do dono não configurado em settings.json!");
+    try {
+      const { initHorariosScheduler } = require("./dados/org/funcoes/horarios_grupo.js");
+      initHorariosScheduler();
+      active++;
+    } catch (e) {
+      console.error("[HORÁRIOS] Erro ao iniciar scheduler:", e.message);
     }
-  } catch (e) {
-    console.error("[ALUGUEL] Erro ao iniciar scheduler:", e.message);
+
+    try {
+      const { initAvisosScheduler } = require("./operacao/avisos-automaticos/index.js");
+      initAvisosScheduler();
+      active++;
+    } catch (e) {
+      console.error("[AVISOS] Erro ao iniciar scheduler:", e.message);
+    }
+
+    try {
+      const { initAbrirFecharScheduler } = require("./operacao/abrir-fechar-grupo/index.js");
+      initAbrirFecharScheduler();
+      active++;
+    } catch (e) {
+      console.error("[ABRIR/FECHAR] Erro ao iniciar scheduler:", e.message);
+    }
+
+    try {
+      const { initBirthdayScheduler } = require("./dados/org/funcoes/aniversario.js");
+      initBirthdayScheduler();
+      active++;
+    } catch (e) {
+      console.error("[ANIVERSÁRIO] Erro ao iniciar scheduler:", e.message);
+    }
+
+    try {
+      const { initAluguelScheduler } = require("./dados/org/funcoes/aluguel.js");
+      const _settingAluguel = JSON.parse(fs.readFileSync("./dados/settings.json", "utf-8"));
+      const _numerodonoAluguel = String(_settingAluguel?.numerodono || "").replace(/\D/g, "");
+      if (_numerodonoAluguel) {
+        initAluguelScheduler(null, _numerodonoAluguel);
+        aluguelAtivo = true;
+        active++;
+      }
+    } catch (e) {
+      console.error("[ALUGUEL] Erro ao iniciar scheduler:", e.message);
+    }
+  } finally {
+    console.log = _origLog;
   }
 
-  console.log("\x1b[32m[SCHEDULERS]\x1b[0m Todos os schedulers inicializados (usam global.conn dinâmico).");
+  _schedulerSummary = { modulesActive: active, modulesTotal: 5, aluguelAtivo };
+  return _schedulerSummary;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -620,33 +620,18 @@ async function createConnection() {
     if (_isFirstConnection) {
       await selectConnectionMethod();
     } else {
-      // ═══ RECONEXÃO — Luzes Natalinas + bem-vindo de volta ═══
-      const { clearScreen: _cls, showBanner, startRGBBanner, stopRGBBanner } = require("./menu_conexao.js");
+      // ═══ RECONEXÃO — Banner Natalino Animado + Card Limpo ═══
+      const { clearScreen: _cls, showBanner: _sBan, startRGBBanner, stopRGBBanner } = require("./menu_conexao.js");
       const _sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
       _cls();
       startRGBBanner();
-      await _sleep(3000);
+      await _sleep(2200);
       stopRGBBanner();
 
       _cls();
-      showBanner();
-
-      const _g = '\x1b[38;5;240m';
-      const _gld = '\x1b[38;5;220m';
-      const _grn = '\x1b[38;5;34m';
-      const _xr = '\x1b[38;5;196m';
-      const _xg = '\x1b[38;5;34m';
-      const _sn = '\x1b[38;5;255m';
-      const _B = '\x1b[1m';
-      const _R = '\x1b[0m';
-
-      console.log(`  ${_xr}🎅 ${_gld}${_B}BEM-VINDO DE VOLTA!${_R} ${_xg}🎄${_R}`);
-      console.log(`  ${_xr}✦${_xg}●${_gld}✦${_xr}●${_sn}✦${_xg}●${_gld}✦${_xr}●${_xg}✦${_gld}●${_R}`);
-      console.log(`  ${_grn}🎄 Aleatory Bot v9.0 ativo!${_R}`);
-      console.log(`  ${_grn}Conectando... Feliz Natal! 🎁${_R}`);
-      console.log(`  ${_xr}✦${_xg}●${_gld}✦${_xr}●${_sn}✦${_xg}●${_gld}✦${_xr}●${_xg}✦${_gld}●${_R}`);
-      console.log();
+      _sBan();
+      showConnectingCard();
     }
 
     let pairingPhoneNumber = null;
@@ -654,7 +639,6 @@ async function createConnection() {
 
     // ═══ BUSCAR VERSÃO ATUALIZADA DO WA WEB ═══
     const waVersion = await getWAVersionFromWPP() || [2, 3000, 1042742319];
-    console.log(`\x1b[36m📱 [VERSION] Conectando com versão: ${JSON.stringify(waVersion)}\x1b[0m`);
 
     const conn = _makeWASocket({
       logger: _logger,
@@ -689,8 +673,6 @@ async function createConnection() {
     _currentSocket = conn;
     // NÃO atualizar global.conn aqui — só quando connection === "open"
     // Isso evita que schedulers usem um socket que ainda não conectou
-
-    console.log(`\x1b[36m[KEEPALIVE]\x1b[0m Ativo: ping a cada 25s para manter conexão.`);
 
     // Solicitar código de pareamento se necessário
     if (
@@ -798,8 +780,6 @@ async function createConnection() {
           sessionStartTime = Date.now();
           global.conn = conn; // ═══ ÚNICO LUGAR onde global.conn é definido ═══
           _backupCreds(); // Backup de segurança a cada conexão bem-sucedida
-          showSuccess("CONECTADO COM SUCESSO!");
-          console.log(`\x1b[36m[CONEXÃO]\x1b[0m Sessão estável. KeepAlive ativo (25s). Uptime iniciado.`);
 
           // ── Registrar handler de mensagens (NESTE socket) ──
           const startAle = require("./index.js");
@@ -832,38 +812,40 @@ async function createConnection() {
           });
 
           // ── Inicializar schedulers UMA VEZ (global, usam global.conn) ──
-          initializeSchedulers();
+          const _schedInfo = initializeSchedulers();
 
           // ═══ BROADCAST AUTOMÁTICO — PRIMEIRA CONEXÃO (Natal 9.0) ═══
-          // Usa arquivo de flag para garantir que envia UMA VEZ, independente do creds.json
           const _broadcastFlagPath = path.join(__dirname, "dados", "_broadcast_v9_sent.flag");
           const _broadcastJaEnviado = fs.existsSync(_broadcastFlagPath);
+
+          // ═══ PAINEL ONLINE CONSOLIDADO (MOBILE & PC) ═══
+          showOnlineDashboard({
+            waVersion,
+            keepAliveSec: 25,
+            modulesActive: _schedInfo.modulesActive,
+            modulesTotal: _schedInfo.modulesTotal,
+            aluguelAtivo: _schedInfo.aluguelAtivo,
+            broadcastStatus: _broadcastJaEnviado ? "ok" : "scheduled",
+          });
+
           if (!_broadcastJaEnviado) {
-            console.log(`\x1b[32m[BROADCAST]\x1b[0m 🎄 Novidades v9.0 ainda não enviadas! Aguardando 15s para disparar...`);
             setTimeout(async () => {
               try {
                 const { broadcastNovidades } = require("./index.js");
                 if (typeof broadcastNovidades === "function") {
-                  console.log(`\x1b[32m[BROADCAST]\x1b[0m 🎅 Disparando novidades de Natal v9.0 para todos os grupos...`);
+                  showWarning("Disparando novidades v9.0 + áudio...");
                   const result = await broadcastNovidades(conn, {
                     customText: "",
                   });
                   if (result?.success) {
-                    console.log(`\x1b[32m[BROADCAST]\x1b[0m ✅ Novidades + áudio enviados! ${result.successCount} grupos | ${result.audioCount || 0} áudios | ${result.failCount} falhas`);
-                    // Marcar como enviado — nunca mais envia
+                    showSuccess(`Novidades enviadas: ${result.successCount} grupos · ${result.audioCount || 0} áudios`);
                     try { fs.writeFileSync(_broadcastFlagPath, new Date().toISOString(), "utf-8"); } catch {}
-                  } else {
-                    console.log(`\x1b[33m[BROADCAST]\x1b[0m Resultado: ${JSON.stringify(result)}`);
                   }
-                } else {
-                  console.log(`\x1b[33m[BROADCAST]\x1b[0m broadcastNovidades não exportado. Pulando...`);
                 }
               } catch (err) {
-                console.error(`\x1b[31m[BROADCAST]\x1b[0m Erro ao enviar novidades:`, err?.message || err);
+                showError(`Falha no broadcast: ${err?.message || err}`);
               }
-            }, 15000); // Aguardar 15s para garantir que grupos estão carregados
-          } else {
-            console.log(`\x1b[36m[BROADCAST]\x1b[0m Novidades v9.0 já foram enviadas anteriormente. Pulando.`);
+            }, 15000);
           }
         }
       } catch (e) {
