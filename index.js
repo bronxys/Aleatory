@@ -855,120 +855,56 @@ function RmvSimbolosLmn(a) {
 // ═══════════════════════════════════════════════════════════
 
 function getNovidadesBroadcastText(customHeader = "", pfx = "!") {
-  const _header = customHeader ? `📢 *${customHeader}*\n\n` : "";
-
-  return `┏━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🎄 𝗙𝗘𝗟𝗜𝗭 𝗡𝗔𝗧𝗔𝗟! 🎄
-┃  🎅 𝗔 𝗟 𝗘 𝗔 𝗧 𝗢 𝗥 𝗬  𝗕 𝗢 𝗧  𝘃𝟵.𝟬 🎅
-┃  ❄ 𝗘𝗱𝗶𝗰̧𝗮̃𝗼 𝗘𝘀𝗽𝗲𝗰𝗶𝗮𝗹 𝗱𝗲 𝗡𝗮𝘁𝗮𝗹 ❄
-┗━━━━━━━━━━━━━━━━━━━━━━━┛
-
-${_header}🎁 *GRANDE ATUALIZAÇÃO DE NATAL v9.0!*
-⭐ *O maior presente para nossos grupos!*
-🎊 *Tudo revisado, otimizado e 100% funcional!*
-
-🎄✦🔴✦🟢✦⭐✦🔴✦🟢✦⭐✦🎄
-
-╭─「 🎅 *ᴛᴇᴍᴀ ɴᴀᴛᴀʟɪɴᴏ ᴇxᴄʟᴜsɪᴠᴏ* 」
-│ ✦ Terminal com luzes natalinas animadas 🎄
-│ ✦ Banner com efeitos de luzes piscantes
-│ ✦ Menu de conexão temático verde & vermelho
-│ ✦ Versão 9.0 — Edição Especial de Natal
-╰──────────────────────╯
-
-╭─「 🗳️ *ᴠᴏᴛᴀᴄ̧ᴀ̃ᴏ ᴅᴇ ʙᴀɴɪᴍᴇɴᴛᴏ — ɴᴏᴠᴏ!* 」
-│ ✦ *${pfx}votarban @user* — Qualquer membro inicia votação
-│ ✦ *${pfx}votoban sim/nao* — Vote para banir ou manter
-│ ✦ *${pfx}statusvoto* — Veja o placar em tempo real
-│ ✦ *${pfx}cancelarvoto* — ADMs cancelam a votação
-│ ✦ Timer de 5 min com encerramento automático
-│ ✦ Quorum justo: 30% dos membros (mínimo 3)
-│ ✦ ADMs notificados invisivelmente no grupo
-│ ✦ Alerta privado aos ADMs quando há remoção
-│ ✦ Proteção: ADMs, donos e bot são imunes
-╰──────────────────────╯
-
-╭─「 🔒 *ʙʟᴏᴄᴋᴄᴍᴅ 2.0 — ʀᴇᴇsᴄʀɪᴛᴏ* 」
-│ ✦ Correção crítica: comandos bloqueiam de verdade
-│ ✦ *${pfx}blockcmd play* — Bloqueia no grupo
-│ ✦ *${pfx}unblockcmd play* — Desbloqueia no grupo
-│ ✦ *${pfx}limparblockcmd* — Remove TODOS os bloqueios
-│ ✦ *${pfx}listblockcmd* — Lista formatada com contagem
-│ ✦ *${pfx}blockcmdg* / *${pfx}unblockcmdg* — Bloqueio global
-│ ✦ Proteção contra bloquear comandos essenciais
-│ ✦ Compatível com dados antigos (migração automática)
-╰──────────────────────╯
-
-╭─「 🛡️ *sᴏʟɪᴄɪᴛᴀᴄ̧ᴏ̃ᴇs ᴅᴇ ᴇɴᴛʀᴀᴅᴀ 2.0* 」
-│ ✦ *${pfx}aceitar* — Aprova todos os pendentes
-│ ✦ *${pfx}aceitar 5* — Aprova os N primeiros
-│ ✦ *${pfx}aceitar @membro* — Aprova específico
-│ ✦ *${pfx}recusar* — Recusa todos / específico
-│ ✦ *${pfx}solicitacoes* — Fila com tempo de espera
-│ ✦ Notificação inteligente em tempo real
-│ ✦ Compatível Baileys 7.x & WhatsApp Privacy
-╰──────────────────────╯
-
-╭─「 🌐 *ᴄᴏɴᴇxᴀ̃ᴏ & ᴇsᴛᴀʙɪʟɪᴅᴀᴅᴇ* 」
-│ ✦ Baileys 7.x turbinado com reconexão imediata
-│ ✦ Zero quedas, anti-crash 24h e menos atrasos
-│ ✦ Correção geral de bugs em todos os módulos
-╰──────────────────────╯
-
-╭─「 🏘️ *sɪsᴛᴇᴍᴀ ᴅᴇ ᴀʟᴜɢᴜᴇʟ 2.0* 」
-│ ✦ Checagem precisa a cada 15 minutos
-│ ✦ Alertas automáticos no PV do responsável
-│ ✦ *${pfx}infoaluguel* — Guia completo e comercial
-│ ✦ *${pfx}pausaraluguel* & *${pfx}retomaraluguel*
-│ ✦ *${pfx}statsaluguel* — Painel com métricas
-╰──────────────────────╯
-
-╭─「 👥 *ʀᴇɢɪsᴛʀᴏ & ᴘᴇʀғɪʟ* 」
-│ ✦ *${pfx}perfil* — Exibição moderna e completa
-│ ✦ *${pfx}registrar* — Registro seguro e sem falhas
-│ ✦ Banco de dados de membros totalmente corrigido
-╰──────────────────────╯
-
-╭─「 🏆 *ʀᴀɴᴋɪɴɢs & ᴀᴛɪᴠɪᴅᴀᴅᴇ* 」
-│ ✦ *${pfx}rankativo* — Contagem em tempo real
-│ ✦ *${pfx}rankinativos* — Identificação de inativos
-│ ✦ Histórico e estatísticas sem travamentos
-╰──────────────────────╯
-
-╭─「 🚪 *ᴇɴᴛʀᴀʀ ᴇᴍ ɢʀᴜᴘᴏs* 」
-│ ✦ *${pfx}entrar* — Entra em qualquer grupo via link
-│ ✦ Suporte a cartões de convite e mensagens citadas
-╰──────────────────────╯
-
-╭─「 🤖 *ɪᴀs 100% ᴏᴘᴇʀᴀᴄɪᴏɴᴀɪs* 」
-│ ✦ *${pfx}ia* — Inteligência Artificial sem limites
-│ ✦ *${pfx}simih* — Sem erro 411, super rápida
-╰──────────────────────╯
-
-╭─「 📢 *ᴀᴠɪsᴏs ᴀᴜᴛᴏᴍᴀ́ᴛɪᴄᴏs* 」
-│ ✦ *${pfx}aviso* — Agende avisos com foto/áudio/texto
-│ ✦ Repetição periódica e sistema 100% estável
-╰──────────────────────╯
-
-╭─「 📡 *ᴀᴠɪsᴏ ɢʟᴏʙᴀʟ — ɴᴏᴠᴏ!* 」
-│ ✦ *${pfx}avisar* — Envia aviso para TODOS os grupos
-│ ✦ *${pfx}avisoflood [1-10]* — Repete X vezes por grupo
-│ ✦ Suporte a texto, imagem e vídeo
-│ ✦ *${pfx}cancelaraviso* — Cancela envio em tempo real
-│ ✦ *${pfx}statusaviso* — Painel com status do envio
-│ ✦ Anti-ban com delay inteligente entre grupos
-│ ✦ Relatório final de sucessos e falhas
-╰──────────────────────╯
-
-🎄✦🔴✦🟢✦⭐✦🔴✦🟢✦⭐✦🎄
-
-┏━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ 🎁 𝗨𝘀𝗲 *${pfx}𝗺𝗲𝗻𝘂* 𝗲 𝗮𝗽𝗿𝗼𝘃𝗲𝗶𝘁𝗲 𝘁𝘂𝗱𝗼! 🎁
-┃ 🎄 𝗯𝗿𝗼𝗻𝘅𝘆𝘀𝗵𝗼𝘀𝘁.𝗰𝗼𝗺 | 𝗯𝘆 𝗠.𝗦𝗰𝗵𝗲𝘆𝗼𝘁 ⭐
-┃ 🎅 𝗙𝗲𝗹𝗶𝘇 𝗡𝗮𝘁𝗮𝗹 𝗲 𝗕𝗼𝗮𝘀 𝗙𝗲𝘀𝘁𝗮𝘀! ❄
-┗━━━━━━━━━━━━━━━━━━━━━━━┛`;
+  return [
+    `  ☆ﾟ.*･｡ﾟ 🎄 ☆ﾟ.*･｡ﾟ 🎅 ☆ﾟ.*･｡ﾟ`,
+    ``,
+    `  ❄ *𝐀𝐋𝐄𝐀𝐓𝐎𝐑𝐘 𝐁𝐎𝐓* ❄`,
+    `  🎄 *ᴠᴇʀsᴀ̃ᴏ 9.0* — ᴇᴅɪᴄ̧ᴀ̃ᴏ ᴅᴇ ɴᴀᴛᴀʟ 🎅`,
+    ``,
+    `  ☆ﾟ.*･｡ﾟ 🎁 ☆ﾟ.*･｡ﾟ ⭐ ☆ﾟ.*･｡ﾟ`,
+    ``,
+    customHeader ? `  📢 *${customHeader}*` : null,
+    customHeader ? `` : null,
+    `  🎁 *O que há de novo?*`,
+    ``,
+    `  🗳️ *Votação de Ban*`,
+    `  Membros votam para banir alguém.`,
+    `  → ${pfx}votarban @user`,
+    ``,
+    `  📡 *Aviso Global*`,
+    `  Envie avisos para todos os grupos.`,
+    `  → ${pfx}avisar · ${pfx}avisoflood`,
+    ``,
+    `  🔒 *BlockCMD 2.0*`,
+    `  Bloqueie comandos por grupo ou global.`,
+    `  → ${pfx}blockcmd · ${pfx}listblockcmd`,
+    ``,
+    `  🛡️ *Solicitações de Entrada*`,
+    `  Aceite ou recuse pedidos de entrada.`,
+    `  → ${pfx}aceitar · ${pfx}recusar`,
+    ``,
+    `  🏘️ *Aluguel 2.0*`,
+    `  Sistema completo de aluguel do bot.`,
+    `  → ${pfx}alugarbot · ${pfx}statsaluguel`,
+    ``,
+    `  🤖 *IA Aleatory*`,
+    `  Inteligência artificial sem limites.`,
+    `  → ${pfx}ia · ${pfx}iaaleatory`,
+    ``,
+    `  ⚡ *Melhorias Gerais*`,
+    `  ✦ Conexão ultra estável 24h`,
+    `  ✦ Anti-crash e reconexão automática`,
+    `  ✦ Correção geral de bugs`,
+    `  ✦ Tema natalino exclusivo 🎄`,
+    ``,
+    `  ☆ﾟ.*･｡ﾟ 🔔 ☆ﾟ.*･｡ﾟ ❄ ☆ﾟ.*･｡ﾟ`,
+    ``,
+    `  📋 *${pfx}menu* — Veja todos os comandos`,
+    ``,
+    `  🎅 *Feliz Natal!* 🎄`,
+    `  _bronxyshost.com · by M.Scheyot_`,
+  ].filter(l => l !== null).join("\n");
 }
-
 let _isBroadcastingNovidades = false;
 
 async function broadcastNovidades(sock, options = {}) {
