@@ -892,7 +892,7 @@ function getNovidadesBroadcastText(customHeader = "", pfx = "!") {
     sep,
     "",
     ...item("01", "🗳️", "Votação de Ban", "O próprio grupo decide quem sai.", c("votarban") + " @membro"),
-    ...item("02", "📡", "Aviso Global", "Um aviso, todos os grupos.", c("avisar") + "  ·  " + c("avisoflood")),
+    ...item("02", "📡", "Divulgação Global", "Envie sua divulgação em todos os grupos.", c("divulgar") + "  ·  " + c("divulgarflood")),
     ...item("03", "🔒", "BlockCMD 2.0", "Bloqueie comandos por grupo.", c("blockcmd") + "  ·  " + c("listblockcmd")),
     ...item("04", "🛡️", "Solicitações de Entrada", "Aprove ou recuse quem entra.", c("aceitar") + "  ·  " + c("recusar")),
     ...item("05", "🏘️", "Aluguel 2.0", "Gestão completa de aluguéis.", c("alugarbot") + "  ·  " + c("statsaluguel")),
@@ -6448,18 +6448,20 @@ Aqui é jogo rápido:
           break;
         }
 
+        case "infodivulgar":
+        case "infodivulgarflood":
         case "infoavisar":
         case "infoavisoglobal":
         case "infoavisoflood": {
           reply(
-            `ℹ️ *INFO · AVISO GLOBAL*\n\n` +
-            `Envia comunicados (texto, foto ou vídeo) para *todos os grupos* onde o bot está.\n\n` +
+            `ℹ️ *INFO · DIVULGAÇÃO GLOBAL*\n\n` +
+            `Envia sua divulgação (texto, foto ou vídeo) para *todos os grupos* onde o bot está — exatamente como você enviar, sem textos extras.\n\n` +
             `📌 *Comandos (só Dono):*\n` +
-            `> \`${prefix}avisar\` mensagem — Envia 1× por grupo\n` +
-            `> \`${prefix}avisoflood\` 3 | mensagem — Repete 1–10×\n` +
-            `> \`${prefix}statusaviso\` — Acompanha o envio\n` +
-            `> \`${prefix}cancelaraviso\` — Para o disparo\n\n` +
-            `💡 _Também funciona marcando/enviando foto ou vídeo. Delay anti-ban automático._`
+            `> \`${prefix}divulgar\` mensagem — Envia 1× por grupo\n` +
+            `> \`${prefix}divulgarflood\` 3 mensagem — Repete 1–100×\n` +
+            `> \`${prefix}statusdivulgar\` — Acompanha o envio\n` +
+            `> \`${prefix}cancelardivulgar\` — Para o disparo\n\n` +
+            `💡 _Também funciona enviando ou marcando foto/vídeo. Delay anti-ban automático._`
           );
           break;
         }
@@ -12232,180 +12234,155 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
           break;
 
         // ═══════════════════════════════════════════════════════════════
-        // SISTEMA DE AVISO GLOBAL — BROADCAST PARA TODOS OS GRUPOS
-        // Apenas donos podem usar. Suporta flood e envio múltiplo.
+        // SISTEMA DE DIVULGAÇÃO GLOBAL — BROADCAST LIMPO PARA TODOS OS GRUPOS
+        // Apenas donos podem usar. Envia EXATAMENTE o conteúdo do dono, sem títulos extras.
         // ═══════════════════════════════════════════════════════════════
-        case "avisoglobal":
-        case "avisar":
-        case "avisargp":
-        case "avisartodos": {
+        case "divulgar":
+        case "divulgargp":
+        case "divulgartodos": {
           if (!SoDono && !isnit && !issupre && !ischyt && !info.key.fromMe)
             return reply(Res_SoDono);
 
-          // ── VERIFICAR SE TEM MENSAGEM ──
-          const _avisoQuoted = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-          const _avisoTexto = q?.trim();
-          const _avisoHasImage = (isMedia && !info.message.videoMessage) || isQuotedImage;
-          const _avisoHasVideo = (isMedia && info.message.videoMessage) || isQuotedVideo;
+          const _divQuoted = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+          const _divQuotedText = _divQuoted?.conversation || _divQuoted?.extendedTextMessage?.text || _divQuoted?.imageMessage?.caption || _divQuoted?.videoMessage?.caption || "";
+          const _divTexto = (q?.trim() || _divQuotedText || "").trim();
+          const _divHasImage = (isMedia && !!info.message?.imageMessage) || isQuotedImage;
+          const _divHasVideo = (isMedia && !!info.message?.videoMessage) || isQuotedVideo;
 
-          if (!_avisoTexto && !_avisoQuoted && !_avisoHasImage && !_avisoHasVideo) {
+          if (!_divTexto && !_divHasImage && !_divHasVideo) {
             return reply(
-              `📢 *SISTEMA DE AVISO GLOBAL*\n\n` +
-              `Use de uma das formas:\n\n` +
-              `✉️ *Texto simples:*\n` +
-              `${prefix}avisar Sua mensagem aqui\n\n` +
-              `🖼️ *Com imagem/vídeo:*\n` +
-              `Envie ou marque a mídia + ${prefix}avisar Legenda\n\n` +
-              `🔁 *Modo flood (repetir):*\n` +
-              `${prefix}avisoflood [qtd] Mensagem\n` +
-              `Ex: ${prefix}avisoflood 3 Atenção todos!\n\n` +
-              `📊 *Ver status:*\n` +
-              `${prefix}statusaviso\n\n` +
-              `⏹️ *Cancelar envio:*\n` +
-              `${prefix}cancelaraviso`
+              `📡 *DIVULGAÇÃO GLOBAL*\n\n` +
+              `Envia exatamente o que você escrever ou marcar para todos os grupos (sem nada adicional).\n\n` +
+              `> \`${prefix}divulgar\` Sua mensagem\n` +
+              `> Envie ou marque foto/vídeo + \`${prefix}divulgar\` legenda\n` +
+              `> \`${prefix}divulgarflood\` [1-100] Mensagem\n` +
+              `> \`${prefix}statusdivulgar\` · \`${prefix}cancelardivulgar\``
             );
           }
 
           // ── BUSCAR TODOS OS GRUPOS ──
-          let _avisoGroups;
+          let _divGroups;
           try {
-            const _avisoAllGp = await conn.groupFetchAllParticipating();
-            _avisoGroups = Object.keys(_avisoAllGp).filter(id => id.endsWith("@g.us"));
+            const _divAllGp = await conn.groupFetchAllParticipating();
+            _divGroups = Object.keys(_divAllGp).filter(id => id.endsWith("@g.us"));
           } catch (e) {
             return reply("❌ Erro ao buscar grupos: " + (e?.message || e));
           }
 
-          if (_avisoGroups.length === 0) return reply("❌ O bot não está em nenhum grupo.");
+          if (_divGroups.length === 0) return reply("❌ O bot não está em nenhum grupo.");
+
+          // ── BAIXAR MÍDIA UMA ÚNICA VEZ ANTES DO LOOP ──
+          let _divMediaBuf = null;
+          let _divMediaType = null;
+          if (_divHasImage) {
+            try {
+              const _qMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage || info.message?.imageMessage;
+              if (_qMsg) {
+                const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
+                const stream = await downloadContentFromMessage(_qMsg, "image");
+                let buffer = Buffer.from([]);
+                for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+                if (buffer.length > 0) { _divMediaBuf = buffer; _divMediaType = "image"; }
+              }
+            } catch { }
+          } else if (_divHasVideo) {
+            try {
+              const _qVMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage || info.message?.videoMessage;
+              if (_qVMsg) {
+                const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
+                const stream = await downloadContentFromMessage(_qVMsg, "video");
+                let buffer = Buffer.from([]);
+                for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+                if (buffer.length > 0) { _divMediaBuf = buffer; _divMediaType = "video"; }
+              }
+            } catch { }
+          }
+
+          if (!_divMediaBuf && !_divTexto) {
+            return reply("❌ Não foi possível carregar a mídia para divulgação.");
+          }
 
           // ── FLAG GLOBAL PARA CANCELAMENTO ──
           if (!global._avisoAtivo) global._avisoAtivo = {};
-          const _avisoId = Date.now().toString();
-          global._avisoAtivo[_avisoId] = true;
-          global._ultimoAvisoId = _avisoId;
+          const _divId = Date.now().toString();
+          global._avisoAtivo[_divId] = true;
+          global._ultimoAvisoId = _divId;
 
-          const _totalGp = _avisoGroups.length;
+          const _totalGp = _divGroups.length;
           await reply(
-            `📢 *AVISO GLOBAL INICIADO*\n\n` +
+            `📡 *DIVULGAÇÃO INICIADA*\n\n` +
             `📨 Enviando para *${_totalGp}* grupos...\n` +
             `⏱️ Tempo estimado: ~${Math.ceil(_totalGp * 2.5 / 60)} min\n` +
-            `⏹️ Cancelar: ${prefix}cancelaraviso\n\n` +
-            `_Aguarde a confirmação final..._`
+            `⏹️ Cancelar: \`${prefix}cancelardivulgar\``
           );
 
-          let _avisoSucesso = 0;
-          let _avisoFalha = 0;
+          let _divSucesso = 0;
+          let _divFalha = 0;
 
-          for (const gpId of _avisoGroups) {
-            // Checar cancelamento
-            if (!global._avisoAtivo[_avisoId]) {
-              await reply(`⏹️ *AVISO CANCELADO*\n\n✅ Enviados: ${_avisoSucesso}\n❌ Falhas: ${_avisoFalha}\n📋 Restantes: ${_totalGp - _avisoSucesso - _avisoFalha}`);
-              delete global._avisoAtivo[_avisoId];
+          for (const gpId of _divGroups) {
+            if (!global._avisoAtivo[_divId]) {
+              await reply(`⏹️ *DIVULGAÇÃO CANCELADA*\n\n✅ Enviados: ${_divSucesso}\n❌ Falhas: ${_divFalha}\n📋 Restantes: ${_totalGp - _divSucesso - _divFalha}`);
+              delete global._avisoAtivo[_divId];
               return;
             }
 
             try {
-              if (_avisoHasImage) {
-                // Enviar com imagem
-                let _avisoImgBuf;
-                try {
-                  const _qMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage || info.message?.imageMessage;
-                  if (_qMsg) {
-                    _avisoImgBuf = await conn.downloadMediaMessage({ message: { imageMessage: _qMsg }, type: "image" }).catch(() => null);
-                    if (!_avisoImgBuf) {
-                      const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
-                      const stream = await downloadContentFromMessage(_qMsg, "image");
-                      let buffer = Buffer.from([]);
-                      for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-                      _avisoImgBuf = buffer;
-                    }
-                  }
-                } catch { _avisoImgBuf = null; }
-
-                if (_avisoImgBuf) {
-                  await conn.sendMessage(gpId, {
-                    image: _avisoImgBuf,
-                    caption: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || ""}`,
-                  });
-                } else {
-                  await conn.sendMessage(gpId, {
-                    text: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || "(imagem não carregada)"}`,
-                  });
-                }
-              } else if (_avisoHasVideo) {
-                let _avisoVidBuf;
-                try {
-                  const _qVMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage || info.message?.videoMessage;
-                  if (_qVMsg) {
-                    const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
-                    const stream = await downloadContentFromMessage(_qVMsg, "video");
-                    let buffer = Buffer.from([]);
-                    for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-                    _avisoVidBuf = buffer;
-                  }
-                } catch { _avisoVidBuf = null; }
-
-                if (_avisoVidBuf) {
-                  await conn.sendMessage(gpId, {
-                    video: _avisoVidBuf,
-                    caption: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || ""}`,
-                  });
-                } else {
-                  await conn.sendMessage(gpId, {
-                    text: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto || "(vídeo não carregado)"}`,
-                  });
-                }
+              if (_divMediaType === "image" && _divMediaBuf) {
+                const _payload = { image: _divMediaBuf };
+                if (_divTexto) _payload.caption = _divTexto;
+                await conn.sendMessage(gpId, _payload);
+              } else if (_divMediaType === "video" && _divMediaBuf) {
+                const _payload = { video: _divMediaBuf };
+                if (_divTexto) _payload.caption = _divTexto;
+                await conn.sendMessage(gpId, _payload);
               } else {
-                // Texto puro
-                await conn.sendMessage(gpId, {
-                  text: `📢 *AVISO DO DONO* 📢\n\n${_avisoTexto}`,
-                });
+                await conn.sendMessage(gpId, { text: _divTexto });
               }
-              _avisoSucesso++;
+              _divSucesso++;
             } catch (e) {
-              _avisoFalha++;
-              console.error(`[AVISO] Falha em ${gpId}: ${e?.message || e}`);
+              _divFalha++;
+              console.error(`[DIVULGAR] Falha em ${gpId}: ${e?.message || e}`);
             }
 
-            // Delay anti-ban (2-3s aleatório)
             await new Promise(r => setTimeout(r, 2000 + Math.floor(Math.random() * 1000)));
           }
 
-          delete global._avisoAtivo[_avisoId];
+          delete global._avisoAtivo[_divId];
           await reply(
-            `✅ *AVISO GLOBAL CONCLUÍDO*\n\n` +
-            `📨 Enviados: *${_avisoSucesso}* de *${_totalGp}*\n` +
-            `❌ Falhas: *${_avisoFalha}*`
+            `✅ *DIVULGAÇÃO CONCLUÍDA*\n\n` +
+            `📨 Enviados: *${_divSucesso}* de *${_totalGp}*\n` +
+            `❌ Falhas: *${_divFalha}*`
           );
           break;
         }
 
-        // ═══ AVISO FLOOD — ENVIAR MESMA MENSAGEM VÁRIAS VEZES ═══
-        case "avisoflood":
-        case "avisarflood":
-        case "floodaviso": {
+        // ═══ DIVULGAR FLOOD — ENVIAR MESMA DIVULGAÇÃO VÁRIAS VEZES (SEM TEXTO EXTRA) ═══
+        case "divulgarflood":
+        case "flooddivulgar": {
           if (!SoDono && !isnit && !issupre && !ischyt && !info.key.fromMe)
             return reply(Res_SoDono);
 
-          // Parsear: !avisoflood [qtd] [mensagem]
-          const _flArgs = q?.trim()?.split(" ") || [];
+          const _flArgs = q?.trim()?.split(/\s+/) || [];
           const _flQtd = parseInt(_flArgs[0]);
-          const _flTexto = _flArgs.slice(1).join(" ").trim();
+          const _flQuoted = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+          const _flQuotedText = _flQuoted?.conversation || _flQuoted?.extendedTextMessage?.text || _flQuoted?.imageMessage?.caption || _flQuoted?.videoMessage?.caption || "";
+          const _flTexto = (_flArgs.slice(1).join(" ").trim() || _flQuotedText || "").trim();
+          const _flHasImage = (isMedia && !!info.message?.imageMessage) || isQuotedImage;
+          const _flHasVideo = (isMedia && !!info.message?.videoMessage) || isQuotedVideo;
 
-          if (!_flQtd || _flQtd < 1 || _flQtd > 10) {
+          if (!_flQtd || _flQtd < 1 || _flQtd > 100) {
             return reply(
-              `🔁 *AVISO FLOOD*\n\n` +
-              `Envia a mesma mensagem várias vezes em todos os grupos.\n\n` +
-              `📝 *Uso:*\n` +
-              `${prefix}avisoflood [1-10] [mensagem]\n\n` +
-              `📌 *Exemplo:*\n` +
-              `${prefix}avisoflood 3 Atenção, nova regra!\n\n` +
-              `⚠️ Máximo: 10 repetições por grupo.`
+              `🔁 *DIVULGAÇÃO FLOOD*\n\n` +
+              `Envia exatamente sua mensagem/mídia de 1 a 100 vezes em todos os grupos.\n\n` +
+              `> \`${prefix}divulgarflood\` [1-100] Sua mensagem\n` +
+              `> Ex: \`${prefix}divulgarflood\` 3 Promoção imperdível!`
             );
           }
 
-          if (!_flTexto) return reply("❌ Cadê a mensagem? Use: " + prefix + "avisoflood " + _flQtd + " Sua mensagem");
+          if (!_flTexto && !_flHasImage && !_flHasVideo) {
+            return reply(`❌ Cadê a divulgação? Use: \`${prefix}divulgarflood ${_flQtd} Sua mensagem\``);
+          }
 
-          // Buscar grupos
           let _flGroups;
           try {
             const _flAllGp = await conn.groupFetchAllParticipating();
@@ -12416,7 +12393,37 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
 
           if (_flGroups.length === 0) return reply("❌ O bot não está em nenhum grupo.");
 
-          // Flag de cancelamento
+          // Baixar mídia uma única vez se houver
+          let _flMediaBuf = null;
+          let _flMediaType = null;
+          if (_flHasImage) {
+            try {
+              const _qMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage || info.message?.imageMessage;
+              if (_qMsg) {
+                const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
+                const stream = await downloadContentFromMessage(_qMsg, "image");
+                let buffer = Buffer.from([]);
+                for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+                if (buffer.length > 0) { _flMediaBuf = buffer; _flMediaType = "image"; }
+              }
+            } catch { }
+          } else if (_flHasVideo) {
+            try {
+              const _qVMsg = info.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage || info.message?.videoMessage;
+              if (_qVMsg) {
+                const { downloadContentFromMessage } = await import("@whiskeysockets/baileys");
+                const stream = await downloadContentFromMessage(_qVMsg, "video");
+                let buffer = Buffer.from([]);
+                for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+                if (buffer.length > 0) { _flMediaBuf = buffer; _flMediaType = "video"; }
+              }
+            } catch { }
+          }
+
+          if (!_flMediaBuf && !_flTexto) {
+            return reply("❌ Não foi possível carregar a mídia para divulgação.");
+          }
+
           if (!global._avisoAtivo) global._avisoAtivo = {};
           const _flId = Date.now().toString();
           global._avisoAtivo[_flId] = true;
@@ -12426,11 +12433,10 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
           const _flTotalMsgs = _flTotal * _flQtd;
 
           await reply(
-            `🔁 *FLOOD GLOBAL INICIADO*\n\n` +
-            `📨 *${_flQtd}x* em *${_flTotal}* grupos = *${_flTotalMsgs}* mensagens\n` +
+            `🔁 *DIVULGAÇÃO FLOOD INICIADA*\n\n` +
+            `📨 *${_flQtd}x* em *${_flTotal}* grupos = *${_flTotalMsgs}* envios\n` +
             `⏱️ Tempo estimado: ~${Math.ceil(_flTotalMsgs * 1.5 / 60)} min\n` +
-            `⏹️ Cancelar: ${prefix}cancelaraviso\n\n` +
-            `_Aguarde..._`
+            `⏹️ Cancelar: \`${prefix}cancelardivulgar\``
           );
 
           let _flSucesso = 0;
@@ -12438,7 +12444,7 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
 
           for (const gpId of _flGroups) {
             if (!global._avisoAtivo[_flId]) {
-              await reply(`⏹️ *FLOOD CANCELADO*\n\n✅ Msgs enviadas: ${_flSucesso}\n❌ Falhas: ${_flFalha}`);
+              await reply(`⏹️ *DIVULGAÇÃO CANCELADA*\n\n✅ Enviados: ${_flSucesso}\n❌ Falhas: ${_flFalha}`);
               delete global._avisoAtivo[_flId];
               return;
             }
@@ -12446,32 +12452,40 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             for (let _flI = 0; _flI < _flQtd; _flI++) {
               if (!global._avisoAtivo[_flId]) break;
               try {
-                await conn.sendMessage(gpId, {
-                  text: `📢 *AVISO DO DONO* 📢\n\n${_flTexto}`,
-                });
+                if (_flMediaType === "image" && _flMediaBuf) {
+                  const _p = { image: _flMediaBuf };
+                  if (_flTexto) _p.caption = _flTexto;
+                  await conn.sendMessage(gpId, _p);
+                } else if (_flMediaType === "video" && _flMediaBuf) {
+                  const _p = { video: _flMediaBuf };
+                  if (_flTexto) _p.caption = _flTexto;
+                  await conn.sendMessage(gpId, _p);
+                } else {
+                  await conn.sendMessage(gpId, { text: _flTexto });
+                }
                 _flSucesso++;
               } catch {
                 _flFalha++;
               }
-              // Delay menor entre repetições no mesmo grupo (1-1.5s)
               if (_flI < _flQtd - 1) {
                 await new Promise(r => setTimeout(r, 1000 + Math.floor(Math.random() * 500)));
               }
             }
-            // Delay entre grupos (2-3s)
             await new Promise(r => setTimeout(r, 2000 + Math.floor(Math.random() * 1000)));
           }
 
           delete global._avisoAtivo[_flId];
           await reply(
-            `✅ *FLOOD GLOBAL CONCLUÍDO*\n\n` +
-            `📨 Mensagens enviadas: *${_flSucesso}* de *${_flTotalMsgs}*\n` +
+            `✅ *DIVULGAÇÃO FLOOD CONCLUÍDA*\n\n` +
+            `📨 Enviados: *${_flSucesso}* de *${_flTotalMsgs}*\n` +
             `❌ Falhas: *${_flFalha}*`
           );
           break;
         }
 
-        // ═══ CANCELAR AVISO EM ANDAMENTO ═══
+        // ═══ CANCELAR DIVULGAÇÃO EM ANDAMENTO ═══
+        case "cancelardivulgar":
+        case "parardivulgar":
         case "cancelaraviso":
         case "pararaviso":
         case "stopaviso": {
@@ -12479,15 +12493,16 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             return reply(Res_SoDono);
 
           if (!global._avisoAtivo || !global._ultimoAvisoId || !global._avisoAtivo[global._ultimoAvisoId]) {
-            return reply("❌ Nenhum aviso em andamento para cancelar.");
+            return reply("❌ Nenhuma divulgação em andamento para cancelar.");
           }
 
           global._avisoAtivo[global._ultimoAvisoId] = false;
-          reply("⏹️ Cancelando aviso... Aguarde a confirmação.");
+          reply("⏹️ Cancelando divulgação... Aguarde a confirmação.");
           break;
         }
 
-        // ═══ STATUS DO AVISO ═══
+        // ═══ STATUS DA DIVULGAÇÃO ═══
+        case "statusdivulgar":
         case "statusaviso": {
           if (!SoDono && !isnit && !issupre && !ischyt && !info.key.fromMe)
             return reply(Res_SoDono);
@@ -12495,9 +12510,8 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
           const _stHasActive = global._avisoAtivo && global._ultimoAvisoId && global._avisoAtivo[global._ultimoAvisoId];
 
           if (_stHasActive) {
-            reply("📢 *AVISO EM ANDAMENTO*\n\n⏱️ Um envio está ativo no momento.\nUse " + prefix + "cancelaraviso para parar.");
+            reply(`📡 *DIVULGAÇÃO EM ANDAMENTO*\n\n⏱️ Um envio está ativo no momento.\nUse \`${prefix}cancelardivulgar\` para parar.`);
           } else {
-            // Contar grupos
             let _stGpCount = 0;
             try {
               const _stAllGp = await conn.groupFetchAllParticipating();
@@ -12505,13 +12519,12 @@ GRUPO INTERAJA, NÃO PRECISAMOS DE ENFEITES,INATIVOS SERAO REMOVIDOS ❌*
             } catch { }
 
             reply(
-              `📊 *STATUS DO SISTEMA DE AVISO*\n\n` +
+              `📊 *STATUS · DIVULGAÇÃO GLOBAL*\n\n` +
               `📋 Grupos do bot: *${_stGpCount}*\n` +
-              `📢 Nenhum envio ativo.\n\n` +
-              `*Comandos:*\n` +
-              `• ${prefix}aviso [texto] — Enviar aviso\n` +
-              `• ${prefix}avisoflood [1-10] [texto] — Flood\n` +
-              `• ${prefix}cancelaraviso — Cancelar`
+              `📡 Nenhum envio ativo.\n\n` +
+              `> \`${prefix}divulgar\` [texto/mídia]\n` +
+              `> \`${prefix}divulgarflood\` [1-100] [texto/mídia]\n` +
+              `> \`${prefix}cancelardivulgar\``
             );
           }
           break;
@@ -14293,49 +14306,55 @@ vota em quem mandou melhor! 🏆
           );
           break;
 
-        // CASE PLAY / PLAY2 – Áudio 🎧
+        // CASE PLAY / PLAY2 / PLAY_AUDIO – Áudio 🎧
         case "play":
         case "play2":
-          conn.sendMessage(from, { react: { text: "🎯", key: info.key } });
+        case "play_audio":
+        case "ytmp3":
+        case "playaudio":
+        case "playmp3":
+          conn.sendMessage(from, { react: { text: "🎧", key: info.key } });
           try {
             if (!q.trim())
               return reply(
-                `🎵 Exemplo: ${prefix}play nome da música\n\nA música será baixada automaticamente. Se não funcionar, o YouTube pode ter restringido o download.`,
+                `╭─「 🎧 *ᴀʟᴇᴀᴛᴏʀʏ ᴘʟᴀʏ* 🎄 」─╮\n` +
+                `│ 💡 Use: \`${prefix + command}\` nome da música\n` +
+                `│ _Ex: ${prefix}play Evidências_\n` +
+                `╰─────────────────────╯`
               );
             reply(Res_Aguarde);
             data = await reqapi.ytsearch(q.trim());
+            if (!data || !data[0])
+              return reply("❌ Não encontrei essa música. Tente outro nome!");
             if (data[0]?.tempo?.length >= 7)
-              return reply(
-                "🚫 O áudio é muito longo. Tente algo com menos de 1 hora.",
-              );
+              return reply("🚫 O áudio é muito longo. Tente algo com menos de 1 hora.");
 
-            var N_E = "???";
-            var _desc = (data[0]?.desc || "").substring(0, 55);
-            var bla = `──────────────────
-  ♪ *ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴜ́sɪᴄᴀ*
-──────────────────
+            const _pTitle = data[0]?.titulo || "Música";
+            const _pTempo = data[0]?.tempo || "0:00";
+            const _pPost = data[0]?.postado || "—";
+            const _pDescRaw = (data[0]?.desc || "").replace(/\s+/g, " ").trim();
+            const _pDesc = _pDescRaw ? (_pDescRaw.length > 58 ? _pDescRaw.slice(0, 58) + "…" : _pDescRaw) : "";
 
-  ◈ *${data[0]?.titulo || N_E}*
+            const _playCard =
+              `╭─「 🎧 *ᴀʟᴇᴀᴛᴏʀʏ ᴘʟᴀʏ* 🎄 」─╮\n` +
+              `│\n` +
+              `│ 🎵 *${_pTitle}*\n` +
+              `│\n` +
+              `│ ⏱️ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ  │ *${_pTempo}*\n` +
+              `│ 📅 ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${_pPost}*\n` +
+              (_pDesc ? `│ 📝 _${_pDesc}_\n` : "") +
+              `│\n` +
+              `│ ◄◄  ❚❚  ►►  ━━●━━━━━━ *${_pTempo}*\n` +
+              `╰─────────────────────╯\n` +
+              `> 🎬 \`${prefix}playmp4\` ─ ʙᴀɪxᴀʀ ᴠɪ́ᴅᴇᴏ\n` +
+              `> 📄 \`${prefix}playdoc\` ─ ʙᴀɪxᴀʀ ᴅᴏᴄᴜᴍᴇɴᴛᴏ`;
 
-  ▿ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ │ *${data[0]?.tempo || N_E}*
-  ▿ ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${data[0]?.postado || N_E}*
-  ▿ _${_desc || "ᴅᴇsᴄ. ɪɴᴅɪsᴘᴏɴɪ́ᴠᴇʟ"}_
-
-  ▷ ━━●━━━━━━━ *${data[0]?.tempo || "0:00"}*
-
-──────────────────
-> ◇ *${prefix}playmp4* ─ ᴠɪ́ᴅᴇᴏ
-> ◇ *${prefix}playdoc* ─ ᴅᴏᴄᴜᴍᴇɴᴛᴏ
-    `;
-
-            conn.sendMessage(
-              from,
-              {
-                image: { url: data[0]?.thumb || logoslink.logo },
-                caption: bla.trim(),
-              },
-              { quoted: info },
-            );
+            const _pThumb = data[0]?.thumb || logoslink?.logo || "";
+            if (_pThumb) {
+              conn.sendMessage(from, { image: { url: _pThumb }, caption: _playCard }, { quoted: info }).catch(() => reply(_playCard));
+            } else {
+              reply(_playCard);
+            }
 
             conn
               .sendMessage(
@@ -14348,60 +14367,59 @@ vota em quem mandou melhor! 🏆
                         : reqapi.play(q.trim(), true),
                   },
                   mimetype: "audio/mpeg",
-                  fileName: data[0]?.titulo || "play.mp3",
+                  fileName: `${_pTitle}.mp3`,
                 },
                 { quoted: info },
               )
-              .catch(() => reply("⚠️ Erro ao enviar o áudio."));
+              .catch(() => reply("⚠️ Erro ao enviar o áudio. Tente novamente."));
           } catch (playErr) {
-            console.error('[PLAY] Erro:', playErr?.message || playErr);
-            reply(
-              "😿 A API de músicas está em reparos. Tente novamente mais tarde.",
-            );
+            console.error("[PLAY] Erro:", playErr?.message || playErr);
+            reply("😿 A API de músicas está instável no momento. Tente novamente em instantes.");
           }
           break;
 
         // CASE PLAYDOC – Documento 📄
         case "playdoc":
+          conn.sendMessage(from, { react: { text: "📄", key: info.key } });
           try {
             if (!q.trim())
               return reply(
-                `📄 Exemplo: ${prefix}playdoc nome da música\n\nO áudio será baixado em formato de documento.`,
+                `╭─「 📄 *ᴀʟᴇᴀᴛᴏʀʏ ᴅᴏᴄ* 🎄 」─╮\n` +
+                `│ 💡 Use: \`${prefix}playdoc\` nome da música\n` +
+                `│ _Envia o áudio em formato documento_\n` +
+                `╰─────────────────────╯`
               );
-
+            reply(Res_Aguarde);
             data = await reqapi.ytsearch(q.trim());
+            if (!data || !data[0])
+              return reply("❌ Não encontrei essa música. Seja mais específico!");
             if (data[0]?.tempo?.length >= 7)
-              return reply(
-                "🚫 O arquivo é muito longo. Tente algo menor que 1 hora.",
-              );
+              return reply("🚫 O arquivo é muito longo. Tente algo menor que 1 hora.");
 
-            var N_E = "???";
-            var _desc = (data[0]?.desc || "").substring(0, 55);
-            var bla = `──────────────────
-  ♫ *ᴅᴏᴡɴʟᴏᴀᴅ ᴅᴏᴄᴜᴍᴇɴᴛᴏ*
-──────────────────
+            const _dTitle = data[0]?.titulo || "Música";
+            const _dTempo = data[0]?.tempo || "0:00";
+            const _dPost = data[0]?.postado || "—";
 
-  ◈ *${data[0]?.titulo || N_E}*
+            const _docCard =
+              `╭─「 📄 *ᴀʟᴇᴀᴛᴏʀʏ ᴅᴏᴄ* 🎄 」─╮\n` +
+              `│\n` +
+              `│ 🎵 *${_dTitle}*\n` +
+              `│\n` +
+              `│ ⏱️ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ  │ *${_dTempo}*\n` +
+              `│ 📅 ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${_dPost}*\n` +
+              `│ 📦 ғᴏʀᴍᴀᴛᴏ  │ *Documento MP3*\n` +
+              `│\n` +
+              `│ ◄◄  ❚❚  ►►  ━━●━━━━━━ *${_dTempo}*\n` +
+              `╰─────────────────────╯\n` +
+              `> 🎧 \`${prefix}play\` ─ ʙᴀɪxᴀʀ ᴀ́ᴜᴅɪᴏ\n` +
+              `> 🎬 \`${prefix}playmp4\` ─ ʙᴀɪxᴀʀ ᴠɪ́ᴅᴇᴏ`;
 
-  ▿ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ │ *${data[0]?.tempo || N_E}*
-  ▿ ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${data[0]?.postado || N_E}*
-  ▿ _${_desc || "ᴅᴇsᴄ. ɪɴᴅɪsᴘᴏɴɪ́ᴠᴇʟ"}_
-
-  ▷ ━━●━━━━━━━ *${data[0]?.tempo || "0:00"}*
-
-──────────────────
-> ◇ *${prefix}playmp4* ─ ᴠɪ́ᴅᴇᴏ
-> ◇ *${prefix}play* ─ ᴀ́ᴜᴅɪᴏ
-    `;
-
-            conn.sendMessage(
-              from,
-              {
-                image: { url: data[0]?.thumb || logoslink.logo },
-                caption: bla.trim(),
-              },
-              { quoted: info },
-            );
+            const _dThumb = data[0]?.thumb || logoslink?.logo || "";
+            if (_dThumb) {
+              conn.sendMessage(from, { image: { url: _dThumb }, caption: _docCard }, { quoted: info }).catch(() => reply(_docCard));
+            } else {
+              reply(_docCard);
+            }
 
             conn
               .sendMessage(
@@ -14409,128 +14427,78 @@ vota em quem mandou melhor! 🏆
                 {
                   document: { url: reqapi.play(q.trim(), true) },
                   mimetype: "audio/mpeg",
-                  fileName: data[0]?.titulo || "play.mp3",
+                  fileName: `${_dTitle}.mp3`,
                 },
                 { quoted: info },
               )
-              .catch(() => reply("⚠️ Erro ao enviar documento."));
+              .catch(() => reply("⚠️ Erro ao enviar o documento."));
           } catch {
-            reply(
-              "❌ Seja mais específico, não foi possível encontrar o resultado.",
-            );
+            reply("❌ Não foi possível encontrar o resultado. Seja mais específico.");
           }
           break;
 
-        // CASE PLAYMP4 / PLAY_VIDEO – Vídeo 🎬
+        // CASE PLAYMP4 / PLAY_VIDEO / YTMP4 – Vídeo 🎬
         case "playmp4":
         case "play_video":
-          try {
-            if (!q.trim())
-              return reply(
-                `🎬 Exemplo: ${prefix}playmp4 nome da música\n\nO vídeo será baixado automaticamente.`,
-              );
-
-            reply(Res_Aguarde);
-            data = await reqapi.ytsearch(q.trim());
-            if (data[0]?.tempo?.length >= 7)
-              return reply(
-                "🚫 O vídeo é muito longo. Escolha um com menos de 1 hora.",
-              );
-
-            var N_E = "???";
-            var _desc = (data[0]?.desc || "").substring(0, 55);
-            var bla = `──────────────────
-  ▶ *ᴅᴏᴡɴʟᴏᴀᴅ ᴠɪ́ᴅᴇᴏ*
-──────────────────
-
-  ◈ *${data[0]?.titulo || N_E}*
-
-  ▿ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ │ *${data[0]?.tempo || N_E}*
-  ▿ ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${data[0]?.postado || N_E}*
-  ▿ _${_desc || "ᴅᴇsᴄ. ɪɴᴅɪsᴘᴏɴɪ́ᴠᴇʟ"}_
-
-  ▷ ━━●━━━━━━━ *${data[0]?.tempo || "0:00"}*
-
-──────────────────
-> ◇ *${prefix}play* ─ ᴀ́ᴜᴅɪᴏ
-> ◇ *${prefix}playdoc* ─ ᴅᴏᴄᴜᴍᴇɴᴛᴏ
-    `;
-
-            conn.sendMessage(
-              from,
-              {
-                image: { url: data[0]?.thumb || logoslink.logo },
-                caption: bla.trim(),
-              },
-              { quoted: info },
-            );
-
-            conn
-              .sendMessage(
-                from,
-                {
-                  video: { url: reqapi.play(q.trim(), false) },
-                  mimetype: "video/mp4",
-                  fileName: data[0]?.titulo || "play.mp4",
-                },
-                { quoted: info },
-              )
-              .catch(() => reply("⚠️ Erro ao enviar o vídeo."));
-          } catch {
-            reply("❌ Não foi possível encontrar esse vídeo. Tente novamente.");
-          }
-          break;
-
-        // DOWNLOADS
         case "ytmp4":
         case "play_mp4":
+          conn.sendMessage(from, { react: { text: "🎬", key: info.key } });
           try {
             if (!q.trim())
-              return reply(`Exemplo: ${prefix + command} link ou nome`);
+              return reply(
+                `╭─「 🎬 *ᴀʟᴇᴀᴛᴏʀʏ ᴠɪ́ᴅᴇᴏ* 🎄 」─╮\n` +
+                `│ 💡 Use: \`${prefix + command}\` nome ou link\n` +
+                `│ _Ex: ${prefix}playmp4 Evidências_\n` +
+                `╰─────────────────────╯`
+              );
+
             reply(Res_Aguarde);
             data = await reqapi.ytsearch(q.trim());
+            if (!data || !data[0])
+              return reply("❌ Não encontrei esse vídeo. Tente outro nome!");
+            if (data[0]?.tempo?.length >= 7)
+              return reply("🚫 O vídeo é muito longo. Escolha um com menos de 1 hora.");
+
+            const _vTitle = data[0]?.titulo || "Vídeo";
+            const _vTempo = data[0]?.tempo || "0:00";
+            const _vPost = data[0]?.postado || "—";
+            const _vDescRaw = (data[0]?.desc || "").replace(/\s+/g, " ").trim();
+            const _vDesc = _vDescRaw ? (_vDescRaw.length > 58 ? _vDescRaw.slice(0, 58) + "…" : _vDescRaw) : "";
+
+            const _vidCard =
+              `╭─「 🎬 *ᴀʟᴇᴀᴛᴏʀʏ ᴠɪ́ᴅᴇᴏ* 🎄 」─╮\n` +
+              `│\n` +
+              `│ 🎥 *${_vTitle}*\n` +
+              `│\n` +
+              `│ ⏱️ ᴅᴜʀᴀᴄ̧ᴀ̃ᴏ  │ *${_vTempo}*\n` +
+              `│ 📅 ᴘᴜʙʟɪᴄᴀᴅᴏ │ *${_vPost}*\n` +
+              (_vDesc ? `│ 📝 _${_vDesc}_\n` : "") +
+              `│\n` +
+              `│ ◄◄  ❚❚  ►►  ━━●━━━━━━ *${_vTempo}*\n` +
+              `╰─────────────────────╯\n` +
+              `> 🎧 \`${prefix}play\` ─ ʙᴀɪxᴀʀ ᴀ́ᴜᴅɪᴏ\n` +
+              `> 📄 \`${prefix}playdoc\` ─ ʙᴀɪxᴀʀ ᴅᴏᴄᴜᴍᴇɴᴛᴏ`;
+
+            const _vThumb = data[0]?.thumb || logoslink?.logo || "";
+            if (_vThumb) {
+              conn.sendMessage(from, { image: { url: _vThumb }, caption: _vidCard }, { quoted: info }).catch(() => reply(_vidCard));
+            } else {
+              reply(_vidCard);
+            }
+
             conn
               .sendMessage(
                 from,
                 {
                   video: { url: reqapi.play(q.trim(), false) },
                   mimetype: "video/mp4",
-                  fileName: data[0]?.titulo || "play.mp4",
+                  fileName: `${_vTitle}.mp4`,
                 },
                 { quoted: info },
               )
-              .catch((e) => {
-                return reply("Erro... 🥱");
-              });
-          } catch (e) {
-            return reply("Erro... 🥱");
-          }
-          break;
-        case "play_audio":
-        case "ytmp3":
-        case "playaudio":
-        case "playmp3":
-          conn.sendMessage(from, { react: { text: "🤹🏻‍♀️", key: info.key } });
-          try {
-            if (!q.trim())
-              return reply(`Exemplo: ${prefix + command} link ou nome 😼`);
-            reply(Res_Aguarde);
-            data = await reqapi.ytsearch(q.trim());
-            conn
-              .sendMessage(
-                from,
-                {
-                  audio: { url: reqapi.play(q.trim(), true) },
-                  mimetype: "audio/mpeg",
-                  fileName: data[0]?.titulo,
-                },
-                { quoted: info },
-              )
-              .catch((e) => {
-                return reply("Erro... 🥱");
-              });
-          } catch (e) {
-            return reply("Erro... 🥱");
+              .catch(() => reply("⚠️ Erro ao enviar o vídeo. Tente novamente."));
+          } catch {
+            reply("❌ Não foi possível encontrar esse vídeo. Tente novamente.");
           }
           break;
         case "tiktok_video":

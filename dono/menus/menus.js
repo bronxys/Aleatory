@@ -203,10 +203,10 @@ const menudono = (prefix, sender) => {
 │ 么 ${prefix}antipv3
 │ 么 ${prefix}antiligar
 │ 么 ${prefix}bcgp "texto"
-│ 么 ${prefix}avisar "texto"
-│ 么 ${prefix}avisoflood [1-10] "texto"
-│ 么 ${prefix}cancelaraviso
-│ 么 ${prefix}statusaviso
+│ 么 ${prefix}divulgar "texto"
+│ 么 ${prefix}divulgarflood [1-100] "texto"
+│ 么 ${prefix}cancelardivulgar
+│ 么 ${prefix}statusdivulgar
 │ 么 ${prefix}novidadesgrupos
 │ 么 ${prefix}visualizarmsg
 │ 么 ${prefix}entrar "link"

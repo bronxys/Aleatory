@@ -440,26 +440,6 @@
     "info": "📊 *Status da Votação*\n\nExibe o placar atual, barra de progresso, tempo restante e quem votou na votação ativa.\nUso: #prefixo#statusvoto"
   },
   {
-    "comando": "avisar",
-    "info": "📡 *Aviso Global (Dono)*\n\nEnvia texto, foto ou vídeo para todos os grupos onde o bot está, com delay anti-ban automático.\n• #prefixo#avisar sua mensagem\n• #prefixo#avisoflood 3 | mensagem (repete 1–10×)\n• #prefixo#statusaviso / #prefixo#cancelaraviso"
-  },
-  {
-    "comando": "avisoglobal",
-    "info": "📡 *Aviso Global (Dono)*\n\nMesmo que #prefixo#avisar: envia um comunicado (texto, foto ou vídeo) para todos os grupos com proteção anti-ban."
-  },
-  {
-    "comando": "avisoflood",
-    "info": "📡 *Aviso Global com Repetição (Dono)*\n\nEnvia o aviso de 1 a 10 vezes por grupo.\nExemplo: #prefixo#avisoflood 3 | Atenção grupo!\nUse #prefixo#cancelaraviso para parar."
-  },
-  {
-    "comando": "cancelaraviso",
-    "info": "🛑 *Cancelar Aviso Global (Dono)*\n\nInterrompe imediatamente um disparo de #prefixo#avisar ou #prefixo#avisoflood em andamento."
-  },
-  {
-    "comando": "statusaviso",
-    "info": "📊 *Status do Aviso Global (Dono)*\n\nMostra se existe uma transmissão global em andamento e o progresso do envio."
-  },
-  {
     "comando": "ia",
     "info": "🤖 *IA Aleatory*\n\nFaça qualquer pergunta direta à inteligência artificial do bot.\nExemplo: #prefixo#ia me explique o que é JavaScript"
   },
@@ -506,5 +486,21 @@
   {
     "comando": "tutorial",
     "info": "📖 *Tutorial do Aleatory v9.0*\n\nEnvia um áudio explicativo completo ensinando como usar os menus, figurinhas, downloads, jogos, IA Aleatory, moderação de grupos e aluguel — além do link do vídeo de instalação.\n\nUso: #prefixo#tutorial (ou #prefixo#guia / #prefixo#comousar)"
+  },
+  {
+    "comando": "divulgar",
+    "info": "📡 *Divulgação Global (Dono)*\n\nEnvia exatamente o texto, foto ou vídeo que você mandar para todos os grupos do bot, sem nenhum título ou texto extra.\n\n• #prefixo#divulgar sua mensagem\n• Envie ou marque foto/vídeo + #prefixo#divulgar legenda\n• #prefixo#divulgarflood 3 sua mensagem (repete 1–100×)\n• #prefixo#statusdivulgar / #prefixo#cancelardivulgar"
+  },
+  {
+    "comando": "divulgarflood",
+    "info": "🔁 *Divulgação Flood (Dono)*\n\nEnvia exatamente sua mensagem ou mídia de 1 a 100 vezes por grupo, sem nada adicional.\nExemplo: #prefixo#divulgarflood 3 Confira a novidade!\nUse #prefixo#cancelardivulgar para interromper."
+  },
+  {
+    "comando": "cancelardivulgar",
+    "info": "⏹️ *Cancelar Divulgação (Dono)*\n\nInterrompe imediatamente uma transmissão de #prefixo#divulgar ou #prefixo#divulgarflood em andamento."
+  },
+  {
+    "comando": "statusdivulgar",
+    "info": "📊 *Status da Divulgação (Dono)*\n\nMostra a quantidade de grupos e se existe uma divulgação em andamento."
   }
 ]
