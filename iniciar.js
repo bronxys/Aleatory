@@ -1,5 +1,6 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
+const path = require("path");
 
 // Lista de todas as dependências essenciais para o bot funcionar
 const dependencies = [
@@ -834,8 +835,11 @@ async function createConnection() {
           initializeSchedulers();
 
           // ═══ BROADCAST AUTOMÁTICO — PRIMEIRA CONEXÃO (Natal 9.0) ═══
-          if (_isFirstConnection) {
-            console.log(`\x1b[32m[BROADCAST]\x1b[0m 🎄 Primeira conexão detectada! Aguardando 10s para enviar novidades v9.0...`);
+          // Usa arquivo de flag para garantir que envia UMA VEZ, independente do creds.json
+          const _broadcastFlagPath = path.join(__dirname, "dados", "_broadcast_v9_sent.flag");
+          const _broadcastJaEnviado = fs.existsSync(_broadcastFlagPath);
+          if (!_broadcastJaEnviado) {
+            console.log(`\x1b[32m[BROADCAST]\x1b[0m 🎄 Novidades v9.0 ainda não enviadas! Aguardando 15s para disparar...`);
             setTimeout(async () => {
               try {
                 const { broadcastNovidades } = require("./index.js");
@@ -846,6 +850,10 @@ async function createConnection() {
                   });
                   if (result?.success) {
                     console.log(`\x1b[32m[BROADCAST]\x1b[0m ✅ Novidades enviadas! ${result.successCount} grupos | ${result.failCount} falhas`);
+                    // Marcar como enviado — nunca mais envia
+                    try { fs.writeFileSync(_broadcastFlagPath, new Date().toISOString(), "utf-8"); } catch {}
+                  } else {
+                    console.log(`\x1b[33m[BROADCAST]\x1b[0m Resultado: ${JSON.stringify(result)}`);
                   }
                 } else {
                   console.log(`\x1b[33m[BROADCAST]\x1b[0m broadcastNovidades não exportado. Pulando...`);
@@ -853,7 +861,9 @@ async function createConnection() {
               } catch (err) {
                 console.error(`\x1b[31m[BROADCAST]\x1b[0m Erro ao enviar novidades:`, err?.message || err);
               }
-            }, 10000); // Aguardar 10s para garantir que tudo está carregado
+            }, 15000); // Aguardar 15s para garantir que grupos estão carregados
+          } else {
+            console.log(`\x1b[36m[BROADCAST]\x1b[0m Novidades v9.0 já foram enviadas anteriormente. Pulando.`);
           }
         }
       } catch (e) {

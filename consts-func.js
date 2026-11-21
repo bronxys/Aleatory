@@ -148,7 +148,13 @@ const anotar = JSON.parse(fs.readFileSync("./dados/org/json/anotar.json"));
 
 const setting = JSON.parse(fs.readFileSync("./dados/settings.json"));
 
-const logoslink = JSON.parse(fs.readFileSync("./dados/logos.json"));
+const logoslink = (() => {
+  try {
+    const data = JSON.parse(fs.readFileSync("./dados/logos.json"));
+    if (data && typeof data === "object" && !Array.isArray(data) && data.logo) return data;
+    return { logo: "" };
+  } catch { return { logo: "" }; }
+})();
 
 const black_ = JSON.parse(fs.readFileSync("./dados/global/AVISOS.json"));
 

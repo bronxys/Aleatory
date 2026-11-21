@@ -33,7 +33,8 @@ function _gerarId(existentes) {
 // ── Leitura e escrita ──
 function getHorarios() {
     try {
-        return JSON.parse(fs.readFileSync(HORARIOS_PATH, "utf-8"));
+        const data = JSON.parse(fs.readFileSync(HORARIOS_PATH, "utf-8"));
+        return Array.isArray(data) ? data : [];
     } catch {
         return [];
     }

@@ -221,15 +221,25 @@ function getMenuMedia() {
     const menuCfg = JSON.parse(
       fs.readFileSync("./dados/menu_media.json", "utf-8"),
     );
-    if (menuCfg.tipo === "gif" && fs.existsSync(menuCfg.gif)) {
+    if (menuCfg.tipo === "gif" && menuCfg.gif && fs.existsSync(menuCfg.gif)) {
       return { video: fs.readFileSync(menuCfg.gif), gifPlayback: true };
     }
-    if (menuCfg.tipo === "foto" && fs.existsSync(menuCfg.foto)) {
+    if (menuCfg.tipo === "foto" && menuCfg.foto && fs.existsSync(menuCfg.foto)) {
       return { image: fs.readFileSync(menuCfg.foto) };
     }
   } catch (e) { }
-  // Fallback: usar logo antigo (URL)
-  return { image: { url: logoslink.logo } };
+  // Fallback: usar gif do menu se existir
+  if (fs.existsSync("./media/menu/menu_gif.mp4")) {
+    return { video: fs.readFileSync("./media/menu/menu_gif.mp4"), gifPlayback: true };
+  }
+  // Fallback: usar logo (URL) se disponível
+  try {
+    if (logoslink && logoslink.logo) {
+      return { image: { url: logoslink.logo } };
+    }
+  } catch (e) { }
+  // Último fallback: texto sem mídia
+  return {};
 }
 // ══════════════════════════════════════════════════════════
 
