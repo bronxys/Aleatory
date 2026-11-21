@@ -865,55 +865,55 @@ function RmvSimbolosLmn(a) {
 // ═══════════════════════════════════════════════════════════
 
 function getNovidadesBroadcastText(customHeader = "", pfx = "!") {
+  const c = (cmd) => "\u0060" + pfx + cmd + "\u0060";
+  const sep = "━━━━━━━━━━━━━━━━";
+  const neve = "🎄 ⋆ ˚｡⋆ ❄ ⋆｡˚ ⋆ 🎄";
+  const item = (n, emoji, titulo, desc, cmds) => [
+    "*" + n + "* ┃ " + emoji + " *" + titulo + "*",
+    "> " + desc,
+    "> " + cmds,
+    "",
+  ];
   return [
-    `  ☆ﾟ.*･｡ﾟ 🎄 ☆ﾟ.*･｡ﾟ 🎅 ☆ﾟ.*･｡ﾟ`,
-    ``,
-    `  ❄ *𝐀𝐋𝐄𝐀𝐓𝐎𝐑𝐘 𝐁𝐎𝐓* ❄`,
-    `  🎄 *ᴠᴇʀsᴀ̃ᴏ 9.0* — ᴇᴅɪᴄ̧ᴀ̃ᴏ ᴅᴇ ɴᴀᴛᴀʟ 🎅`,
-    ``,
-    `  ☆ﾟ.*･｡ﾟ 🎁 ☆ﾟ.*･｡ﾟ ⭐ ☆ﾟ.*･｡ﾟ`,
-    ``,
-    customHeader ? `  📢 *${customHeader}*` : null,
-    customHeader ? `` : null,
-    `  🎁 *O que há de novo?*`,
-    ``,
-    `  🗳️ *Votação de Ban*`,
-    `  Membros votam para banir alguém.`,
-    `  → ${pfx}votarban @user`,
-    ``,
-    `  📡 *Aviso Global*`,
-    `  Envie avisos para todos os grupos.`,
-    `  → ${pfx}avisar · ${pfx}avisoflood`,
-    ``,
-    `  🔒 *BlockCMD 2.0*`,
-    `  Bloqueie comandos por grupo ou global.`,
-    `  → ${pfx}blockcmd · ${pfx}listblockcmd`,
-    ``,
-    `  🛡️ *Solicitações de Entrada*`,
-    `  Aceite ou recuse pedidos de entrada.`,
-    `  → ${pfx}aceitar · ${pfx}recusar`,
-    ``,
-    `  🏘️ *Aluguel 2.0*`,
-    `  Sistema completo de aluguel do bot.`,
-    `  → ${pfx}alugarbot · ${pfx}statsaluguel`,
-    ``,
-    `  🤖 *IA Aleatory*`,
-    `  Inteligência artificial sem limites.`,
-    `  → ${pfx}ia · ${pfx}iaaleatory`,
-    ``,
-    `  ⚡ *Melhorias Gerais*`,
-    `  ✦ Conexão ultra estável 24h`,
-    `  ✦ Anti-crash e reconexão automática`,
-    `  ✦ Correção geral de bugs`,
-    `  ✦ Tema natalino exclusivo 🎄`,
-    ``,
-    `  ☆ﾟ.*･｡ﾟ 🔔 ☆ﾟ.*･｡ﾟ ❄ ☆ﾟ.*･｡ﾟ`,
-    ``,
-    `  📋 *${pfx}menu* — Veja todos os comandos`,
-    ``,
-    `  🎅 *Feliz Natal!* 🎄`,
-    `  _bronxyshost.com · by M.Scheyot_`,
-  ].filter(l => l !== null).join("\n");
+    neve,
+    "   *ALEATORY BOT*  ·  *v9.0*",
+    "   _Edição Especial de Natal_",
+    neve,
+    "",
+    customHeader ? "📢 *" + customHeader + "*" : null,
+    customHeader ? "" : null,
+    "Ho ho ho! 🎅",
+    "O Papai Noel passou por aqui",
+    "e deixou *presentes novos* no",
+    "seu bot. Confira 👇",
+    "",
+    sep,
+    "🎁  *PRESENTES DA v9.0*",
+    sep,
+    "",
+    ...item("01", "🗳️", "Votação de Ban", "O próprio grupo decide quem sai.", c("votarban") + " @membro"),
+    ...item("02", "📡", "Aviso Global", "Um aviso, todos os grupos.", c("avisar") + "  ·  " + c("avisoflood")),
+    ...item("03", "🔒", "BlockCMD 2.0", "Bloqueie comandos por grupo.", c("blockcmd") + "  ·  " + c("listblockcmd")),
+    ...item("04", "🛡️", "Solicitações de Entrada", "Aprove ou recuse quem entra.", c("aceitar") + "  ·  " + c("recusar")),
+    ...item("05", "🏘️", "Aluguel 2.0", "Gestão completa de aluguéis.", c("alugarbot") + "  ·  " + c("statsaluguel")),
+    ...item("06", "🤖", "IA Aleatory", "Converse com a inteligência do bot.", c("ia") + "  ·  " + c("iaaleatory")),
+    sep,
+    "⚡  *POR BAIXO DO CAPÔ*",
+    sep,
+    "",
+    "✓ Conexão estável 24h",
+    "✓ Reconexão automática",
+    "✓ Anti-crash reforçado",
+    "✓ Dezenas de bugs corrigidos",
+    "",
+    neve,
+    "",
+    "📋 Digite " + c("menu") + " para ver tudo",
+    "🎅 *Boas festas e bom uso!*",
+    "",
+    "_Josival & M.Scheyot_",
+    "_bronxyshost.com_",
+  ].filter((l) => l !== null).join("\n");
 }
 let _isBroadcastingNovidades = false;
 
@@ -936,7 +936,7 @@ async function broadcastNovidades(sock, options = {}) {
   _isBroadcastingNovidades = true;
 
   try {
-    // 1. Carregar banner de novidades na memória
+    // 1. Carregar banner de novidades e áudio de apresentação na memória
     let bannerBuffer = null;
     const bannerPath = "./dados/novidades_banner.png";
     if (fs.existsSync(bannerPath)) {
@@ -945,6 +945,14 @@ async function broadcastNovidades(sock, options = {}) {
       } catch (e) {
         console.error("Erro ao ler banner de novidades:", e);
       }
+    }
+
+    let introAudio = null;
+    try {
+      const { getDuvidaAudio } = require("./dados/org/funcoes/duvida_audio.js");
+      introAudio = await getDuvidaAudio();
+    } catch (e) {
+      console.error("Erro ao carregar áudio de apresentação:", e?.message || e);
     }
 
     const captionMsg = getNovidadesBroadcastText(customText, setting.prefix || "!");
@@ -966,7 +974,8 @@ async function broadcastNovidades(sock, options = {}) {
         text: `🚀 *Iniciando Transmissão de Novidades v9.0!*\n\n` +
           `👥 *Grupos identificados:* ${groupList.length}\n` +
           `👤 *PV do Dono:* ${cleanDonoNum || "Não configurado"}\n` +
-          `🛡️ *Modo seguro anti-spam:* delay inteligente de ~2s por grupo para total segurança da sua conta.\n\n` +
+          `🎙️ *Áudio de apresentação:* ${introAudio ? "Incluído ✅" : "Indisponível ⚠️"}\n` +
+          `🛡️ *Modo seguro anti-spam:* delay inteligente entre envios para total segurança da sua conta.\n\n` +
           `_Aguarde... Você receberá o relatório final assim que concluir!_`,
       });
     }
@@ -983,6 +992,14 @@ async function broadcastNovidades(sock, options = {}) {
         } else {
           await sock.sendMessage(donoJid, { text: captionMsg });
         }
+        if (introAudio) {
+          await sleep(800);
+          await sock.sendMessage(donoJid, {
+            audio: introAudio.buffer,
+            mimetype: introAudio.mimetype,
+            ptt: true,
+          }).catch(() => { });
+        }
         donoSent = true;
       } catch (errDono) {
         console.error("Erro ao enviar novidades no PV do dono:", errDono?.message || errDono);
@@ -991,11 +1008,13 @@ async function broadcastNovidades(sock, options = {}) {
 
     // 4. Enviar em todos os grupos com delay anti-spam
     let successCount = 0;
+    let audioCount = 0;
     let failCount = 0;
 
     for (let i = 0; i < groupList.length; i++) {
       const gp = groupList[i];
       const gpJid = gp.id;
+      let sentThisGroup = false;
 
       try {
         if (bannerBuffer) {
@@ -1007,18 +1026,34 @@ async function broadcastNovidades(sock, options = {}) {
           await sock.sendMessage(gpJid, { text: captionMsg });
         }
         successCount++;
+        sentThisGroup = true;
       } catch (errGp) {
         try {
           await sock.sendMessage(gpJid, { text: captionMsg });
           successCount++;
+          sentThisGroup = true;
         } catch {
           failCount++;
         }
       }
 
-      // Intervalo seguro de 1.8s a 2.5s com jitter para evitar qualquer bloqueio por flood
+      if (sentThisGroup && introAudio) {
+        try {
+          await sleep(800);
+          await sock.sendMessage(gpJid, {
+            audio: introAudio.buffer,
+            mimetype: introAudio.mimetype,
+            ptt: true,
+          });
+          audioCount++;
+        } catch (errAud) {
+          console.error(`Erro ao enviar áudio de apresentação no grupo ${gpJid}:`, errAud?.message || errAud);
+        }
+      }
+
+      // Intervalo seguro de 2.2s a 3.0s com jitter para evitar bloqueio por flood
       if (i < groupList.length - 1) {
-        await sleep(1800 + Math.floor(Math.random() * 700));
+        await sleep(2200 + Math.floor(Math.random() * 800));
       }
     }
 
@@ -1029,6 +1064,7 @@ async function broadcastNovidades(sock, options = {}) {
       `┗━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
       `📊 *Relatório de Envio (Novidades 9.0 — Natal):*\n` +
       `✅ *Grupos entregues com sucesso:* ${successCount}\n` +
+      `🎙️ *Áudios entregues:* ${audioCount}\n` +
       `⚠️ *Falhas / Grupos bloqueados:* ${failCount}\n` +
       `👥 *Total de grupos processados:* ${groupList.length}\n` +
       `📱 *Enviado no PV do Dono:* ${donoSent ? "Sim ✅" : "Falhou ou não configurado ⚠️"}\n\n` +
@@ -1041,6 +1077,7 @@ async function broadcastNovidades(sock, options = {}) {
     return {
       success: true,
       successCount,
+      audioCount,
       failCount,
       totalGroups: groupList.length,
       donoSent,
@@ -1926,6 +1963,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       ];
 
       if (isGroup && !fs.existsSync(dirGroup)) {
+        try { fs.mkdirSync(require("path").dirname(dirGroup), { recursive: true }); } catch { }
         fs.writeFileSync(dirGroup, JSON.stringify(data_IDGP, null, 2) + "\n");
       }
 
@@ -19964,6 +20002,31 @@ _Remove da lista negra global_
               reply(
                 `❌ ID *${q.trim()}* não encontrado!\n\n▸ *${prefix}listaavisos* — Ver IDs corretos`,
               );
+            }
+          }
+          break;
+
+        case "duvida":
+        case "duvidas":
+        case "dúvida":
+        case "sobrebot":
+          {
+            try {
+              await conn.sendMessage(from, { react: { text: "🎙️", key: info.key } });
+              await conn.sendPresenceUpdate("recording", from).catch(() => { });
+              const { getDuvidaAudio } = require("./dados/org/funcoes/duvida_audio.js");
+              const _aud = await getDuvidaAudio();
+              await conn.sendMessage(
+                from,
+                { audio: _aud.buffer, mimetype: _aud.mimetype, ptt: true },
+                { quoted: info },
+              );
+              await conn.sendMessage(from, { react: { text: "🎄", key: info.key } });
+            } catch (e) {
+              console.error("[DUVIDA] Erro ao enviar áudio:", e?.message || e);
+              await conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
+            } finally {
+              conn.sendPresenceUpdate("paused", from).catch(() => { });
             }
           }
           break;

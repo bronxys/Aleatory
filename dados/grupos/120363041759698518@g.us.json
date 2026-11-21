@@ -1,0 +1,107 @@
+[
+  {
+    "name": "« Chat × Aleatory — ¯SUP & Informações »",
+    "groupId": "120363041759698518@g.us",
+    "x9": false,
+    "antiimg": false,
+    "antivideo": false,
+    "antiaudio": false,
+    "antisticker": false,
+    "antidoc": false,
+    "antictt": false,
+    "antiloc": false,
+    "antilinkgp": false,
+    "antilinkhard": false,
+    "antilink2": false,
+    "antifake": false,
+    "Odelete": false,
+    "antispam": false,
+    "anticatalogo": false,
+    "sistemGold": false,
+    "visuUnica": false,
+    "registrarFIGUS": false,
+    "soadm": false,
+    "rg_aluguel": false,
+    "advtlink": [],
+    "advtlinkgp": [],
+    "listanegra": [],
+    "advertir": [],
+    "prefixos": [
+      "!"
+    ],
+    "comandosB": [],
+    "advertir2": [],
+    "legenda_estrangeiro": "0",
+    "legenda_listanegra": "𝙊𝙡𝙝𝙖 𝙖𝙞 𝙛𝙖𝙢𝙞́𝙡𝙞𝙖 𝙦𝙪𝙚𝙢 𝙙𝙚𝙪 𝙖𝙨 𝙘𝙖𝙧𝙖𝙨 𝙥𝙤𝙧 𝘼𝙦𝙪𝙞..! 𝙥𝙤𝙧 𝙤𝙧𝙙𝙚𝙣𝙨 𝙙𝙤 𝘼𝙙𝙢𝙞𝙧𝙤 𝙞𝙧𝙚𝙞 𝙩𝙚 𝙥𝙖𝙨𝙨𝙖𝙧 𝙖 𝙁𝙖𝙘𝙖😝🔪\n𝘼𝙜𝙤𝙧𝙖 𝙨𝙞𝙣𝙩𝙖 𝙤 𝙥𝙤𝙙𝙚𝙧 𝙙𝙤 𝘽𝙖𝙣 𝘾𝙖𝙗𝙖𝙘̧𝙤𝙑𝘼𝙕𝘼 😡🤬",
+    "legenda_documento": "0",
+    "legenda_video": "0",
+    "legenda_imagem": "0",
+    "multiprefix": false,
+    "recolherlinkgp": false,
+    "forca_ofc": [
+      {
+        "acertos": 0,
+        "erros": 0,
+        "palavra": [],
+        "escreveu": [],
+        "palavra_ofc": 0,
+        "dica": 0,
+        "tema": 0
+      }
+    ],
+    "Chances": [
+      {
+        "id": "17098835230888@lid",
+        "ChanceG": null,
+        "ChanceAp": null,
+        "ChanceR": [],
+        "Vinganca": null,
+        "cassino": 0,
+        "quiz": [
+          {
+            "errou": 0,
+            "acertou": 0,
+            "numero": 0
+          }
+        ],
+        "roletadasorte": false,
+        "Cachaca": 1,
+        "Escudo": []
+      }
+    ],
+    "ausentes": [],
+    "forca_inc": false,
+    "comandos_gold": [],
+    "antipalavrao": {
+      "active": false,
+      "palavras": []
+    },
+    "limitec": {
+      "active": false,
+      "quantidade": null
+    },
+    "wellcome": [
+      {
+        "bemvindo1": false,
+        "saiu1": false,
+        "fundo": "",
+        "fundo_saiu": "",
+        "legendabv": " Seja 𝗕𝗘𝗠-𝗩𝗜𝗡𝗗𝗢 #numerodele# 𝙇𝙚𝙧 𝙖𝙨 𝙧𝙚𝙜𝙧𝙖𝙨 𝙚́ 𝙥𝙖𝙧𝙩𝙞́𝙘𝙞𝙥𝙚..! 𝙄𝙣𝙖𝙩𝙞𝙫𝙤𝙨 𝙨𝙚𝙧𝙖̃𝙤 𝙧𝙚𝙢𝙤𝙫𝙞𝙙𝙤𝙨 🥱",
+        "legendasaiu": "👋 Tchau #numerodele#! Até a próxima! 🚪"
+      },
+      {
+        "bemvindo2": false,
+        "saiu2": false,
+        "legendabv": "Oiê seja 𝗕𝗘𝗠-𝗩𝗜𝗡𝗗𝗢 #numerodele# 𝙇𝙚𝙧 𝙖𝙨 𝙧𝙚𝙜𝙧𝙖𝙨 𝙚́ 𝙥𝙖𝙧𝙩𝙞́𝙘𝙞𝙥𝙚..! 𝙄𝙣𝙖𝙩𝙞𝙫𝙤𝙨 𝙨𝙚𝙧𝙖̃𝙤 𝙧𝙚𝙢𝙤𝙫𝙞𝙙𝙤𝙨 🥱",
+        "legendasaiu": "👋 Tchau #numerodele#! Até a próxima! 🚪"
+      }
+    ],
+    "simi1": false,
+    "simi2": false,
+    "autosticker": false,
+    "autoresposta": false,
+    "jogos": false,
+    "bangp": false,
+    "iaAleatory": false
+  }
+]

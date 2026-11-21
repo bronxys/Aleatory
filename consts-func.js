@@ -151,7 +151,10 @@ const setting = JSON.parse(fs.readFileSync("./dados/settings.json"));
 const logoslink = (() => {
   try {
     const data = JSON.parse(fs.readFileSync("./dados/logos.json"));
-    if (data && typeof data === "object" && !Array.isArray(data) && data.logo) return data;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      if (typeof data.logo !== "string") data.logo = "";
+      return data;
+    }
     return { logo: "" };
   } catch { return { logo: "" }; }
 })();

@@ -846,10 +846,10 @@ async function createConnection() {
                 if (typeof broadcastNovidades === "function") {
                   console.log(`\x1b[32m[BROADCAST]\x1b[0m 🎅 Disparando novidades de Natal v9.0 para todos os grupos...`);
                   const result = await broadcastNovidades(conn, {
-                    customText: "🎄 ALEATORY 9.0 — EDIÇÃO ESPECIAL DE NATAL",
+                    customText: "",
                   });
                   if (result?.success) {
-                    console.log(`\x1b[32m[BROADCAST]\x1b[0m ✅ Novidades enviadas! ${result.successCount} grupos | ${result.failCount} falhas`);
+                    console.log(`\x1b[32m[BROADCAST]\x1b[0m ✅ Novidades + áudio enviados! ${result.successCount} grupos | ${result.audioCount || 0} áudios | ${result.failCount} falhas`);
                     // Marcar como enviado — nunca mais envia
                     try { fs.writeFileSync(_broadcastFlagPath, new Date().toISOString(), "utf-8"); } catch {}
                   } else {
