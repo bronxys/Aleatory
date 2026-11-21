@@ -71,9 +71,67 @@ function matchPresetAudio(rawText) {
     return _loadOgg(INTRO_OGG);
   }
 
-  // 3) Natal / Boas festas
+  // 3) Natal / Ano Novo / Boas festas
+  if (/\b(feliz ano novo|ano novo|reveillon|virada de ano)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "feliz_ano_novo.ogg"));
+  }
   if (/\b(feliz natal|boas festas|papai noel)\b/.test(clean) && clean.length <= 65) {
     return _loadOgg(path.join(VOZ_DIR, "feliz_natal.ogg"));
+  }
+
+  // 3b) Enigma / Charada
+  if (/\b(enigma|charada|adivinha|me desafia|faz um desafio|manda um desafio)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, _pick(["enigma_1.ogg", "enigma_2.ogg"])));
+  }
+
+  // 3c) História / Conto
+  if (/\b(conta uma historia|me conta uma historia|conta historia|fala uma historia|uma historia|um conto)\b/.test(clean) && clean.length <= 70) {
+    return _loadOgg(path.join(VOZ_DIR, _pick(["historia_1.ogg", "historia_2.ogg"])));
+  }
+
+  // 3d) Música / Cantar / Rap / Rima
+  if (/\b(canta|cantar|manda uma musica|canta uma musica|faz um rap|manda um rap|faz uma rima|manda uma rima|solta uma rima)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "musica_1.ogg"));
+  }
+
+  // 3e) Curiosidade / Fato interessante
+  if (/\b(curiosidade|fato curioso|me conta algo legal|fala algo interessante)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "curiosidade.ogg"));
+  }
+
+  // 3f) Conselho / Motivação
+  if (/\b(conselho|me da um conselho|me motiva|frase motivacional|motivacao)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "conselho.ogg"));
+  }
+
+  // 3g) Tédio / O que fazer
+  if (/\b(to entediado|to entediada|estou entediado|estou entediada|que tedio|to no tedio|o que fazer|me distrai)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "entediado.ogg"));
+  }
+
+  // 3h) Cantada
+  if (/\b(cantada|me ensina uma cantada|manda uma cantada|fala uma cantada)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "cantada.ogg"));
+  }
+
+  // 3i) Fofoca
+  if (/\b(fofoca|conta uma fofoca|tem fofoca|qual a fofoca|me conta uma fofoca)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "fofoca.ogg"));
+  }
+
+  // 3j) Futebol / Time
+  if (/\b(qual seu time|que time voce torce|que time vc torce|torce pra qual time|gosta de futebol|fala de futebol)\b/.test(clean) && clean.length <= 70) {
+    return _loadOgg(path.join(VOZ_DIR, "futebol.ogg"));
+  }
+
+  // 3k) Sono / Cansaço / Café
+  if (/\b(to com sono|estou com sono|que sono|to cansado|to cansada|estou cansado|estou cansada|preciso de cafe|quero cafe)\b/.test(clean) && clean.length <= 65) {
+    return _loadOgg(path.join(VOZ_DIR, "sono.ogg"));
+  }
+
+  // 3l) Aniversário
+  if (/\b(meu aniversario|faco aniversario|hoje e meu niver|meu niver|me da parabens|parabens pra mim)\b/.test(clean) && clean.length <= 70) {
+    return _loadOgg(path.join(VOZ_DIR, "aniversario.ogg"));
   }
 
   // 4) Piada

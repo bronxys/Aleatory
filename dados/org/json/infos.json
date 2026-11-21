@@ -197,7 +197,7 @@
   },
   {
     "comando": "bot",
-    "info": "Comando bobo, que envia um audio perguntando o que você quer."
+    "info": "🤖 *Apresentação do Bot*\n\nEnvia uma nota de voz oficial de apresentação e um painel completo com capa personalizada contendo status, hospedagem (bronxyshost.com), ping, dono, grupo, horário e clima ao vivo em São Paulo e total de comandos.\n\nLivre para todos! Uso: #prefixo#bot"
   },
   {
     "comando": "signo",
@@ -502,5 +502,9 @@
   {
     "comando": "recusar",
     "info": "🛡️ *Recusar Solicitações (ADM)*\n\nRecusa pedidos pendentes de entrada no grupo.\nVeja mais em #prefixo#inforecusar."
+  },
+  {
+    "comando": "tutorial",
+    "info": "📖 *Tutorial do Aleatory v9.0*\n\nEnvia um áudio explicativo completo ensinando como usar os menus, figurinhas, downloads, jogos, IA Aleatory, moderação de grupos e aluguel — além do link do vídeo de instalação.\n\nUso: #prefixo#tutorial (ou #prefixo#guia / #prefixo#comousar)"
   }
 ]

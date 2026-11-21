@@ -11,7 +11,9 @@ const menu = (prefix, NomeDoBot, sender) => {
 
 ╭─「 🎄 ᴄᴏɴғɪɢs 」
 │ 么 ${prefix}novidades
+│ 么 ${prefix}bot
 │ 么 ${prefix}duvida
+│ 么 ${prefix}tutorial
 │ 么 ${prefix}ping
 │ 么 ${prefix}configurar-bot
 │ 么 ${prefix}alugar

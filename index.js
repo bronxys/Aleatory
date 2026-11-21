@@ -5858,10 +5858,49 @@ Aqui é jogo rápido:
 
           break;
         case "tutorial":
-          reply(
-            `Quer aprender a instalar o Aleatory sem complicação?
-Então confere esse passo a passo que preparei pra você 👉 https://youtu.be/ymSaelbslXA?si=V17dWSScvGgwR9Nx`,
-          );
+        case "comousar":
+        case "guia":
+          {
+            const _tutPath = "./media/duvida/aleatory_tutorial.ogg";
+            try {
+              await conn.sendMessage(from, { react: { text: "🎙️", key: info.key } });
+              await conn.sendPresenceUpdate("recording", from).catch(() => { });
+              if (fs.existsSync(_tutPath) && fs.statSync(_tutPath).size > 1000) {
+                await conn.sendMessage(
+                  from,
+                  {
+                    audio: fs.readFileSync(_tutPath),
+                    mimetype: "audio/ogg; codecs=opus",
+                    ptt: true,
+                  },
+                  { quoted: info },
+                );
+              }
+              await conn.sendMessage(
+                from,
+                {
+                  text:
+                    `📖 *GUIA RÁPIDO · ALEATORY v9.0*\n\n` +
+                    `> 📋 \`${prefix}menu\` — Todos os comandos\n` +
+                    `> ℹ️ \`${prefix}info [cmd]\` — Explica qualquer comando\n` +
+                    `> 🎙️ \`${prefix}duvida\` — Conheça o bot e a BronxysHost\n` +
+                    `> 🎄 \`${prefix}novidades\` — Novidades da v9.0\n\n` +
+                    `🎬 *Tutorial de instalação em vídeo:*\n` +
+                    `https://youtu.be/ymSaelbslXA?si=V17dWSScvGgwR9Nx`,
+                },
+                { quoted: info },
+              );
+              await conn.sendMessage(from, { react: { text: "🎄", key: info.key } });
+            } catch (e) {
+              console.error("[TUTORIAL] Erro:", e?.message || e);
+              reply(
+                `Quer aprender a instalar o Aleatory sem complicação?\n` +
+                `Confira o passo a passo 👉 https://youtu.be/ymSaelbslXA?si=V17dWSScvGgwR9Nx`,
+              );
+            } finally {
+              conn.sendPresenceUpdate("paused", from).catch(() => { });
+            }
+          }
           break;
 
         //_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-/
@@ -21524,15 +21563,162 @@ você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar 
         //==(AUDIOS/DE-MUSICA/ZOUEIRA/ETC..)===\\
 
         case "bot":
-          conn.sendMessage(
-            from,
-            {
-              audio: { url: "./dados/audios/bot.ogg" },
-              mimetype: "audio/ogg; codecs=opus",
-              ptt: true,
-            },
-            { quoted: info },
-          );
+          {
+            const _botStartMs = Date.now();
+            try {
+              await conn.sendMessage(from, { react: { text: "🤖", key: info.key } });
+
+              // 1) Áudio breve de apresentação (voz oficial Aleatory)
+              const _botAudPath = "./media/duvida/aleatory_bot.ogg";
+              if (fs.existsSync(_botAudPath) && fs.statSync(_botAudPath).size > 1000) {
+                await conn.sendPresenceUpdate("recording", from).catch(() => { });
+                await conn.sendMessage(
+                  from,
+                  {
+                    audio: fs.readFileSync(_botAudPath),
+                    mimetype: "audio/ogg; codecs=opus",
+                    ptt: true,
+                  },
+                  { quoted: info },
+                );
+                await conn.sendPresenceUpdate("paused", from).catch(() => { });
+              }
+
+              // 2) Horário, saudação e período em São Paulo - Brasil
+              const _spNow = moment.tz("America/Sao_Paulo");
+              const _spHora = _spNow.hour();
+              const _spHoraFmt = _spNow.format("HH:mm:ss");
+              const _spDataFmt = _spNow.format("DD/MM/YYYY");
+
+              let _saudacao = "Boa madrugada";
+              let _periodo = "🌃 Madrugada";
+              if (_spHora >= 5 && _spHora < 12) {
+                _saudacao = "Bom dia";
+                _periodo = "☀️ Dia";
+              } else if (_spHora >= 12 && _spHora < 18) {
+                _saudacao = "Boa tarde";
+                _periodo = "🌇 Tarde";
+              } else if (_spHora >= 18 && _spHora <= 23) {
+                _saudacao = "Boa noite";
+                _periodo = "🌙 Noite";
+              }
+
+              // 3) Clima ao vivo em São Paulo (Open-Meteo, cache 15 min, sem API key)
+              let _climaStr = "Indisponível";
+              try {
+                const _nowMs = Date.now();
+                if (!global._spWeatherCache || _nowMs - global._spWeatherCache.ts > 15 * 60 * 1000) {
+                  const _wRes = await axios.get(
+                    "https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,weather_code,is_day&timezone=America%2FSao_Paulo",
+                    { timeout: 4000 },
+                  );
+                  const _cur = _wRes?.data?.current;
+                  if (_cur && typeof _cur.temperature_2m === "number") {
+                    const _temp = Math.round(_cur.temperature_2m);
+                    const _code = _cur.weather_code;
+                    const _isDay = _cur.is_day === 1;
+                    let _desc = "Tempo firme";
+                    let _ico = _isDay ? "☀️" : "🌙";
+                    if (_code === 0) { _desc = "Céu limpo"; _ico = _isDay ? "☀️" : "🌙"; }
+                    else if (_code <= 2) { _desc = "Parcialmente nublado"; _ico = _isDay ? "⛅" : "☁️"; }
+                    else if (_code === 3) { _desc = "Nublado"; _ico = "☁️"; }
+                    else if (_code === 45 || _code === 48) { _desc = "Neblina"; _ico = "🌫️"; }
+                    else if (_code >= 51 && _code <= 57) { _desc = "Garoa"; _ico = "🌦️"; }
+                    else if ((_code >= 61 && _code <= 67) || (_code >= 80 && _code <= 82)) { _desc = "Chuva"; _ico = "🌧️"; }
+                    else if (_code >= 95) { _desc = "Tempestade"; _ico = "⛈️"; }
+                    global._spWeatherCache = { ts: _nowMs, str: `${_ico} ${_temp}°C · ${_desc}` };
+                  }
+                }
+                if (global._spWeatherCache?.str) _climaStr = global._spWeatherCache.str;
+              } catch { }
+
+              // 4) Quantidade real de comandos (cache 1 única vez)
+              let _totalCmds = 1000;
+              try {
+                if (!global._allCmdsCache) {
+                  const _srcBot = fs.readFileSync(__filename, "utf-8");
+                  const _setBot = new Set();
+                  const _reBot = /\bcase\s+["']([a-z0-9_-]{2,25})["']\s*:/gi;
+                  let _mb;
+                  while ((_mb = _reBot.exec(_srcBot)) !== null) _setBot.add(_mb[1].toLowerCase());
+                  global._allCmdsCache = Array.from(_setBot);
+                }
+                _totalCmds = global._allCmdsCache.length;
+              } catch { }
+
+              // 5) Uptime, ping, dono e local
+              const _upSec = Math.floor(process.uptime());
+              const _upD = Math.floor(_upSec / 86400);
+              const _upH = Math.floor((_upSec % 86400) / 3600);
+              const _upM = Math.floor((_upSec % 3600) / 60);
+              const _upStr = _upD > 0 ? `${_upD}d ${_upH}h ${_upM}m` : (_upH > 0 ? `${_upH}h ${_upM}m` : `${_upM}m`);
+
+              const _pingSec = Math.max(0.01, (Date.now() - _botStartMs) / 1000).toFixed(2);
+              const _donoNumLimpo = String(numerodono || "").replace(/\D/g, "");
+              const _donoNumShow = _donoNumLimpo ? `wa.me/${_donoNumLimpo}` : "Não configurado";
+              const _localNome = isGroup ? (groupName || "Grupo") : "Chat Privado";
+
+              const _botCaption =
+                `🎄 ⋆ ˚｡⋆ ❄ ⋆｡˚ ⋆ 🎄\n` +
+                `   *${String(NomeDoBot || "Aleatory-Bot").toUpperCase()}*  ·  *v9.0*\n` +
+                `   _Edição Especial de Natal_\n` +
+                `🎄 ⋆ ˚｡⋆ ❄ ⋆｡˚ ⋆ 🎄\n\n` +
+                `> 🌐 *Hospedagem:* \`bronxyshost.com\`\n` +
+                `> 🟢 *Status:* Online · ⏱️ ${_upStr}\n\n` +
+                `╭─「 🤖 *ɪɴғᴏs ᴅᴏ ʙᴏᴛ* 」\n` +
+                `│ 么 *Nome:* ${NomeDoBot}\n` +
+                `│ 么 *Ping:* ${_pingSec}s ⚡\n` +
+                `│ 么 *Prefixo:* \`${prefix}\`\n` +
+                `│ 么 *Comandos:* ${_totalCmds.toLocaleString("pt-BR")}+ ativos\n` +
+                `│ 么 *Local:* ${_localNome}\n` +
+                `╰──────────────╯\n\n` +
+                `╭─「 👑 *ᴅᴏɴᴏ* 」\n` +
+                `│ 么 *Nick:* ${NickDono}\n` +
+                `│ 么 *Contato:* ${_donoNumShow}\n` +
+                `╰──────────────╯\n\n` +
+                `╭─「 🇧🇷 *sãᴏ ᴘᴀᴜʟᴏ · ʙʀᴀsɪʟ* 」\n` +
+                `│ 么 *${_saudacao}!* · ${_periodo}\n` +
+                `│ 么 🕒 ${_spHoraFmt} · ${_spDataFmt}\n` +
+                `│ 么 *Clima:* ${_climaStr}\n` +
+                `╰──────────────╯\n\n` +
+                `> 💡 \`${prefix}menu\` · \`${prefix}tutorial\` · \`${prefix}duvida\``;
+
+              // 6) Enviar GIF animado + legenda (fallback: banner estático -> texto)
+              const _botGifPath = "./media/menu/bot_gif.mp4";
+              const _botImgPath = "./media/menu/bot_banner.jpg";
+              if (fs.existsSync(_botGifPath)) {
+                await conn.sendMessage(
+                  from,
+                  {
+                    video: fs.readFileSync(_botGifPath),
+                    gifPlayback: true,
+                    caption: _botCaption,
+                    mentions: [sender],
+                  },
+                  { quoted: info },
+                );
+              } else if (fs.existsSync(_botImgPath)) {
+                await conn.sendMessage(
+                  from,
+                  {
+                    image: fs.readFileSync(_botImgPath),
+                    caption: _botCaption,
+                    mentions: [sender],
+                  },
+                  { quoted: info },
+                );
+              } else {
+                await conn.sendMessage(
+                  from,
+                  { text: _botCaption, mentions: [sender] },
+                  { quoted: info },
+                );
+              }
+            } catch (e) {
+              console.error("[BOT] Erro no comando !bot:", e?.message || e);
+              reply(`🤖 *${NomeDoBot} v9.0* · Online na bronxyshost.com ✅`);
+            }
+          }
           break;
 
         case "infobot":
