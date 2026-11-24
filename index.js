@@ -902,11 +902,11 @@ function getNovidadesBroadcastText(customHeader = "", pfx = "!") {
     "🎁  *PRESENTES DA v9.0*",
     sep,
     "",
-    ...item("01", "🎵", "Figurinhas com Áudio", "Crie figurinhas sonoras de música, vídeo (≤10s) ou imagem + áudio.", c("stickeraudio") + "  ·  " + c("audiosticker")),
+    ...item("01", "🎵", "Figurinhas com Áudio", "Crie figurinhas sonoras de música, vídeo (≤10s) ou imagem + áudio.", c("stickeraudio") + "  ·  " + c("figaudio") + "  ·  " + c("audiosticker")),
     ...item("02", "👁️", "Revelar 2.0", "Revela foto, vídeo, áudio e texto de visualização única.", c("revelar")),
     ...item("03", "⭐", "Menu Gold Atualizado", "Economia, jogos, ranking e saldo de Gold integrado.", c("menugold") + "  ·  " + c("perfil")),
     ...item("04", "🗳️", "Votação de Ban", "O próprio grupo decide quem sai.", c("votarban") + " @membro"),
-    ...item("05", "📡", "Divulgação Global", "Envie sua divulgação em todos os grupos (até 100x).", c("divulgar") + "  ·  " + c("divulgarflood")),
+    ...item("05", "📡", "Sistema de Divulgação com Flood", "Divulgue texto, foto ou vídeo em todos os grupos (1 a 100x, sem texto extra).", c("divulgar") + "  ·  " + c("divulgarflood") + "  ·  " + c("statusdivulgar") + "  ·  " + c("cancelardivulgar")),
     ...item("06", "🔒", "BlockCMD & Solicitações", "Bloqueie comandos e aprove ou recuse entradas.", c("blockcmd") + "  ·  " + c("aceitar")),
     ...item("07", "🏘️", "Aluguel 2.0 & IA", "Gestão completa de aluguéis e inteligência do bot.", c("alugarbot") + "  ·  " + c("ia")),
     sep,
@@ -19317,7 +19317,8 @@ _Remove da lista negra global_
           break;
 
         case "stickeraudio":
-        case "audiosticker": {
+        case "audiosticker":
+        case "figaudio": {
           await handleStickerAudioCommand({
             conn,
             from,

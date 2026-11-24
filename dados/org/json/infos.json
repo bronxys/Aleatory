@@ -505,10 +505,14 @@
   },
   {
     "comando": "stickeraudio",
-    "info": "🎵 *Figurinha com Áudio* (alias: #prefixo#audiosticker)\n\nModos disponíveis:\n1️⃣ Link do YouTube (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <link>`\n\n2️⃣ Nome da música (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <nome>`\n\n3️⃣ Vídeo com áudio (até 10s · gratuito/local):\nEnvie ou responda um vídeo com `#prefixo#stickeraudio`\n\n4️⃣ Imagem + Áudio (gratuito/local):\nResponda uma mensagem de áudio enviando uma imagem com `#prefixo#stickeraudio` na legenda."
+    "info": "🎵 *Figurinha com Áudio* (aliases: #prefixo#figaudio, #prefixo#audiosticker)\n\nModos disponíveis:\n1️⃣ Link do YouTube (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <link>`\n\n2️⃣ Nome da música (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <nome>`\n\n3️⃣ Vídeo com áudio (até 10s · gratuito/local):\nEnvie ou responda um vídeo com `#prefixo#stickeraudio`\n\n4️⃣ Imagem + Áudio (gratuito/local):\nResponda uma mensagem de áudio enviando uma imagem com `#prefixo#stickeraudio` na legenda."
   },
   {
     "comando": "audiosticker",
+    "info": "🎵 Alias do comando `#prefixo#stickeraudio`. Use `#prefixo#info stickeraudio` para ver todos os 4 modos."
+  },
+  {
+    "comando": "figaudio",
     "info": "🎵 Alias do comando `#prefixo#stickeraudio`. Use `#prefixo#info stickeraudio` para ver todos os 4 modos."
   },
   {

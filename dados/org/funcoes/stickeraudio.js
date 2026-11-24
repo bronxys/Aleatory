@@ -143,7 +143,7 @@ async function withTempDir(fn) {
   try {
     return await fn(dir);
   } finally {
-    await fsp.rm(dir, { recursive: true, force: true }).catch(() => {});
+    await fsp.rm(dir, { recursive: true, force: true }).catch(() => { });
   }
 }
 
@@ -405,6 +405,66 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
 }
 
 /**
+ * Gera waveform de 64 barras (0..100) a partir do áudio via FFmpeg PCM mono 8kHz.
+ * Em caso de falha, retorna uma curva padrão suave para garantir compatibilidade PTT.
+ */
+async function generateAudioWaveform(audioFilePath) {
+  try {
+    return await withTempDir(async (dir) => {
+      const pcmFile = path.join(dir, "wave.pcm");
+      await runBinary(
+        "ffmpeg",
+        [
+          "-y",
+          "-i",
+          audioFilePath,
+          "-ac",
+          "1",
+          "-ar",
+          "8000",
+          "-f",
+          "s16le",
+          pcmFile,
+        ],
+        10000
+      );
+      const pcm = await fsp.readFile(pcmFile);
+      const totalSamples = Math.floor(pcm.length / 2);
+      if (totalSamples < 64) return null;
+
+      const bars = 64;
+      const step = Math.floor(totalSamples / bars);
+      const raw = new Float64Array(bars);
+      let maxVal = 0;
+
+      for (let i = 0; i < bars; i++) {
+        let sum = 0;
+        const start = i * step;
+        const end = Math.min(start + step, totalSamples);
+        for (let s = start; s < end; s++) {
+          sum += Math.abs(pcm.readInt16LE(s * 2));
+        }
+        const avg = sum / Math.max(1, end - start);
+        raw[i] = avg;
+        if (avg > maxVal) maxVal = avg;
+      }
+
+      const out = new Uint8Array(bars);
+      for (let i = 0; i < bars; i++) {
+        out[i] = maxVal > 0 ? Math.min(100, Math.round((raw[i] / maxVal) * 100)) : 20;
+      }
+      return out;
+    });
+  } catch {
+    const fallback = new Uint8Array(64);
+    for (let i = 0; i < 64; i++) {
+      fallback[i] = 25 + Math.round(Math.abs(Math.sin(i * 0.35)) * 55);
+    }
+    return fallback;
+  }
+}
+
+/**
  * Extrai e converte faixa de áudio para OGG/Opus (48kHz, compatível com WhatsApp)
  * cortando com segurança no limite maxSeconds (10s para vídeo, 30s para música/áudio).
  */
@@ -439,7 +499,11 @@ async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
       FFMPEG_TIMEOUT_MS
     );
 
-    const outInfo = await probeMedia(outFile);
+    const [outInfo, waveform] = await Promise.all([
+      probeMedia(outFile),
+      generateAudioWaveform(outFile),
+    ]);
+
     if (!outInfo.hasAudio || outInfo.duration <= 0) {
       throw new MediaValidationError(
         "INVALID_MEDIA_FILE",
@@ -451,6 +515,7 @@ async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
     return {
       buffer,
       duration: outInfo.duration,
+      waveform,
       mimetype: "audio/ogg; codecs=opus",
     };
   });
@@ -511,6 +576,7 @@ async function processVideoMode(videoBuffer, metadata = {}) {
       webpBuffer,
       audioBuffer: audioResult.buffer,
       audioDuration: audioResult.duration,
+      waveform: audioResult.waveform,
       isAnimated: true,
       mode: 3,
       usesApiCredits: false,
@@ -567,6 +633,7 @@ async function processImageAudioMode(imageBuffer, audioBuffer, metadata = {}) {
       webpBuffer,
       audioBuffer: opusAudio.buffer,
       audioDuration: opusAudio.duration,
+      waveform: opusAudio.waveform,
       isAnimated: false,
       mode: 4,
       usesApiCredits: false,
@@ -618,6 +685,7 @@ async function processMusicStickerMode(
       webpBuffer,
       audioBuffer: opusAudio.buffer,
       audioDuration: opusAudio.duration,
+      waveform: opusAudio.waveform,
       isAnimated: visualIsSticker && isWebpBuffer(webpBuffer),
       mode: modeNumber,
       usesApiCredits: true,
@@ -727,7 +795,7 @@ function buildUsageHelp(prefix, commandName = "stickeraudio") {
 }
 
 /**
- * Orquestrador principal do comando /stickeraudio e alias /audiosticker.
+ * Orquestrador principal do comando /stickeraudio (aliases: /audiosticker, /figaudio).
  */
 async function handleStickerAudioCommand({
   conn,
@@ -744,13 +812,24 @@ async function handleStickerAudioCommand({
   settings,
   httpClient,
 }) {
-  const detected = detectStickerAudioInput(info, q);
+  // Corrigir bug de autocapitalização no celular onde index.js pode passar "!Stickeraudio" em q
+  let cleanQ = String(q || "").trim();
+  const cmdPattern = new RegExp(
+    `^${String(prefix || "!").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:stickeraudio|audiosticker|figaudio)\\b`,
+    "i"
+  );
+  cleanQ = cleanQ.replace(cmdPattern, "").trim();
+
+  const detected = detectStickerAudioInput(info, cleanQ);
+  console.log(
+    `[STICKERAUDIO] cmd=${command} modo=${detected.mode} query="${cleanQ.slice(0, 60)}" from=${from}`
+  );
 
   if (detected.mode === 0) {
     if (detected.reason === "MISSING_AUDIO_OR_QUERY") {
       return await reply(
         `🎵 Informe o *nome da música* ou *link do YouTube* junto com o comando, ou responda a um áudio enviando a imagem!\n\n` +
-          buildUsageHelp(prefix, command)
+        buildUsageHelp(prefix, command)
       );
     }
     return await reply(buildUsageHelp(prefix, command));
@@ -764,7 +843,7 @@ async function handleStickerAudioCommand({
 
   try {
     // Reação inicial não-bloqueante
-    conn.sendMessage(from, { react: { text: "🎵", key: info.key } }).catch(() => {});
+    conn.sendMessage(from, { react: { text: "🎵", key: info.key } }).catch(() => { });
 
     let processed;
 
@@ -818,7 +897,7 @@ async function handleStickerAudioCommand({
       if (!isValidYouTubeUrl(detected.query)) {
         return await reply(
           "❌ *Link do YouTube inválido.*\n" +
-            "> Envie um link válido como `https://youtu.be/...` ou `https://www.youtube.com/watch?v=...`."
+          "> Envie um link válido como `https://youtu.be/...` ou `https://www.youtube.com/watch?v=...`."
         );
       }
 
@@ -831,11 +910,11 @@ async function handleStickerAudioCommand({
         reuseQuotedSticker
           ? Promise.resolve(null)
           : downloadMediaBuffer(
-              detected.visualMsg,
-              detected.visualType,
-              downloadContentFromMessage,
-              { maxBytes: MAX_IMAGE_BYTES }
-            ),
+            detected.visualMsg,
+            detected.visualType,
+            downloadContentFromMessage,
+            { maxBytes: MAX_IMAGE_BYTES }
+          ),
         fetchYouTubeAudioByUrl(detected.query, { settings, httpClient }),
       ]);
 
@@ -857,6 +936,7 @@ async function handleStickerAudioCommand({
           webpBuffer: null,
           audioBuffer: opusAudio.buffer,
           audioDuration: opusAudio.duration,
+          waveform: opusAudio.waveform,
           isAnimated: Boolean(detected.visualMsg?.isAnimated),
           mode: 1,
           usesApiCredits: true,
@@ -883,11 +963,11 @@ async function handleStickerAudioCommand({
         reuseQuotedSticker
           ? Promise.resolve(null)
           : downloadMediaBuffer(
-              detected.visualMsg,
-              detected.visualType,
-              downloadContentFromMessage,
-              { maxBytes: MAX_IMAGE_BYTES }
-            ),
+            detected.visualMsg,
+            detected.visualType,
+            downloadContentFromMessage,
+            { maxBytes: MAX_IMAGE_BYTES }
+          ),
         fetchYouTubeAudioByName(detected.query, { settings, httpClient }),
       ]);
 
@@ -909,6 +989,7 @@ async function handleStickerAudioCommand({
           webpBuffer: null,
           audioBuffer: opusAudio.buffer,
           audioDuration: opusAudio.duration,
+          waveform: opusAudio.waveform,
           isAnimated: Boolean(detected.visualMsg?.isAnimated),
           mode: 2,
           usesApiCredits: true,
@@ -928,7 +1009,7 @@ async function handleStickerAudioCommand({
       quoted: info,
     });
 
-    conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => {});
+    conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { });
 
     return {
       ok: true,
@@ -942,7 +1023,7 @@ async function handleStickerAudioCommand({
       messageId: delivery.messageId || null,
     };
   } catch (err) {
-    conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+    conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
 
     if (err instanceof SpiderXError || err instanceof MediaValidationError) {
       console.error(`[STICKERAUDIO][MODO ${detected.mode}] ${err.code}: ${sanitizeSecrets(err.message)}`);
