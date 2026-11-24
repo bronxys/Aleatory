@@ -344,13 +344,12 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
     const outFile = path.join(dir, "anim_sticker.webp");
     const durationLimit = Math.min(maxSeconds, MAX_VIDEO_SECONDS).toFixed(3);
 
-    // Escada adaptativa para garantir compatibilidade <= 500 KB no WhatsApp
+    // Escada adaptativa compacta (padrão WhatsApp/Takeshi: 350x350 compacto para envio confiável)
     const presets = [
-      { size: 512, fps: 15, quality: 65 },
-      { size: 512, fps: 12, quality: 50 },
-      { size: 384, fps: 12, quality: 45 },
-      { size: 320, fps: 10, quality: 35 },
-      { size: 256, fps: 8, quality: 30 },
+      { size: 350, fps: 15, quality: 25 },
+      { size: 350, fps: 15, quality: 12 },
+      { size: 320, fps: 12, quality: 10 },
+      { size: 256, fps: 10, quality: 8 },
     ];
 
     let finalBuffer = null;
@@ -376,10 +375,12 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
           "0",
           "-compression_level",
           "6",
+          "-method",
+          "6",
           "-q:v",
           String(preset.quality),
           "-preset",
-          "default",
+          "picture",
           "-an",
           "-vsync",
           "0",
@@ -390,7 +391,7 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
 
       const candidate = await fsp.readFile(outFile);
       finalBuffer = candidate;
-      if (candidate.length <= MAX_ANIMATED_WEBP_BYTES) break;
+      if (candidate.length <= 280 * 1024) break;
     }
 
     if (!finalBuffer || !finalBuffer.length) {

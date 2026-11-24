@@ -279,21 +279,33 @@ function buildNativeAudioStickerMessage(baileysMod, stickerMedia, audioMessage) 
   const proto = baileysMod.proto || baileysMod.WAProto;
   const { Message } = proto;
 
+  // Manter exatamente os campos mínimos esperados pelo protocolo WhatsApp 2026 / ZAPO 1.12.0
   const cleanAudio = {
-    ...audioMessage,
-    ptt: true,
+    url: audioMessage.url,
+    directPath: audioMessage.directPath,
+    mediaKey: audioMessage.mediaKey,
+    fileSha256: audioMessage.fileSha256,
+    fileEncSha256: audioMessage.fileEncSha256,
+    fileLength: audioMessage.fileLength,
+    mediaKeyTimestamp: audioMessage.mediaKeyTimestamp || Math.floor(Date.now() / 1000),
     mimetype: audioMessage.mimetype || "audio/ogg; codecs=opus",
+    ptt: true,
+    ...(audioMessage.seconds ? { seconds: audioMessage.seconds } : {}),
+    ...(audioMessage.streamingSidecar ? { streamingSidecar: audioMessage.streamingSidecar } : {}),
   };
-  delete cleanAudio.contextInfo;
 
   const encodedAudio = Message.AudioMessage.encode(cleanAudio).finish();
 
   const stickerMessage = {
-    ...stickerMedia,
+    url: stickerMedia.url,
+    directPath: stickerMedia.directPath,
+    mediaKey: stickerMedia.mediaKey,
+    fileSha256: stickerMedia.fileSha256,
+    fileEncSha256: stickerMedia.fileEncSha256,
+    fileLength: stickerMedia.fileLength,
+    mediaKeyTimestamp: stickerMedia.mediaKeyTimestamp || Math.floor(Date.now() / 1000),
     mimetype: stickerMedia.mimetype || "image/webp",
-    width: stickerMedia.width || 512,
-    height: stickerMedia.height || 512,
-    stickerSentTs: stickerMedia.stickerSentTs || Date.now(),
+    ...(stickerMedia.isAnimated ? { isAnimated: true } : {}),
     contextInfo: undefined,
     __audioStickerAudioBytes: encodedAudio,
   };
@@ -928,15 +940,77 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
       audioMessageObj
     );
 
-    const messageId = await conn.relayMessage(jid, nativeMessage, {});
+    // Verificar em runtime os campos emitidos pelo encodeWAMessage real do Baileys
+    let wireLen = 0;
+    let has26 = false;
+    let has134 = false;
+    try {
+      const rawEncoded = baileys.proto.Message.encode(nativeMessage).finish();
+      wireLen = rawEncoded.length;
+      const pb = require("protobufjs/minimal");
+      const rd = pb.Reader.create(rawEncoded);
+      while (rd.pos < rd.len) {
+        const tag = rd.uint32();
+        const fn = tag >>> 3;
+        const wt = tag & 7;
+        if (fn === 26) has26 = true;
+        if (fn === 134) has134 = true;
+        if (wt === 2) rd.bytes();
+        else rd.skipType(wt);
+      }
+    } catch {
+      // diagnóstico não-bloqueante
+    }
+
+    // Gerar messageId antes para registrar no retry store e capturar ACK do servidor
+    const preMsgId =
+      typeof baileys.generateMessageIDV2 === "function"
+        ? baileys.generateMessageIDV2(conn.user?.id)
+        : undefined;
+
+    if (preMsgId && typeof global._storeOutgoingMessage === "function") {
+      global._storeOutgoingMessage(preMsgId, nativeMessage);
+    }
+
+    // Escutar ACK do servidor WhatsApp para esse msgId (diagnóstico em tempo real, auto-limpa em 8s)
+    if (preMsgId && conn.ws && typeof conn.ws.on === "function") {
+      const ackEvent = `CB:ack,class:message,id:${preMsgId}`;
+      const onAck = (node) => {
+        clearTimeout(ackTimer);
+        console.log(
+          `[STICKERAUDIO] SERVER ACK id=${preMsgId} attrs=${JSON.stringify(node?.attrs || {})}`
+        );
+      };
+      const ackTimer = setTimeout(() => {
+        try {
+          conn.ws.off(ackEvent, onAck);
+        } catch {
+          // ignorar
+        }
+      }, 8000);
+      conn.ws.once(ackEvent, onAck);
+    }
+
+    const messageId = await conn.relayMessage(
+      jid,
+      nativeMessage,
+      preMsgId ? { messageId: preMsgId } : {}
+    );
+    const finalId =
+      (typeof messageId === "string" ? messageId : messageId?.key?.id) || preMsgId || null;
+
+    if (finalId && finalId !== preMsgId && typeof global._storeOutgoingMessage === "function") {
+      global._storeOutgoingMessage(finalId, nativeMessage);
+    }
+
     console.log(
-      `[STICKERAUDIO] relayMessage OK -> jid=${jid} id=${typeof messageId === "string" ? messageId : messageId?.key?.id || "?"}`
+      `[STICKERAUDIO] relayMessage OK -> jid=${jid} id=${finalId || "?"} wire=${wireLen}B f26=${has26} f134=${has134} pttPath=${audioMessageObj.directPath?.slice(0, 28) || "?"} stkPath=${stickerMediaObj.directPath?.slice(0, 28) || "?"}`
     );
 
     return {
       deliveryMode: "native_audio_sticker_baileys",
       nativeAudioSticker: true,
-      messageId: typeof messageId === "string" ? messageId : messageId?.key?.id || null,
+      messageId: finalId,
       nativeMessage,
     };
   }

@@ -84,6 +84,9 @@ const NodeCache = require("node-cache");
 // Armazena últimas mensagens para retry de descriptografia
 // ═══════════════════════════════════════════════════════════
 const _messageStore = new NodeCache({ stdTTL: 300, maxKeys: 5000 }); // 5min TTL, max 5k msgs
+global._storeOutgoingMessage = (id, message) => {
+  if (id && message) _messageStore.set(id, { message });
+};
 
 // Cache de metadados de grupo para evitar rate-limits
 const _groupMetadataCache = new NodeCache({ stdTTL: 300, useClones: false }); // 5min TTL
