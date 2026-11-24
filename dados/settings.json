@@ -7,5 +7,6 @@
   "aniversario": true,
   "modoregistro": true,
   "gemini_api_key": "",
+  "spider_api_token": "",
   "iaAleatoryPV": true
 }

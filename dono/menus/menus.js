@@ -385,6 +385,7 @@ const menumidias = (prefix, sender) => {
 │ 么 ${prefix}mediafire "link"
 │ 么 ${prefix}transcrever •áudio•
 │ 么 ${prefix}sticker
+│ 么 ${prefix}stickeraudio
 │ 么 ${prefix}fstiker
 │ 么 ${prefix}attp "texto"
 │ 么 ${prefix}toimg

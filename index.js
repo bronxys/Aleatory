@@ -31,6 +31,17 @@ const {
   prepareAudioForWhatsApp,
 } = require("./dados/org/funcoes/audio_converter.js");
 
+// Camada de compatibilidade WhatsApp (v8/v9), /revelar atualizado e /stickeraudio
+const {
+  getQuotedMessage,
+  extractViewOncePayload,
+} = require("./dados/org/funcoes/wa_adapter.js");
+const {
+  handleRevelarCommand,
+  rememberViewOnceText,
+} = require("./dados/org/funcoes/revelar.js");
+const { handleStickerAudioCommand } = require("./dados/org/funcoes/stickeraudio.js");
+
 const {
   fs,
   axios,
@@ -1506,6 +1517,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       }
 
       if (upsert.type === "append") return;
+      rememberViewOnceText(info);
       const type = baileys.getContentType(info.message);
       const content = JSON.stringify(info.message);
       const pushname = info.pushName ? info.pushName : "";
@@ -1576,11 +1588,13 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         info.message?.conversation ||
         info.message?.viewOnceMessageV2?.message?.imageMessage?.caption ||
         info.message?.viewOnceMessageV2?.message?.videoMessage?.caption ||
+        info.message?.viewOnceMessageV2Extension?.message?.extendedTextMessage?.text ||
         info.message?.imageMessage?.caption ||
         info.message?.videoMessage?.caption ||
         info.message?.extendedTextMessage?.text ||
         info.message?.viewOnceMessage?.message?.videoMessage?.caption ||
         info.message?.viewOnceMessage?.message?.imageMessage?.caption ||
+        info.message?.viewOnceMessage?.message?.extendedTextMessage?.text ||
         info.message?.documentWithCaptionMessage?.message?.documentMessage
           ?.caption ||
         info.message?.buttonsMessage?.imageMessage?.caption ||
@@ -2908,7 +2922,8 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       //=========(isQuoted/consts)=============\\
       const isImage = type == "imageMessage";
       const isVideo = type == "videoMessage";
-      const isVisuU2 = type == "viewOnceMessageV2";
+      const isVisuU2 =
+        type == "viewOnceMessageV2" || type == "viewOnceMessageV2Extension";
       const isAudio = type == "audioMessage";
       const isSticker = type == "stickerMessage";
       const isContact = type == "contactMessage";
@@ -11387,56 +11402,31 @@ ${horarios2
 
         case "rvisu":
         case "open":
-        case "revelar":
-          try {
-            RSMM =
-              info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-            boij22 =
-              RSMM?.imageMessage ||
-              info.message?.imageMessage ||
-              RSMM?.viewOnceMessageV2?.message?.imageMessage ||
-              info.message?.viewOnceMessageV2?.message?.imageMessage ||
-              info.message?.viewOnceMessage?.message?.imageMessage ||
-              RSMM?.viewOnceMessage?.message?.imageMessage;
-            boijj =
-              RSMM?.videoMessage ||
-              info.message?.videoMessage ||
-              RSMM?.viewOnceMessageV2?.message?.videoMessage ||
-              info.message?.viewOnceMessageV2?.message?.videoMessage ||
-              info.message?.viewOnceMessage?.message?.videoMessage ||
-              RSMM?.viewOnceMessage?.message?.videoMessage;
-            boij33 =
-              RSMM?.audioMessage ||
-              info.message?.audioMessage ||
-              RSMM?.viewOnceMessageV2?.message?.audioMessage ||
-              info.message?.viewOnceMessageV2?.message?.audioMessage ||
-              info.message?.viewOnceMessage?.message?.audioMessage ||
-              RSMM?.viewOnceMessage?.message?.audioMessage;
-            if (boijj) {
-              px = boijj;
-              px.viewOnce = false;
-              px.video = { url: px.url };
-              await conn.sendMessage(from, px, { quoted: info });
-            } else if (boij22) {
-              px = boij22;
-              px.viewOnce = false;
-              px.image = { url: px.url };
-              await conn.sendMessage(from, px, { quoted: info });
-            } else if (boij33) {
-              px = boij33;
-              px.viewOnce = false;
-              px.audio = { url: px.url };
-              await conn.sendMessage(from, px, { quoted: info });
-            } else {
-              return reply(
-                "Por favor, *mencione uma imagem, video ou áudio em visualização única* para executar o comando.",
-              );
-            }
-          } catch (e) {
-            console.error(e);
-            await reply("Ocorreu um erro");
+        case "revelar": {
+          // Se houver quiz ativo e nenhuma mensagem de visualização única foi citada, orientar uso do revelarquiz
+          if (
+            command === "revelar" &&
+            !getQuotedMessage(info) &&
+            !extractViewOncePayload(info).found &&
+            isGroup &&
+            typeof temQuiz === "function" &&
+            temQuiz(from)
+          ) {
+            return reply(
+              `💡 Há um *quiz ativo* neste grupo! Use \`${prefix}revelarquiz\` (ADM) para revelar a resposta do quiz, ou responda uma mensagem de visualização única com \`${prefix}revelar\`.`
+            );
           }
+
+          await handleRevelarCommand({
+            conn,
+            from,
+            info,
+            prefix,
+            reply,
+            downloadContentFromMessage,
+          });
           break;
+        }
 
         case "getquoted":
         case "getinfo":
@@ -19325,6 +19315,25 @@ _Remove da lista negra global_
           }
           break;
 
+        case "stickeraudio":
+        case "audiosticker": {
+          await handleStickerAudioCommand({
+            conn,
+            from,
+            info,
+            q,
+            prefix,
+            command,
+            pushname,
+            NomeDoBot,
+            NickDono,
+            reply,
+            downloadContentFromMessage,
+            settings: setting,
+          });
+          break;
+        }
+
         case "rvvisu":
         case "rvvisuunica":
         case "revelarvisu":
@@ -19332,65 +19341,14 @@ _Remove da lista negra global_
           {
             if (Os_Returns(false, true, false).true)
               return reply(Os_Returns(false, true, false).txt);
-            try {
-              var RSMM =
-                info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-              var boij22 =
-                RSMM?.imageMessage ||
-                info.message?.imageMessage ||
-                RSMM?.viewOnceMessageV2?.message?.imageMessage ||
-                info.message?.viewOnceMessageV2?.message?.imageMessage ||
-                info.message?.viewOnceMessage?.message?.imageMessage ||
-                RSMM?.viewOnceMessage?.message?.imageMessage;
-              var boijj =
-                RSMM?.videoMessage ||
-                info.message?.videoMessage ||
-                RSMM?.viewOnceMessageV2?.message?.videoMessage ||
-                info.message?.viewOnceMessageV2?.message?.videoMessage ||
-                info.message?.viewOnceMessage?.message?.videoMessage ||
-                RSMM?.viewOnceMessage?.message?.videoMessage;
-              var boij33 =
-                RSMM?.audioMessage ||
-                info.message?.audioMessage ||
-                RSMM?.viewOnceMessageV2?.message?.audioMessage ||
-                info.message?.viewOnceMessageV2?.message?.audioMessage ||
-                info.message?.viewOnceMessage?.message?.audioMessage ||
-                RSMM?.viewOnceMessage?.message?.audioMessage;
-              if (boijj) {
-                var px = boijj;
-                px.viewOnce = false;
-                px.video = {
-                  url: px.url,
-                };
-                await conn.sendMessage(from, px, {
-                  quoted: info,
-                });
-              } else if (boij22) {
-                var px = boij22;
-                px.viewOnce = false;
-                px.image = {
-                  url: px.url,
-                };
-                await conn.sendMessage(from, px, {
-                  quoted: info,
-                });
-              } else if (boij33) {
-                var px = boij33;
-                px.viewOnce = false;
-                px.audio = {
-                  url: px.url,
-                };
-                await conn.sendMessage(from, px, {
-                  quoted: info,
-                });
-              } else {
-                return reply(
-                  "Por favor, *mencione uma imagem, video ou áudio em visualização única* para executar o comando.",
-                );
-              }
-            } catch (error) {
-              await reply(messageJson?.error);
-            }
+            await handleRevelarCommand({
+              conn,
+              from,
+              info,
+              prefix,
+              reply,
+              downloadContentFromMessage,
+            });
           }
           break;
 
@@ -20310,7 +20268,6 @@ _→ Áudio enviado todo dia às 14:30_
           break;
         }
 
-        case "revelar":
         case "revelarquiz": {
           if (!isGroup) return reply(Res_SoGrupo);
           if (!isGroupAdmins) return reply("🔒 Apenas *admins* podem revelar a resposta!");
