@@ -90,10 +90,15 @@ function installNativeAudioStickerProtoExtension(baileysOrProto) {
 
   const messageEncode = Message.encode.bind(Message);
   Message.encode = function encode(message, writer) {
-    writer = messageEncode(message, writer);
-    if (message?.audioStickerMessage != null) {
+    let target = message;
+    if (target?.stickerMessage?.__aleatoryEncHintOnly) {
+      target = { ...target };
+      delete target.stickerMessage;
+    }
+    writer = messageEncode(target, writer);
+    if (target?.audioStickerMessage != null) {
       FutureProofMessage.encode(
-        message.audioStickerMessage,
+        target.audioStickerMessage,
         writer.uint32(AUDIO_STICKER_OUTER_TAG).fork()
       ).ldelim();
     }
@@ -102,10 +107,15 @@ function installNativeAudioStickerProtoExtension(baileysOrProto) {
 
   const messageFromObject = Message.fromObject.bind(Message);
   Message.fromObject = function fromObject(object) {
-    const message = messageFromObject(object);
-    if (object?.audioStickerMessage != null) {
+    let source = object;
+    if (source?.stickerMessage?.__aleatoryEncHintOnly) {
+      source = { ...source };
+      delete source.stickerMessage;
+    }
+    const message = messageFromObject(source);
+    if (source?.audioStickerMessage != null) {
       message.audioStickerMessage = FutureProofMessage.fromObject(
-        object.audioStickerMessage
+        source.audioStickerMessage
       );
     }
     return message;
@@ -778,6 +788,8 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   stickerMessage.height = Number(height) || 512;
   stickerMessage.isAnimated = isAnimated === true;
   stickerMessage.isLottie = false;
+  stickerMessage.isAvatar = false;
+  stickerMessage.isAiSticker = false;
   stickerMessage.stickerSentTs = Date.now();
 
   const quoted = sendOptions.quoted;
@@ -800,6 +812,16 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     audioMessage,
     crypto.randomBytes(32)
   );
+
+  // Dica apenas para o roteador XMPP interno do Baileys (messages-send.js):
+  // - Faz getMediaType(msg) retornar "sticker" -> injeta mediatype="sticker" no nó <enc>
+  // - Faz getMessageType(msg) retornar "media" -> injeta type="media" no nó <message>
+  // - Removido automaticamente em Message.fromObject e Message.encode antes da
+  //   serialização Protobuf, garantindo ZERO duplicação do campo #26 no payload criptografado!
+  const relayPayload = {
+    ...protoPayload,
+    stickerMessage: { __aleatoryEncHintOnly: true },
+  };
 
   const messageId = crypto.randomBytes(10).toString("hex").toUpperCase();
 
@@ -826,11 +848,10 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     conn.ws.once(ackEvent, onAck);
   }
 
-  // Relay exato conforme validado no protocolo Baileys 7.x (sem injetar mediatype inválido na tag <message>)
-  await conn.relayMessage(jid, protoPayload, { messageId });
+  await conn.relayMessage(jid, relayPayload, { messageId });
 
   console.log(
-    `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#26) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated})`
+    `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#26, stanza media/sticker) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated})`
   );
 
   return {

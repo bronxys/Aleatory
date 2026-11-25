@@ -18,11 +18,14 @@ const {
 const {
   SpiderXError,
   sanitizeSecrets,
+  getSpiderConfig,
   looksLikeUrl,
   isValidYouTubeUrl,
+  normalizeYouTubeUrl,
   fetchYouTubeAudioByUrl,
   fetchYouTubeAudioByName,
 } = require("./spiderx_api.js");
+const axios = require("axios");
 
 /**
  * Sistema completo do comando /stickeraudio (aliases: /audiosticker, /figaudio):
@@ -55,8 +58,10 @@ const MAX_MUSIC_SECONDS = 30;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_VIDEO_BYTES = 64 * 1024 * 1024; // 64 MB (suporta vídeos longos; recorta só os primeiros 10s)
-const MAX_STATIC_WEBP_BYTES = 100 * 1024; // 100 KB (limite WhatsApp)
-const MAX_ANIMATED_WEBP_BYTES = 500 * 1024; // 500 KB (padrão estável WhatsApp)
+const MAX_STATIC_WEBP_BYTES = 100 * 1024; // 100 KB (limite WhatsApp final com EXIF)
+const MAX_RAW_STATIC_WEBP_BYTES = 96 * 1024; // folga para chunk EXIF ficar <= 100 KB
+const MAX_ANIMATED_WEBP_BYTES = 500 * 1024; // 500 KB (limite WhatsApp final com EXIF)
+const MAX_RAW_ANIMATED_WEBP_BYTES = 488 * 1024; // folga para EXIF garantir < 500 KB no iOS/Android
 const FFMPEG_TIMEOUT_MS = 60000;
 const FFPROBE_TIMEOUT_MS = 12000;
 const WAVEFORM_SAMPLE_RATE = 8000;
@@ -309,15 +314,17 @@ async function convertImageToStickerWebp(imageBuffer, metadata = {}) {
           "-vcodec",
           "libwebp",
           "-vf",
-          "scale=512:512:force_original_aspect_ratio=increase,crop=512:512",
+          "scale=512:512:force_original_aspect_ratio=increase:flags=lanczos,crop=512:512",
           "-frames:v",
           "1",
           "-lossless",
           "0",
+          "-compression_level",
+          "4",
           "-q:v",
           String(q),
           "-preset",
-          "picture",
+          "default",
           "-an",
           outFile,
         ],
@@ -326,7 +333,7 @@ async function convertImageToStickerWebp(imageBuffer, metadata = {}) {
 
       const candidate = await fsp.readFile(outFile);
       finalBuffer = candidate;
-      if (candidate.length <= MAX_STATIC_WEBP_BYTES) break;
+      if (candidate.length <= MAX_RAW_STATIC_WEBP_BYTES) break;
     }
 
     if (!finalBuffer || !finalBuffer.length) {
@@ -368,70 +375,114 @@ async function prepareExistingStickerWebp(stickerBuffer, metadata = {}) {
 }
 
 /**
+ * Seleciona a escada ideal de resolução/FPS/qualidade conforme a duração do clipe.
+ *
+ * Prioriza fluidez (14–20 FPS, nunca abaixo de 12 FPS) e nitidez (Lanczos + libwebp_anim
+ * com -preset default -compression_level 4), evitando cair para 256px @ 8fps travado.
+ */
+function buildAnimatedWebpAttempts(durationSec) {
+  if (durationSec <= 4.5) {
+    return [
+      { size: 512, fps: 20, quality: 58 },
+      { size: 512, fps: 18, quality: 48 },
+      { size: 512, fps: 15, quality: 42 },
+      { size: 512, fps: 15, quality: 32 },
+      { size: 448, fps: 15, quality: 38 },
+      { size: 384, fps: 15, quality: 34 },
+      { size: 352, fps: 14, quality: 28 },
+    ];
+  }
+
+  if (durationSec <= 7.5) {
+    return [
+      { size: 512, fps: 16, quality: 46 },
+      { size: 512, fps: 15, quality: 36 },
+      { size: 448, fps: 15, quality: 40 },
+      { size: 448, fps: 15, quality: 30 },
+      { size: 384, fps: 15, quality: 36 },
+      { size: 384, fps: 14, quality: 28 },
+      { size: 352, fps: 14, quality: 28 },
+      { size: 320, fps: 12, quality: 24 },
+    ];
+  }
+
+  // Clipes de 7.5s a 10s: começa direto em 448/384 @ 15fps para máxima fluidez sem desperdiçar CPU
+  return [
+    { size: 448, fps: 15, quality: 36 },
+    { size: 384, fps: 15, quality: 36 },
+    { size: 384, fps: 15, quality: 28 },
+    { size: 352, fps: 15, quality: 32 },
+    { size: 352, fps: 14, quality: 24 },
+    { size: 320, fps: 14, quality: 28 },
+    { size: 320, fps: 12, quality: 22 },
+  ];
+}
+
+/**
  * Converte vídeo (até 10s) para figurinha animada WebP quadrada (padrão WhatsApp).
  *
- * Usa center-crop para forçar aspecto 1:1 real, garantindo que clientes
- * iOS/Android reconheçam o sticker como quadrado e habilitem o áudio.
- * Padding transparente (RGBA + pad) NÃO funciona em clientes móveis porque
- * o WhatsApp descarta a área transparente e mostra o conteúdo original.
- *
- * Escada adaptativa: reduz resolução/FPS/qualidade até caber em <= 500 KB.
+ * - Center-crop quadrado 1:1 com filtro Lanczos (nítido, sem barras verticais).
+ * - Encoder libwebp_anim + preset default + compression_level 4 (~33% menor que preset icon).
+ * - Mantém FPS alto (14–20 fps, piso mínimo 12 fps) cabendo com folga de EXIF em <= 500 KB.
  */
 async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata = {}) {
   return await withTempDir(async (dir) => {
     const outFile = path.join(dir, "anim_sticker.webp");
-    const durationLimit = Math.min(maxSeconds, MAX_VIDEO_SECONDS).toFixed(3);
-
-    const attempts = [
-      { size: 512, fps: 15, quality: 50 },
-      { size: 512, fps: 12, quality: 40 },
-      { size: 448, fps: 10, quality: 35 },
-      { size: 384, fps: 10, quality: 30 },
-      { size: 320, fps: 10, quality: 25 },
-      { size: 256, fps: 8, quality: 20 },
-    ];
+    const clippedSec = Math.min(Number(maxSeconds) || MAX_VIDEO_SECONDS, MAX_VIDEO_SECONDS);
+    const durationLimit = clippedSec.toFixed(3);
+    const attempts = buildAnimatedWebpAttempts(clippedSec);
 
     let finalBuffer = null;
     let finalSize = 512;
+    let chosenAttempt = attempts[0];
+    let encoderName = "libwebp_anim";
 
     for (const attempt of attempts) {
-      // Center-crop quadrado 1:1 (equivalente ao modo cover): garante figurinha quadrada sem barras verticais
-      const vf = `fps=${attempt.fps},scale=${attempt.size}:${attempt.size}:force_original_aspect_ratio=increase,crop=${attempt.size}:${attempt.size}`;
+      const vf = `fps=${attempt.fps},scale=${attempt.size}:${attempt.size}:force_original_aspect_ratio=increase:flags=lanczos,crop=${attempt.size}:${attempt.size}`;
+      const buildArgs = (codec) => [
+        "-y",
+        "-v",
+        "error",
+        "-ss",
+        "0",
+        "-t",
+        durationLimit,
+        "-i",
+        inputVideoPath,
+        "-an",
+        "-vf",
+        vf,
+        "-c:v",
+        codec,
+        "-loop",
+        "0",
+        "-lossless",
+        "0",
+        "-preset",
+        "default",
+        "-compression_level",
+        "4",
+        "-q:v",
+        String(attempt.quality),
+        outFile,
+      ];
 
-      await runBinary(
-        "ffmpeg",
-        [
-          "-y",
-          "-v",
-          "error",
-          "-ss",
-          "0",
-          "-t",
-          durationLimit,
-          "-i",
-          inputVideoPath,
-          "-an",
-          "-vf",
-          vf,
-          "-c:v",
-          "libwebp",
-          "-loop",
-          "0",
-          "-lossless",
-          "0",
-          "-preset",
-          "icon",
-          "-quality",
-          String(attempt.quality),
-          outFile,
-        ],
-        FFMPEG_TIMEOUT_MS
-      );
+      try {
+        await runBinary("ffmpeg", buildArgs(encoderName), FFMPEG_TIMEOUT_MS);
+      } catch (err) {
+        if (encoderName === "libwebp_anim") {
+          encoderName = "libwebp";
+          await runBinary("ffmpeg", buildArgs(encoderName), FFMPEG_TIMEOUT_MS);
+        } else {
+          throw err;
+        }
+      }
 
       const candidate = await fsp.readFile(outFile);
       finalBuffer = candidate;
       finalSize = attempt.size;
-      if (candidate.length <= MAX_ANIMATED_WEBP_BYTES) break;
+      chosenAttempt = attempt;
+      if (candidate.length <= MAX_RAW_ANIMATED_WEBP_BYTES) break;
     }
 
     if (!finalBuffer || !finalBuffer.length) {
@@ -441,10 +492,17 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
       );
     }
 
+    const stamped = await stampStickerExif(finalBuffer, metadata);
+    console.log(
+      `[STICKERAUDIO] WebP animado: ${finalSize}x${finalSize} @ ${chosenAttempt.fps}fps q=${chosenAttempt.quality} (${encoderName}) -> ${Math.round(stamped.length / 1024)}KB (${clippedSec.toFixed(1)}s)`
+    );
+
     return {
-      buffer: await stampStickerExif(finalBuffer, metadata),
+      buffer: stamped,
       width: finalSize,
       height: finalSize,
+      fps: chosenAttempt.fps,
+      quality: chosenAttempt.quality,
       isAnimated: true,
     };
   });
@@ -832,6 +890,14 @@ function detectStickerAudioInput(info, rawQuery = "") {
     };
   }
 
+  if (!visualMsg && query) {
+    return {
+      mode: 0,
+      reason: "MISSING_VISUAL_FOR_QUERY",
+      query,
+    };
+  }
+
   return {
     mode: 0,
     reason: "HELP",
@@ -911,11 +977,52 @@ function buildInfoFigAudioTutorial(prefix = "!", NomeDoBot = "Aleatory-Bot") {
     `│ 🔊 *COMO OUVIR A FIGURINHA:*\n` +
     `│ • As figurinhas sonoras chegam mutadas por padrão.\n` +
     `│ • Toque no ícone de som *(canto superior esquerdo no\n` +
-    `│   celular ou superior direito no WhatsApp Web)*.\n` +
-    `│ • Mantenha o WhatsApp atualizado na Play Store / App Store\n` +
-    `│   e verifique se o celular não está no modo silencioso.\n` +
+    `│   Android ou superior direito no WhatsApp Web/Windows)*.\n` +
+    `│ • *Aviso iOS (iPhone):* a Meta ainda está liberando o\n` +
+    `│   recurso gradualmente no iOS (TestFlight Beta 26.46+).\n` +
+    `│   Mantenha o WhatsApp atualizado na App Store!\n` +
     `╰──────────────────────────────────╯`
   );
+}
+
+/**
+ * Fallback gratuito via API Bronxys (reqapi.play) caso spider_api_token não esteja configurado.
+ */
+async function fetchAudioViaBronxysFallback(queryOrUrl, reqapi, httpClient = axios) {
+  if (!reqapi || typeof reqapi.play !== "function") return null;
+  const mediaUrl = reqapi.play(queryOrUrl, true);
+  const res = await httpClient.get(mediaUrl, {
+    timeout: 35000,
+    responseType: "arraybuffer",
+    maxContentLength: 25 * 1024 * 1024,
+    maxBodyLength: 25 * 1024 * 1024,
+    validateStatus: () => true,
+    headers: { "User-Agent": "Aleatory-Bot/9.0" },
+  });
+  if (!res || res.status < 200 || res.status >= 300) {
+    throw new SpiderXError(
+      "SPIDERX_UNAVAILABLE",
+      "🌐 *Não foi possível baixar o áudio do YouTube no momento.* Tente novamente em instantes.",
+      `Bronxys fallback HTTP ${res?.status || "N/A"}`
+    );
+  }
+  const buf = Buffer.isBuffer(res.data) ? res.data : Buffer.from(res.data || "");
+  const ct = String(res.headers?.["content-type"] || "").toLowerCase();
+  const head = buf.slice(0, 64).toString("utf8").trim().toLowerCase();
+  if (
+    buf.length < 1024 ||
+    ct.includes("text/html") ||
+    ct.includes("application/json") ||
+    head.startsWith("<!doctype") ||
+    head.startsWith("<html") ||
+    head.startsWith("{")
+  ) {
+    throw new SpiderXError(
+      "SPIDERX_NOT_FOUND",
+      "🔎 *Não foi possível extrair o áudio desse link/música.* Tente outro termo ou envie o vídeo/áudio diretamente."
+    );
+  }
+  return { buffer: buf, title: queryOrUrl, duration: null, source: "bronxys_fallback" };
 }
 
 /**
@@ -936,6 +1043,7 @@ async function handleStickerAudioCommand({
   downloadContentFromMessage,
   settings,
   httpClient,
+  reqapi,
 }) {
   // Sanitizar q caso o teclado do celular tenha capitalizado o comando (ex.: !Figaudio, !Sa)
   let cleanQ = String(q || "").trim();
@@ -955,6 +1063,15 @@ async function handleStickerAudioCommand({
       return await reply(
         `🎵 Informe o *nome da música* ou *link do YouTube* junto com o comando, ou responda a um áudio enviando a imagem!\n\n` +
           buildUsageHelp(prefix, command)
+      );
+    }
+    if (detected.reason === "MISSING_VISUAL_FOR_QUERY") {
+      const cmd = `${prefix}${command}`;
+      return await reply(
+        `🖼️ *Faltou a figurinha ou imagem* para colocar esse áudio!\n\n` +
+          `• *Responda uma figurinha* com:\n  \`${cmd} ${detected.query}\`\n` +
+          `• Ou *envie uma imagem* com \`${cmd} ${detected.query}\` na legenda.\n` +
+          `• Para transformar um *vídeo direto* em figurinha com som, envie/responda o vídeo apenas com \`${cmd}\`.`
       );
     }
     return await reply(buildUsageHelp(prefix, command));
@@ -1008,14 +1125,21 @@ async function handleStickerAudioCommand({
       processed = await processImageAudioMode(visualBuffer, audioBuffer, metadata);
     }
 
-    // ─── MODO 1: Link do YouTube (Spider X API — consome créditos) ───
+    // ─── MODO 1: Link do YouTube (Spider X API ou fallback Bronxys API) ───
     else if (detected.mode === 1) {
       if (!isValidYouTubeUrl(detected.query)) {
         return await reply(
           "❌ *Link do YouTube inválido.*\n" +
-            "> Envie um link válido como `https://youtu.be/...` ou `https://www.youtube.com/watch?v=...`."
+            "> Envie um link válido como `https://youtu.be/...`, `https://www.youtube.com/watch?v=...` ou `https://youtube.com/shorts/...`."
         );
       }
+
+      const normalizedYt = normalizeYouTubeUrl(detected.query);
+      const hasSpiderToken = Boolean(getSpiderConfig(settings).token);
+      const audioPromise =
+        !hasSpiderToken && reqapi
+          ? fetchAudioViaBronxysFallback(normalizedYt, reqapi, httpClient)
+          : fetchYouTubeAudioByUrl(normalizedYt, { settings, httpClient });
 
       const [visualBuffer, musicData] = await Promise.all([
         downloadMediaBuffer(
@@ -1024,7 +1148,7 @@ async function handleStickerAudioCommand({
           downloadContentFromMessage,
           { maxBytes: MAX_IMAGE_BYTES }
         ),
-        fetchYouTubeAudioByUrl(detected.query, { settings, httpClient }),
+        audioPromise,
       ]);
 
       processed = await processMusicStickerMode(
@@ -1036,8 +1160,14 @@ async function handleStickerAudioCommand({
       );
     }
 
-    // ─── MODO 2: Nome da música (Spider X API — consome créditos) ───
+    // ─── MODO 2: Nome da música (Spider X API ou fallback Bronxys API) ───
     else if (detected.mode === 2) {
+      const hasSpiderToken = Boolean(getSpiderConfig(settings).token);
+      const audioPromise =
+        !hasSpiderToken && reqapi
+          ? fetchAudioViaBronxysFallback(detected.query, reqapi, httpClient)
+          : fetchYouTubeAudioByName(detected.query, { settings, httpClient });
+
       const [visualBuffer, musicData] = await Promise.all([
         downloadMediaBuffer(
           detected.visualMsg,
@@ -1045,7 +1175,7 @@ async function handleStickerAudioCommand({
           downloadContentFromMessage,
           { maxBytes: MAX_IMAGE_BYTES }
         ),
-        fetchYouTubeAudioByName(detected.query, { settings, httpClient }),
+        audioPromise,
       ]);
 
       processed = await processMusicStickerMode(

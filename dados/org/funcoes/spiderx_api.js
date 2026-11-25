@@ -141,12 +141,45 @@ function isValidYouTubeUrl(rawUrl) {
 }
 
 /**
- * Normaliza um link do YouTube para garantir protocolo https://.
+ * Normaliza um link do YouTube (incluindo /shorts/ e parâmetros ?is=/?si=)
+ * para o formato canônico https://www.youtube.com/watch?v=<id>.
  */
 function normalizeYouTubeUrl(rawUrl) {
-  const trimmed = String(rawUrl || "").trim();
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
+  let candidate = String(rawUrl || "").trim();
+  if (!/^https?:\/\//i.test(candidate)) {
+    candidate = `https://${candidate}`;
+  }
+
+  try {
+    const parsed = new URL(candidate);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    if (host === "youtu.be") {
+      const id = parsed.pathname.replace(/^\/+/, "").split("/")[0];
+      if (/^[A-Za-z0-9_-]{11}$/.test(id)) {
+        return `https://www.youtube.com/watch?v=${id}`;
+      }
+    }
+    if (
+      host === "youtube.com" ||
+      host === "m.youtube.com" ||
+      host === "music.youtube.com"
+    ) {
+      if (parsed.pathname === "/watch") {
+        const id = parsed.searchParams.get("v") || "";
+        if (/^[A-Za-z0-9_-]{11}$/.test(id)) {
+          return `https://www.youtube.com/watch?v=${id}`;
+        }
+      }
+      const match = parsed.pathname.match(/^\/(shorts|embed|live|v)\/([A-Za-z0-9_-]{11})/);
+      if (match) {
+        return `https://www.youtube.com/watch?v=${match[2]}`;
+      }
+    }
+  } catch {
+    // manter candidate
+  }
+
+  return candidate;
 }
 
 /**

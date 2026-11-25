@@ -19382,6 +19382,7 @@ _Remove da lista negra global_
             reply,
             downloadContentFromMessage,
             settings: setting,
+            reqapi,
           });
           break;
         }
