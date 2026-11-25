@@ -1,6 +1,5 @@
 "use strict";
 
-const axios = require("axios");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -8,42 +7,27 @@ const path = require("path");
 /**
  * Camada de compatibilidade e abstração WhatsApp (Aleatory v8/v9).
  *
- * - Detecta dinamicamente a biblioteca instalada (@whiskeysockets/baileys ou zapo-js)
- *   e a versão do projeto, preservando 100% de compatibilidade com a sessão atual.
- * - Implementa envio NATIVO de figurinhas com áudio no @whiskeysockets/baileys@7.0.0-rc14
- *   com paridade total ao protocolo WhatsApp 2026 / ZAPO 1.12.0:
- *     • Upload criptografado de áudio PTT em /mms/ptt com streamingSidecar + waveform
- *     • Upload criptografado da figurinha WebP em /mms/sticker (512x512)
- *     • StickerMessage campo #26 (AudioMessage embutido, tag 210 / wireType 2)
- *     • Message campo #134 (FutureProofMessage wrapper, tag 1074 / wireType 2)
- *     • messageContextInfo.messageSecret (32 bytes) para geração do reporting token
- *     • Envio em UMA única bolha via conn.relayMessage()
- * - Normaliza extração de mensagens citadas (quotedMessage) e containers de
- *   visualização única (viewOnceMessage, viewOnceMessageV2, viewOnceMessageV2Extension,
- *   ephemeralMessage e flags viewOnce diretas), sem mutar o objeto original.
+ * - Detecta dinamicamente a biblioteca instalada (@whiskeysockets/baileys) e a versão
+ *   do projeto, preservando 100% da sessão e conexão existentes.
+ * - Implementa envio NATIVO de figurinhas com áudio no @whiskeysockets/baileys@7.x
+ *   sem alterar arquivos em node_modules e sem depender de pastas externas:
+ *     • Patch idempotente em WAProto (encode + fromObject):
+ *         - StickerMessage campo #26 (tag 210 / 0xd2 0x01) -> audioMessage
+ *         - Message campo #134 (tag 1074 / 0xb2 0x08) -> audioStickerMessage (FutureProofMessage)
+ *     • Upload nativo via prepareWAMessageMedia + conn.waUploadToServer
+ *     • Payload oficial: { messageContextInfo: { messageSecret }, audioStickerMessage: { message: { stickerMessage: { ..., audioMessage } } } }
+ *     • Envio em 1 única mensagem via conn.relayMessage(jid, payload, { messageId })
+ * - Normaliza extração de quotedMessage e containers viewOnce (imagem, vídeo, áudio e texto).
  */
 
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..", "..");
 const DEFAULT_MAX_MEDIA_BYTES = 25 * 1024 * 1024; // 25 MB
 const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30000;
-const DEFAULT_UPLOAD_TIMEOUT_MS = 45000;
 
-const AUDIO_STICKER_INNER_TAG = (26 << 3) | 2; // 210 — StickerMessage.audioMessage
-const AUDIO_STICKER_OUTER_TAG = (134 << 3) | 2; // 1074 — Message.audioStickerWrapper (FutureProofMessage)
-
-const SIDECAR_CHUNK_SIZE = 65536;
-const SIDECAR_HMAC_SIZE = 10;
-const IV_SIZE = 16;
-
-const HKDF_INFO_MAP = {
-  ptt: "WhatsApp Audio Keys",
-  audio: "WhatsApp Audio Keys",
-  sticker: "WhatsApp Image Keys",
-  image: "WhatsApp Image Keys",
-};
+const AUDIO_STICKER_INNER_TAG = 210; // (26 << 3) | 2  -> 0xd2 0x01 (StickerMessage.audioMessage)
+const AUDIO_STICKER_OUTER_TAG = 1074; // (134 << 3) | 2 -> 0xb2 0x08 (Message.audioStickerMessage)
 
 let _cachedCapabilities = null;
-let _protoPatched = false;
 
 function safeReadJson(filePath) {
   try {
@@ -57,269 +41,114 @@ function safeReadJson(filePath) {
 }
 
 /**
- * Deriva IV (16B), encKey (32B) e macKey (32B) via HKDF-SHA256 (especificação WhatsApp).
+ * Instala (de forma idempotente em memória) suporte aos campos protobuf oficiais
+ * de figurinha com áudio no Baileys (encode e fromObject), preservando todas as
+ * demais mensagens do WhatsApp intactas.
  */
-function deriveWhatsAppMediaKeys(mediaKey, hkdfType) {
-  const infoStr = HKDF_INFO_MAP[hkdfType];
-  if (!infoStr) throw new Error(`Tipo HKDF inválido: ${hkdfType}`);
-  const expanded = Buffer.from(
-    crypto.hkdfSync("sha256", mediaKey, Buffer.alloc(0), Buffer.from(infoStr, "utf8"), 80)
-  );
-  return {
-    iv: expanded.subarray(0, 16),
-    encKey: expanded.subarray(16, 48),
-    macKey: expanded.subarray(48, 80),
-  };
-}
+function installNativeAudioStickerProtoExtension(baileysOrProto) {
+  const proto = baileysOrProto?.Message
+    ? baileysOrProto
+    : baileysOrProto?.proto || baileysOrProto?.WAProto;
 
-/**
- * Calcula streamingSidecar (10 bytes de HMAC-SHA256 por chunk de 64 KB com overlap de IV)
- * exatamente conforme WaMediaCrypto do WhatsApp / ZAPO 1.12.0.
- */
-function computeStreamingSidecar(macKey, iv, ciphertextWithMac) {
-  const full = Buffer.concat([iv, ciphertextWithMac]);
-  const chunks = [];
-  for (let offset = 0; offset < full.length; offset += SIDECAR_CHUNK_SIZE) {
-    const end = Math.min(offset + SIDECAR_CHUNK_SIZE + IV_SIZE, full.length);
-    const slice = full.subarray(offset, end);
-    if (slice.length === 0) break;
-    const digest = crypto.createHmac("sha256", macKey).update(slice).digest();
-    chunks.push(digest.subarray(0, SIDECAR_HMAC_SIZE));
-    if (end >= full.length) break;
-  }
-  return Buffer.concat(chunks);
-}
-
-/**
- * Criptografa mídia no padrão WhatsApp (AES-256-CBC + HMAC-SHA256 10B + SHA-256 + sidecar).
- */
-function encryptWhatsAppMedia(plaintextBuffer, hkdfType, includeSidecar = false) {
-  const mediaKey = crypto.randomBytes(32);
-  const { iv, encKey, macKey } = deriveWhatsAppMediaKeys(mediaKey, hkdfType);
-
-  const cipher = crypto.createCipheriv("aes-256-cbc", encKey, iv);
-  const ciphertext = Buffer.concat([cipher.update(plaintextBuffer), cipher.final()]);
-
-  const macFull = crypto.createHmac("sha256", macKey).update(iv).update(ciphertext).digest();
-  const mac = macFull.subarray(0, 10);
-  const ciphertextHmac = Buffer.concat([ciphertext, mac]);
-
-  const fileSha256 = crypto.createHash("sha256").update(plaintextBuffer).digest();
-  const fileEncSha256 = crypto.createHash("sha256").update(ciphertextHmac).digest();
-
-  const streamingSidecar = includeSidecar
-    ? computeStreamingSidecar(macKey, iv, ciphertextHmac)
-    : undefined;
-
-  return {
-    mediaKey,
-    ciphertextHmac,
-    fileSha256,
-    fileEncSha256,
-    fileLength: plaintextBuffer.length,
-    streamingSidecar,
-  };
-}
-
-function encodeBase64UrlToken(buf) {
-  return Buffer.from(buf)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
-/**
- * Faz upload criptografado diretamente nos endpoints oficiais do CDN do WhatsApp
- * (/mms/ptt para áudio PTT e /mms/sticker para figurinhas), usando conn.refreshMediaConn()
- * do Baileys — garantindo paridade exata com ZAPO 1.12.0.
- */
-async function uploadWhatsAppMediaDirect(
-  conn,
-  plaintextBuffer,
-  { uploadPath, hkdfType, contentType, includeSidecar = false, timeoutMs = DEFAULT_UPLOAD_TIMEOUT_MS }
-) {
-  const enc = encryptWhatsAppMedia(plaintextBuffer, hkdfType, includeSidecar);
-  const token = encodeBase64UrlToken(enc.fileEncSha256);
-
-  let uploadInfo = await conn.refreshMediaConn(false);
-  const hosts = Array.isArray(uploadInfo?.hosts) ? uploadInfo.hosts : [];
-  if (!hosts.length || !uploadInfo?.auth) {
-    throw new Error("media_conn sem hosts ou auth para upload de mídia.");
-  }
-
-  let lastErr = null;
-  for (let i = 0; i < hosts.length; i++) {
-    const hostname = hosts[i]?.hostname;
-    if (!hostname) continue;
-    const auth = encodeURIComponent(uploadInfo.auth);
-    const url = `https://${hostname}${uploadPath}/${token}?auth=${auth}&token=${token}`;
-
-    try {
-      const res = await axios.post(url, enc.ciphertextHmac, {
-        timeout: timeoutMs,
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
-        headers: {
-          "Content-Type": "application/octet-stream",
-          Origin: "https://web.whatsapp.com",
-        },
-        validateStatus: () => true,
-      });
-
-      const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-      if (res.status >= 200 && res.status < 300 && (data?.url || data?.direct_path)) {
-        const directPath = data.direct_path || "";
-        const mediaUrl =
-          data.url || (directPath ? `https://mmg.whatsapp.net${directPath}` : "");
-        return {
-          url: mediaUrl,
-          directPath,
-          mediaKey: enc.mediaKey,
-          fileSha256: enc.fileSha256,
-          fileEncSha256: enc.fileEncSha256,
-          fileLength: enc.fileLength,
-          mediaKeyTimestamp: Math.floor(Date.now() / 1000),
-          mimetype: contentType,
-          ...(enc.streamingSidecar ? { streamingSidecar: enc.streamingSidecar } : {}),
-        };
-      }
-
-      lastErr = new Error(
-        `Upload ${uploadPath} falhou em ${hostname} (HTTP ${res.status}): ${JSON.stringify(data).slice(0, 200)}`
-      );
-      if (i === 0) {
-        try {
-          uploadInfo = await conn.refreshMediaConn(true);
-        } catch {
-          // continuar com próximo host
-        }
-      }
-    } catch (err) {
-      lastErr = err;
-    }
-  }
-
-  throw lastErr || new Error(`Falha ao fazer upload de mídia em ${uploadPath}.`);
-}
-
-/**
- * Instala (de forma idempotente e apenas em memória) o suporte aos campos #26 e #134
- * no encoder protobuf do Baileys, permitindo enviar figurinhas com áudio NATIVAS em
- * uma única mensagem sem alterar arquivos dentro de node_modules nem afetar nenhuma
- * outra mensagem do bot.
- */
-function installNativeAudioStickerProtoExtension(baileysMod) {
-  if (_protoPatched) return true;
-  const proto = baileysMod?.proto || baileysMod?.WAProto;
   const Message = proto?.Message;
   const StickerMessage = Message?.StickerMessage;
+  const AudioMessage = Message?.AudioMessage;
+  const FutureProofMessage = Message?.FutureProofMessage;
 
-  if (
-    !Message ||
-    !StickerMessage ||
-    typeof Message.encode !== "function" ||
-    typeof StickerMessage.encode !== "function"
-  ) {
+  if (!Message || !StickerMessage || !AudioMessage || !FutureProofMessage) {
     return false;
   }
 
-  if (!StickerMessage.encode.__aleatoryAudioStickerWrapped) {
-    const origStickerEncode = StickerMessage.encode;
-    const wrappedStickerEncode = function encode(m, w) {
-      const writer = origStickerEncode.call(this, m, w);
-      if (
-        m &&
-        m.__audioStickerAudioBytes instanceof Uint8Array &&
-        m.__audioStickerAudioBytes.length > 0
-      ) {
-        writer.uint32(AUDIO_STICKER_INNER_TAG).bytes(m.__audioStickerAudioBytes);
-      }
-      return writer;
-    };
-    wrappedStickerEncode.__aleatoryAudioStickerWrapped = true;
-    StickerMessage.encode = wrappedStickerEncode;
+  if (Message.__aleatoryAudioStickerPatched) {
+    return true;
   }
 
-  if (!Message.encode.__aleatoryAudioStickerWrapped) {
-    const origMessageEncode = Message.encode;
-    const wrappedMessageEncode = function encode(m, w) {
-      const writer = origMessageEncode.call(this, m, w);
-      if (
-        m &&
-        m.__audioStickerWrapperBytes instanceof Uint8Array &&
-        m.__audioStickerWrapperBytes.length > 0
-      ) {
-        writer.uint32(AUDIO_STICKER_OUTER_TAG).bytes(m.__audioStickerWrapperBytes);
-      }
-      return writer;
-    };
-    wrappedMessageEncode.__aleatoryAudioStickerWrapped = true;
-    Message.encode = wrappedMessageEncode;
-  }
+  const stickerEncode = StickerMessage.encode.bind(StickerMessage);
+  StickerMessage.encode = function encode(message, writer) {
+    writer = stickerEncode(message, writer);
+    if (message?.audioMessage != null) {
+      AudioMessage.encode(
+        message.audioMessage,
+        writer.uint32(AUDIO_STICKER_INNER_TAG).fork()
+      ).ldelim();
+    }
+    return writer;
+  };
 
-  _protoPatched = true;
+  const stickerFromObject = StickerMessage.fromObject.bind(StickerMessage);
+  StickerMessage.fromObject = function fromObject(object) {
+    const message = stickerFromObject(object);
+    if (object?.audioMessage != null) {
+      message.audioMessage = AudioMessage.fromObject(object.audioMessage);
+    }
+    return message;
+  };
+
+  const messageEncode = Message.encode.bind(Message);
+  Message.encode = function encode(message, writer) {
+    writer = messageEncode(message, writer);
+    if (message?.audioStickerMessage != null) {
+      FutureProofMessage.encode(
+        message.audioStickerMessage,
+        writer.uint32(AUDIO_STICKER_OUTER_TAG).fork()
+      ).ldelim();
+    }
+    return writer;
+  };
+
+  const messageFromObject = Message.fromObject.bind(Message);
+  Message.fromObject = function fromObject(object) {
+    const message = messageFromObject(object);
+    if (object?.audioStickerMessage != null) {
+      message.audioStickerMessage = FutureProofMessage.fromObject(
+        object.audioStickerMessage
+      );
+    }
+    return message;
+  };
+
+  Object.defineProperty(Message, "__aleatoryAudioStickerPatched", {
+    value: true,
+    enumerable: false,
+  });
+
   return true;
 }
 
 /**
- * Constrói o payload Protobuf oficial de uma figurinha com áudio nativa do WhatsApp:
- *  - StickerMessage com AudioMessage embutido no campo #26
- *  - FutureProofMessage({ message: { stickerMessage } }) no campo #134 da Message
- *  - messageContextInfo.messageSecret (32 bytes) para reporting token e compatibilidade 2026
+ * Constrói o payload Protobuf oficial de figurinha com áudio do WhatsApp para Baileys 7.x:
+ *  {
+ *    messageContextInfo: { messageSecret },
+ *    audioStickerMessage: {
+ *      message: {
+ *        stickerMessage: { ...stickerMessage, audioMessage }
+ *      }
+ *    }
+ *  }
  */
-function buildNativeAudioStickerMessage(baileysMod, stickerMedia, audioMessage) {
-  const ok = installNativeAudioStickerProtoExtension(baileysMod);
+function buildNativeAudioStickerMessage(
+  baileysOrProto,
+  stickerMessage,
+  audioMessage,
+  messageSecret = crypto.randomBytes(32)
+) {
+  const ok = installNativeAudioStickerProtoExtension(baileysOrProto);
   if (!ok) {
     throw new Error(
-      "Não foi possível inicializar a extensão protobuf de figurinha com áudio."
+      "A versão instalada do Baileys não contém os tipos protobuf necessários para figurinhas com áudio."
     );
   }
 
-  const proto = baileysMod.proto || baileysMod.WAProto;
-  const { Message } = proto;
-
-  // Manter exatamente os campos mínimos esperados pelo protocolo WhatsApp 2026 / ZAPO 1.12.0
-  const cleanAudio = {
-    url: audioMessage.url,
-    directPath: audioMessage.directPath,
-    mediaKey: audioMessage.mediaKey,
-    fileSha256: audioMessage.fileSha256,
-    fileEncSha256: audioMessage.fileEncSha256,
-    fileLength: audioMessage.fileLength,
-    mediaKeyTimestamp: audioMessage.mediaKeyTimestamp || Math.floor(Date.now() / 1000),
-    mimetype: audioMessage.mimetype || "audio/ogg; codecs=opus",
-    ptt: true,
-    ...(audioMessage.seconds ? { seconds: audioMessage.seconds } : {}),
-    ...(audioMessage.streamingSidecar ? { streamingSidecar: audioMessage.streamingSidecar } : {}),
-  };
-
-  const encodedAudio = Message.AudioMessage.encode(cleanAudio).finish();
-
-  const stickerMessage = {
-    url: stickerMedia.url,
-    directPath: stickerMedia.directPath,
-    mediaKey: stickerMedia.mediaKey,
-    fileSha256: stickerMedia.fileSha256,
-    fileEncSha256: stickerMedia.fileEncSha256,
-    fileLength: stickerMedia.fileLength,
-    mediaKeyTimestamp: stickerMedia.mediaKeyTimestamp || Math.floor(Date.now() / 1000),
-    mimetype: stickerMedia.mimetype || "image/webp",
-    ...(stickerMedia.isAnimated ? { isAnimated: true } : {}),
-    contextInfo: undefined,
-    __audioStickerAudioBytes: encodedAudio,
-  };
-
-  const wrapperBytes = Message.FutureProofMessage.encode({
-    message: { stickerMessage },
-  }).finish();
-
   return {
-    stickerMessage,
-    messageContextInfo: {
-      messageSecret: crypto.randomBytes(32),
+    messageContextInfo: { messageSecret },
+    audioStickerMessage: {
+      message: {
+        stickerMessage: {
+          ...stickerMessage,
+          audioMessage,
+        },
+      },
     },
-    __audioStickerWrapperBytes: wrapperBytes,
   };
 }
 
@@ -382,7 +211,7 @@ async function getRuntimeCapabilities(forceRefresh = false) {
     zapoTargetVersion: "1.12.0",
     nativeAudioStickerSupport,
     nativeAudioStickerMode: nativeAudioStickerSupport
-      ? "baileys_proto_fields_26_134"
+      ? "baileys_audioStickerMessage_134_26"
       : "unavailable",
     stickerProtoFields,
     viewOnceSupport: {
@@ -763,7 +592,11 @@ async function downloadMediaBuffer(
 
 async function hasNativeAudioStickerSupport(conn) {
   if (conn && typeof conn.sendAudioSticker === "function") return true;
-  if (conn && typeof conn.relayMessage === "function") {
+  if (
+    conn &&
+    typeof conn.relayMessage === "function" &&
+    typeof conn.waUploadToServer === "function"
+  ) {
     const caps = await getRuntimeCapabilities();
     return Boolean(caps.nativeAudioStickerSupport);
   }
@@ -772,16 +605,16 @@ async function hasNativeAudioStickerSupport(conn) {
 }
 
 /**
- * Envia figurinha com áudio NATIVA do WhatsApp (1 única figurinha com ícone de som):
+ * Envia figurinha com áudio NATIVA do WhatsApp (1 única figurinha com som)
+ * usando exatamente o fluxo validado para @whiskeysockets/baileys@7.x:
  *
- * 1. Se `conn.sendAudioSticker` existir (ex.: ZAPO), usa diretamente.
- * 2. No Baileys 7.0.0-rc14:
- *    - Preferencialmente faz upload direto em /mms/ptt (com streamingSidecar + waveform)
- *      e /mms/sticker via conn.refreshMediaConn (paridade 100% com ZAPO 1.12.0).
- *    - Fallback automático para prepareWAMessageMedia + conn.waUploadToServer caso
- *      refreshMediaConn não exista no socket.
- *    - Monta o payload protobuf nativo (StickerMessage #26 + FutureProofMessage #134
- *      + messageContextInfo.messageSecret) e envia em 1 bolha via conn.relayMessage().
+ * 1. Faz upload paralelo do sticker WebP e do áudio OGG/Opus (ptt: true) via
+ *    prepareWAMessageMedia + conn.waUploadToServer.
+ * 2. Preenche width, height, isAnimated, isLottie=false, contextInfo (quote)
+ *    no stickerMessage e mimetype, ptt=true, seconds, waveform no audioMessage.
+ * 3. Monta { messageContextInfo: { messageSecret }, audioStickerMessage: { message: { stickerMessage: { ..., audioMessage } } } }
+ *    com patch em StickerMessage/Message (encode + fromObject).
+ * 4. Dispara via conn.relayMessage(jid, payload, { messageId }) com messageId hex 20 chars.
  */
 async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   if (!conn) throw new Error("Conexão WhatsApp indisponível.");
@@ -789,28 +622,23 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   const {
     webpBuffer,
     audioBuffer,
-    existingStickerMessage = null,
-    existingAudioMessage = null,
+    width = 512,
+    height = 512,
     isAnimated = false,
-    audioDuration = 0,
+    audioDuration = 1,
     waveform = null,
   } = payload || {};
 
-  if (!existingStickerMessage && (!Buffer.isBuffer(webpBuffer) || !webpBuffer.length)) {
+  if (!Buffer.isBuffer(webpBuffer) || !webpBuffer.length) {
     throw new Error("Buffer WebP da figurinha está vazio.");
   }
-  if (!existingAudioMessage && (!Buffer.isBuffer(audioBuffer) || !audioBuffer.length)) {
+  if (!Buffer.isBuffer(audioBuffer) || !audioBuffer.length) {
     throw new Error("Buffer de áudio está vazio.");
   }
 
-  // Caminho 1: Cliente ZAPO / adaptador com sendAudioSticker nativo
+  // Caminho alternativo caso a conexão exponha sendAudioSticker nativo (ex.: ZAPO)
   if (typeof conn.sendAudioSticker === "function") {
-    const sent = await conn.sendAudioSticker(
-      jid,
-      existingStickerMessage || webpBuffer,
-      existingAudioMessage || audioBuffer,
-      sendOptions
-    );
+    const sent = await conn.sendAudioSticker(jid, webpBuffer, audioBuffer, sendOptions);
     return {
       deliveryMode: "native_audio_sticker",
       nativeAudioSticker: true,
@@ -819,214 +647,113 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     };
   }
 
-  // Caminho 2: Envio NATIVO no @whiskeysockets/baileys
-  if (typeof conn.relayMessage === "function") {
-    const baileys = sendOptions._baileysMod || (await import("@whiskeysockets/baileys"));
-    const prepareWAMessageMedia = baileys.prepareWAMessageMedia;
-    const canDirectUpload = typeof conn.refreshMediaConn === "function";
-
-    // 2a. Preparar AudioMessage (PTT em /mms/ptt + streamingSidecar + waveform)
-    let audioMessageObj = existingAudioMessage ? { ...existingAudioMessage } : null;
-    if (!audioMessageObj) {
-      if (canDirectUpload) {
-        try {
-          const uploadedPtt = await uploadWhatsAppMediaDirect(conn, audioBuffer, {
-            uploadPath: "/mms/ptt",
-            hkdfType: "ptt",
-            contentType: "audio/ogg; codecs=opus",
-            includeSidecar: true,
-          });
-          audioMessageObj = {
-            ...uploadedPtt,
-            ptt: true,
-            seconds: audioDuration > 0 ? Math.max(1, Math.round(audioDuration)) : 1,
-            ...(waveform instanceof Uint8Array && waveform.length > 0 ? { waveform } : {}),
-          };
-          console.log(
-            `[STICKERAUDIO] Upload /mms/ptt OK (${audioBuffer.length}B, sidecar=${uploadedPtt.streamingSidecar?.length || 0}B)`
-          );
-        } catch (directAudioErr) {
-          console.warn(
-            "[STICKERAUDIO] Upload direto /mms/ptt falhou, tentando waUploadToServer:",
-            directAudioErr?.message || directAudioErr
-          );
-        }
-      }
-
-      if (!audioMessageObj) {
-        if (typeof conn.waUploadToServer !== "function") {
-          throw new Error("Socket Baileys sem waUploadToServer/refreshMediaConn.");
-        }
-        const preparedAudio = await prepareWAMessageMedia(
-          {
-            audio: audioBuffer,
-            mimetype: "audio/ogg; codecs=opus",
-            ptt: true,
-            seconds: audioDuration > 0 ? Math.max(1, Math.round(audioDuration)) : 1,
-            ...(waveform instanceof Uint8Array && waveform.length > 0 ? { waveform } : {}),
-          },
-          {
-            upload: conn.waUploadToServer,
-            jid,
-          }
-        );
-        audioMessageObj = preparedAudio.audioMessage;
-      }
-    }
-
-    // 2b. Preparar StickerMessage (upload em /mms/sticker ou reutilizar figurinha citada válida)
-    let stickerMediaObj = null;
-    if (
-      existingStickerMessage &&
-      existingStickerMessage.mediaKey &&
-      (existingStickerMessage.url || existingStickerMessage.directPath)
-    ) {
-      stickerMediaObj = { ...existingStickerMessage };
-      delete stickerMediaObj.contextInfo;
-    } else {
-      if (canDirectUpload) {
-        try {
-          const uploadedSticker = await uploadWhatsAppMediaDirect(conn, webpBuffer, {
-            uploadPath: "/mms/sticker",
-            hkdfType: "sticker",
-            contentType: "image/webp",
-            includeSidecar: false,
-          });
-          stickerMediaObj = {
-            ...uploadedSticker,
-            width: 512,
-            height: 512,
-            isAnimated: Boolean(isAnimated),
-            stickerSentTs: Date.now(),
-          };
-          console.log(
-            `[STICKERAUDIO] Upload /mms/sticker OK (${webpBuffer.length}B, animated=${Boolean(isAnimated)})`
-          );
-        } catch (directStickerErr) {
-          console.warn(
-            "[STICKERAUDIO] Upload direto /mms/sticker falhou, tentando waUploadToServer:",
-            directStickerErr?.message || directStickerErr
-          );
-        }
-      }
-
-      if (!stickerMediaObj) {
-        if (typeof conn.waUploadToServer !== "function") {
-          throw new Error("Socket Baileys sem waUploadToServer/refreshMediaConn.");
-        }
-        const preparedSticker = await prepareWAMessageMedia(
-          {
-            sticker: webpBuffer,
-            mimetype: "image/webp",
-            width: 512,
-            height: 512,
-            isAnimated: Boolean(isAnimated),
-          },
-          {
-            upload: conn.waUploadToServer,
-            jid,
-          }
-        );
-        stickerMediaObj = preparedSticker.stickerMessage;
-        stickerMediaObj.width = stickerMediaObj.width || 512;
-        stickerMediaObj.height = stickerMediaObj.height || 512;
-        if (isAnimated) stickerMediaObj.isAnimated = true;
-      }
-    }
-
-    const nativeMessage = buildNativeAudioStickerMessage(
-      baileys,
-      stickerMediaObj,
-      audioMessageObj
+  if (
+    typeof conn.waUploadToServer !== "function" ||
+    typeof conn.relayMessage !== "function"
+  ) {
+    throw new Error(
+      "A conexão Baileys atual não disponibiliza waUploadToServer/relayMessage para figurinhas com áudio."
     );
+  }
 
-    // Verificar em runtime os campos emitidos pelo encodeWAMessage real do Baileys
-    let wireLen = 0;
-    let has26 = false;
-    let has134 = false;
-    try {
-      const rawEncoded = baileys.proto.Message.encode(nativeMessage).finish();
-      wireLen = rawEncoded.length;
-      const pb = require("protobufjs/minimal");
-      const rd = pb.Reader.create(rawEncoded);
-      while (rd.pos < rd.len) {
-        const tag = rd.uint32();
-        const fn = tag >>> 3;
-        const wt = tag & 7;
-        if (fn === 26) has26 = true;
-        if (fn === 134) has134 = true;
-        if (wt === 2) rd.bytes();
-        else rd.skipType(wt);
-      }
-    } catch {
-      // diagnóstico não-bloqueante
-    }
+  const baileys = sendOptions._baileysMod || (await import("@whiskeysockets/baileys"));
+  const prepareWAMessageMedia = baileys.prepareWAMessageMedia;
+  if (typeof prepareWAMessageMedia !== "function") {
+    throw new Error("prepareWAMessageMedia não está disponível nesta versão do Baileys.");
+  }
 
-    // Gerar messageId antes para registrar no retry store e capturar ACK do servidor
-    const preMsgId =
-      typeof baileys.generateMessageIDV2 === "function"
-        ? baileys.generateMessageIDV2(conn.user?.id)
-        : undefined;
+  const [stickerMedia, audioMedia] = await Promise.all([
+    prepareWAMessageMedia(
+      { sticker: webpBuffer },
+      { upload: conn.waUploadToServer }
+    ),
+    prepareWAMessageMedia(
+      {
+        audio: audioBuffer,
+        mimetype: "audio/ogg; codecs=opus",
+        ptt: true,
+      },
+      { upload: conn.waUploadToServer }
+    ),
+  ]);
 
-    if (preMsgId && typeof global._storeOutgoingMessage === "function") {
-      global._storeOutgoingMessage(preMsgId, nativeMessage);
-    }
+  const stickerMessage = stickerMedia?.stickerMessage;
+  const audioMessage = audioMedia?.audioMessage;
+  if (!stickerMessage || !audioMessage) {
+    throw new Error("O Baileys não preparou o stickerMessage ou audioMessage.");
+  }
 
-    // Escutar ACK do servidor WhatsApp para esse msgId (diagnóstico em tempo real, auto-limpa em 8s)
-    if (preMsgId && conn.ws && typeof conn.ws.on === "function") {
-      const ackEvent = `CB:ack,class:message,id:${preMsgId}`;
-      const onAck = (node) => {
-        clearTimeout(ackTimer);
-        console.log(
-          `[STICKERAUDIO] SERVER ACK id=${preMsgId} attrs=${JSON.stringify(node?.attrs || {})}`
-        );
-      };
-      const ackTimer = setTimeout(() => {
-        try {
-          conn.ws.off(ackEvent, onAck);
-        } catch {
-          // ignorar
-        }
-      }, 8000);
-      conn.ws.once(ackEvent, onAck);
-    }
+  stickerMessage.width = Number(width) || 512;
+  stickerMessage.height = Number(height) || 512;
+  stickerMessage.isAnimated = isAnimated === true;
+  stickerMessage.isLottie = false;
 
-    const messageId = await conn.relayMessage(
-      jid,
-      nativeMessage,
-      preMsgId ? { messageId: preMsgId } : {}
-    );
-    const finalId =
-      (typeof messageId === "string" ? messageId : messageId?.key?.id) || preMsgId || null;
-
-    if (finalId && finalId !== preMsgId && typeof global._storeOutgoingMessage === "function") {
-      global._storeOutgoingMessage(finalId, nativeMessage);
-    }
-
-    console.log(
-      `[STICKERAUDIO] relayMessage OK -> jid=${jid} id=${finalId || "?"} wire=${wireLen}B f26=${has26} f134=${has134} pttPath=${audioMessageObj.directPath?.slice(0, 28) || "?"} stkPath=${stickerMediaObj.directPath?.slice(0, 28) || "?"}`
-    );
-
-    return {
-      deliveryMode: "native_audio_sticker_baileys",
-      nativeAudioSticker: true,
-      messageId: finalId,
-      nativeMessage,
+  const quoted = sendOptions.quoted;
+  if (quoted?.key?.id && quoted?.message) {
+    stickerMessage.contextInfo = {
+      stanzaId: quoted.key.id,
+      ...(quoted.key.participant ? { participant: quoted.key.participant } : {}),
+      quotedMessage: quoted.message,
     };
   }
 
-  throw new Error(
-    "A conexão ativa do WhatsApp não expõe relayMessage para envio de figurinha com áudio."
+  audioMessage.mimetype = "audio/ogg; codecs=opus";
+  audioMessage.ptt = true;
+  audioMessage.seconds = Math.max(1, Math.min(30, Math.ceil(Number(audioDuration) || 1)));
+  audioMessage.waveform =
+    Buffer.isBuffer(waveform) || waveform instanceof Uint8Array
+      ? Buffer.from(waveform)
+      : Buffer.alloc(64, 15);
+
+  const protoPayload = buildNativeAudioStickerMessage(
+    baileys.proto || baileys.WAProto,
+    stickerMessage,
+    audioMessage,
+    crypto.randomBytes(32)
   );
+
+  const messageId = crypto.randomBytes(10).toString("hex").toUpperCase();
+
+  if (typeof global._storeOutgoingMessage === "function") {
+    global._storeOutgoingMessage(messageId, protoPayload);
+  }
+
+  // Escuta de diagnóstico não-bloqueante para ACK do servidor (auto-limpa em 8s)
+  if (conn.ws && typeof conn.ws.once === "function") {
+    const ackEvent = `CB:ack,class:message,id:${messageId}`;
+    const onAck = (node) => {
+      clearTimeout(ackTimer);
+      console.log(
+        `[STICKERAUDIO] SERVER ACK id=${messageId} attrs=${JSON.stringify(node?.attrs || {})}`
+      );
+    };
+    const ackTimer = setTimeout(() => {
+      try {
+        conn.ws.off?.(ackEvent, onAck);
+      } catch {
+        // ignorar
+      }
+    }, 8000);
+    conn.ws.once(ackEvent, onAck);
+  }
+
+  await conn.relayMessage(jid, protoPayload, { messageId });
+
+  console.log(
+    `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#26) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated})`
+  );
+
+  return {
+    deliveryMode: "native_audio_sticker_baileys",
+    nativeAudioSticker: true,
+    messageId,
+    nativeMessage: protoPayload,
+  };
 }
 
 module.exports = {
   AUDIO_STICKER_INNER_TAG,
   AUDIO_STICKER_OUTER_TAG,
-  deriveWhatsAppMediaKeys,
-  computeStreamingSidecar,
-  encryptWhatsAppMedia,
-  uploadWhatsAppMediaDirect,
   installNativeAudioStickerProtoExtension,
   buildNativeAudioStickerMessage,
   getRuntimeCapabilities,

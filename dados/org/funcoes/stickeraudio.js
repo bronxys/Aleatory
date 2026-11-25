@@ -25,7 +25,7 @@ const {
 } = require("./spiderx_api.js");
 
 /**
- * Sistema completo do comando /stickeraudio (alias /audiosticker):
+ * Sistema completo do comando /stickeraudio (aliases: /audiosticker, /figaudio):
  *
  * MODO 1 (Spider X API — consome créditos):
  *   Responder figurinha ou enviar imagem com /stickeraudio <link do YouTube>
@@ -37,16 +37,17 @@ const {
  *
  * MODO 3 (Local — SEM créditos):
  *   Enviar ou responder vídeo de até 10s com /stickeraudio
- *   -> converte em figurinha animada WebP (<= 500 KB) + áudio original sincronizado.
+ *   -> converte em figurinha animada WebP + áudio original em Opus VOIP 16kHz + waveform.
  *
  * MODO 4 (Local — SEM créditos):
- *   Responder a uma mensagem de áudio enviando uma imagem com /stickeraudio na legenda
- *   -> usa a imagem como figurinha WebP (<= 100 KB) + áudio correspondente.
+ *   Responder a uma mensagem de áudio enviando uma imagem (ou vídeo) com /stickeraudio na legenda
+ *   -> combina o visual da imagem/vídeo com o áudio correspondente em 1 figurinha sonora nativa.
  *
  * Garantias operacionais:
  * - Limpeza determinística de diretórios temporários (try/finally).
  * - Encerramento forçado de processos FFmpeg/FFprobe em caso de timeout.
  * - Validação rigorosa de duração, formato e tamanho antes do processamento.
+ * - 100% autocontido dentro do Aleatory (sem dependência de pastas externas).
  */
 
 const MAX_VIDEO_SECONDS = 10;
@@ -56,9 +57,11 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_VIDEO_BYTES = 15 * 1024 * 1024; // 15 MB
 const MAX_STATIC_WEBP_BYTES = 100 * 1024; // 100 KB (limite WhatsApp)
-const MAX_ANIMATED_WEBP_BYTES = 500 * 1024; // 500 KB (limite WhatsApp)
-const FFMPEG_TIMEOUT_MS = 35000;
+const MAX_ANIMATED_WEBP_BYTES = 500 * 1024; // 500 KB (padrão estável WhatsApp)
+const FFMPEG_TIMEOUT_MS = 45000;
 const FFPROBE_TIMEOUT_MS = 10000;
+const WAVEFORM_SAMPLE_RATE = 8000;
+const WAVEFORM_BARS = 64;
 
 class MediaValidationError extends Error {
   constructor(code, userMessage) {
@@ -72,9 +75,10 @@ class MediaValidationError extends Error {
 /**
  * Executa um binário (ffmpeg/ffprobe) via spawn com timeout seguro e encerramento garantido.
  */
-function runBinary(bin, args, timeoutMs) {
+function runBinary(bin, args, timeoutMs, binaryStdout = false) {
   return new Promise((resolve, reject) => {
-    let stdout = "";
+    const stdoutChunks = [];
+    let stdoutStr = "";
     let stderr = "";
     let settled = false;
     let killTimer = null;
@@ -109,7 +113,11 @@ function runBinary(bin, args, timeoutMs) {
     }, timeoutMs);
 
     proc.stdout.on("data", (chunk) => {
-      if (stdout.length < 256 * 1024) stdout += chunk.toString("utf8");
+      if (binaryStdout) {
+        stdoutChunks.push(chunk);
+      } else if (stdoutStr.length < 256 * 1024) {
+        stdoutStr += chunk.toString("utf8");
+      }
     });
 
     proc.stderr.on("data", (chunk) => {
@@ -123,7 +131,10 @@ function runBinary(bin, args, timeoutMs) {
 
     proc.on("close", (code) => {
       if (code === 0) {
-        finish(null, { stdout, stderr });
+        finish(null, {
+          stdout: binaryStdout ? Buffer.concat(stdoutChunks) : stdoutStr,
+          stderr,
+        });
       } else {
         const err = new Error(
           `${bin} encerrou com código ${code}: ${stderr.slice(-300)}`
@@ -143,7 +154,7 @@ async function withTempDir(fn) {
   try {
     return await fn(dir);
   } finally {
-    await fsp.rm(dir, { recursive: true, force: true }).catch(() => { });
+    await fsp.rm(dir, { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -216,21 +227,41 @@ async function probeMedia(filePath) {
 }
 
 /**
+ * Verifica se um buffer é um arquivo WebP válido (RIFF....WEBP).
+ */
+function isWebpBuffer(buf) {
+  return (
+    Buffer.isBuffer(buf) &&
+    buf.length >= 12 &&
+    buf.slice(0, 4).toString("ascii") === "RIFF" &&
+    buf.slice(8, 12).toString("ascii") === "WEBP"
+  );
+}
+
+/**
+ * Detecta se um buffer WebP é animado (contém chunk ANIM ou ANMF).
+ */
+function isAnimatedWebpBuffer(buf) {
+  if (!isWebpBuffer(buf)) return false;
+  return buf.includes(Buffer.from("ANIM")) || buf.includes(Buffer.from("ANMF"));
+}
+
+/**
  * Injeta metadados EXIF de figurinha do WhatsApp em um arquivo WebP (estático ou animado).
  */
 async function stampStickerExif(webpBuffer, metadata = {}) {
   if (!metadata.packname && !metadata.author) return webpBuffer;
 
   const packId =
-    metadata.packId ||
-    `aleatory-${crypto.randomBytes(4).toString("hex")}`;
+    metadata.packId || `aleatory-${crypto.randomBytes(4).toString("hex")}`;
   const json = {
     "sticker-pack-id": packId,
     "sticker-pack-name": String(metadata.packname || "Aleatory-Bot"),
     "sticker-pack-publisher": String(metadata.author || "StickerAudio"),
-    emojis: Array.isArray(metadata.categories) && metadata.categories.length
-      ? metadata.categories
-      : ["🎵"],
+    emojis:
+      Array.isArray(metadata.categories) && metadata.categories.length
+        ? metadata.categories
+        : ["🎵"],
   };
 
   const exifAttr = Buffer.from([
@@ -256,18 +287,6 @@ async function stampStickerExif(webpBuffer, metadata = {}) {
 }
 
 /**
- * Verifica se um buffer é um arquivo WebP válido (RIFF....WEBP).
- */
-function isWebpBuffer(buf) {
-  return (
-    Buffer.isBuffer(buf) &&
-    buf.length >= 12 &&
-    buf.slice(0, 4).toString("ascii") === "RIFF" &&
-    buf.slice(8, 12).toString("ascii") === "WEBP"
-  );
-}
-
-/**
  * Converte imagem (JPG/PNG/WebP/etc.) para figurinha estática WebP 512x512 <= 100 KB.
  */
 async function convertImageToStickerWebp(imageBuffer, metadata = {}) {
@@ -276,7 +295,7 @@ async function convertImageToStickerWebp(imageBuffer, metadata = {}) {
     const outFile = path.join(dir, "sticker.webp");
     await fsp.writeFile(inFile, imageBuffer);
 
-    const qualities = [80, 65, 50, 35];
+    const qualities = [80, 65, 50, 35, 20];
     let finalBuffer = null;
 
     for (const q of qualities) {
@@ -284,6 +303,8 @@ async function convertImageToStickerWebp(imageBuffer, metadata = {}) {
         "ffmpeg",
         [
           "-y",
+          "-v",
+          "error",
           "-i",
           inFile,
           "-vcodec",
@@ -316,74 +337,84 @@ async function convertImageToStickerWebp(imageBuffer, metadata = {}) {
       );
     }
 
-    return await stampStickerExif(finalBuffer, metadata);
+    return {
+      buffer: await stampStickerExif(finalBuffer, metadata),
+      width: 512,
+      height: 512,
+      isAnimated: false,
+    };
   });
 }
 
 /**
- * Prepara figurinha já existente (estática ou animada), preservando animação e EXIF.
+ * Prepara figurinha já existente (estática ou animada), preservando animação, dimensões e EXIF.
  */
 async function prepareExistingStickerWebp(stickerBuffer, metadata = {}) {
   if (isWebpBuffer(stickerBuffer)) {
+    const animated = isAnimatedWebpBuffer(stickerBuffer);
+    let finalBuf = stickerBuffer;
     try {
-      return await stampStickerExif(stickerBuffer, metadata);
+      finalBuf = await stampStickerExif(stickerBuffer, metadata);
     } catch {
-      // Se node-webpmux não conseguir regravar EXIF, manter buffer WebP válido
-      return stickerBuffer;
+      finalBuf = stickerBuffer;
     }
+    return {
+      buffer: finalBuf,
+      width: 512,
+      height: 512,
+      isAnimated: animated,
+    };
   }
   return await convertImageToStickerWebp(stickerBuffer, metadata);
 }
 
 /**
- * Converte vídeo (até 10s) para figurinha animada WebP 512x512 <= 500 KB,
- * preservando duração sincronizada com a faixa de áudio extraída.
+ * Converte vídeo (até 10s) para figurinha animada WebP (padrão WhatsApp, preset icon)
+ * reduzindo resolução/FPS adaptativamente para respeitar o limite de tamanho.
  */
 async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata = {}) {
   return await withTempDir(async (dir) => {
     const outFile = path.join(dir, "anim_sticker.webp");
     const durationLimit = Math.min(maxSeconds, MAX_VIDEO_SECONDS).toFixed(3);
 
-    // Escada adaptativa compacta (padrão WhatsApp/Takeshi: 350x350 compacto para envio confiável)
-    const presets = [
-      { size: 350, fps: 15, quality: 25 },
-      { size: 350, fps: 15, quality: 12 },
-      { size: 320, fps: 12, quality: 10 },
-      { size: 256, fps: 10, quality: 8 },
+    const attempts = [
+      { size: 512, fps: 15, quality: 55 },
+      { size: 512, fps: 12, quality: 45 },
+      { size: 448, fps: 10, quality: 35 },
+      { size: 384, fps: 10, quality: 30 },
+      { size: 320, fps: 10, quality: 25 },
+      { size: 256, fps: 8, quality: 20 },
     ];
 
     let finalBuffer = null;
+    let finalSize = 512;
 
-    for (const preset of presets) {
+    for (const attempt of attempts) {
       await runBinary(
         "ffmpeg",
         [
           "-y",
+          "-v",
+          "error",
           "-ss",
           "0",
           "-t",
           durationLimit,
           "-i",
           inputVideoPath,
-          "-vcodec",
-          "libwebp",
+          "-an",
           "-vf",
-          `fps=${preset.fps},scale=${preset.size}:${preset.size}:force_original_aspect_ratio=decrease,format=rgba,pad=${preset.size}:${preset.size}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`,
+          `fps=${attempt.fps},scale=${attempt.size}:${attempt.size}:force_original_aspect_ratio=decrease,format=rgba,pad=${attempt.size}:${attempt.size}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`,
+          "-c:v",
+          "libwebp",
           "-loop",
           "0",
           "-lossless",
           "0",
-          "-compression_level",
-          "6",
-          "-method",
-          "6",
-          "-q:v",
-          String(preset.quality),
           "-preset",
-          "picture",
-          "-an",
-          "-vsync",
-          "0",
+          "icon",
+          "-quality",
+          String(attempt.quality),
           outFile,
         ],
         FFMPEG_TIMEOUT_MS
@@ -391,7 +422,8 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
 
       const candidate = await fsp.readFile(outFile);
       finalBuffer = candidate;
-      if (candidate.length <= 280 * 1024) break;
+      finalSize = attempt.size;
+      if (candidate.length <= MAX_ANIMATED_WEBP_BYTES) break;
     }
 
     if (!finalBuffer || !finalBuffer.length) {
@@ -401,98 +433,82 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
       );
     }
 
-    return await stampStickerExif(finalBuffer, metadata);
+    return {
+      buffer: await stampStickerExif(finalBuffer, metadata),
+      width: finalSize,
+      height: finalSize,
+      isAnimated: true,
+    };
   });
 }
 
 /**
- * Gera waveform de 64 barras (0..100) a partir do áudio via FFmpeg PCM mono 8kHz.
- * Em caso de falha, retorna uma curva padrão suave para garantir compatibilidade PTT.
+ * Calcula waveform de 64 barras (0..100) a partir do PCM mono 8kHz (padrão WhatsApp PTT).
  */
-async function generateAudioWaveform(audioFilePath) {
-  try {
-    return await withTempDir(async (dir) => {
-      const pcmFile = path.join(dir, "wave.pcm");
-      await runBinary(
-        "ffmpeg",
-        [
-          "-y",
-          "-i",
-          audioFilePath,
-          "-ac",
-          "1",
-          "-ar",
-          "8000",
-          "-f",
-          "s16le",
-          pcmFile,
-        ],
-        10000
-      );
-      const pcm = await fsp.readFile(pcmFile);
-      const totalSamples = Math.floor(pcm.length / 2);
-      if (totalSamples < 64) return null;
-
-      const bars = 64;
-      const step = Math.floor(totalSamples / bars);
-      const raw = new Float64Array(bars);
-      let maxVal = 0;
-
-      for (let i = 0; i < bars; i++) {
-        let sum = 0;
-        const start = i * step;
-        const end = Math.min(start + step, totalSamples);
-        for (let s = start; s < end; s++) {
-          sum += Math.abs(pcm.readInt16LE(s * 2));
-        }
-        const avg = sum / Math.max(1, end - start);
-        raw[i] = avg;
-        if (avg > maxVal) maxVal = avg;
-      }
-
-      const out = new Uint8Array(bars);
-      for (let i = 0; i < bars; i++) {
-        out[i] = maxVal > 0 ? Math.min(100, Math.round((raw[i] / maxVal) * 100)) : 20;
-      }
-      return out;
-    });
-  } catch {
-    const fallback = new Uint8Array(64);
-    for (let i = 0; i < 64; i++) {
-      fallback[i] = 25 + Math.round(Math.abs(Math.sin(i * 0.35)) * 55);
-    }
-    return fallback;
+function createWaveform(pcmBuffer) {
+  const sampleCount = Math.floor(pcmBuffer.length / 2);
+  if (sampleCount < WAVEFORM_BARS) {
+    return Buffer.alloc(WAVEFORM_BARS, 10);
   }
+
+  const blockSize = Math.floor(sampleCount / WAVEFORM_BARS);
+  const averages = [];
+  for (let bar = 0; bar < WAVEFORM_BARS; bar += 1) {
+    let total = 0;
+    const start = bar * blockSize;
+    for (let sample = 0; sample < blockSize; sample += 1) {
+      total += Math.abs(pcmBuffer.readInt16LE((start + sample) * 2));
+    }
+    averages.push(total / blockSize);
+  }
+
+  const maxAverage = Math.max(...averages);
+  const scale = maxAverage > 0 ? 100 / maxAverage : 1;
+  return Buffer.from(
+    averages.map((value) => Math.min(100, Math.floor(value * scale)))
+  );
 }
 
 /**
- * Extrai e converte faixa de áudio para OGG/Opus (48kHz, compatível com WhatsApp)
- * cortando com segurança no limite maxSeconds (10s para vídeo, 30s para música/áudio).
+ * Converte áudio para OGG/Opus VOIP 16kHz 32k (perfil nativo PTT do WhatsApp)
+ * e gera waveform real de 64 barras + duração exata.
  */
 async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
   return await withTempDir(async (dir) => {
     const outFile = path.join(dir, "audio.ogg");
-    const limit = Math.max(1, Number(maxSeconds) || MAX_MUSIC_SECONDS).toFixed(3);
+    const limit = Math.max(1, Math.min(Number(maxSeconds) || MAX_MUSIC_SECONDS, MAX_MUSIC_SECONDS));
 
     await runBinary(
       "ffmpeg",
       [
         "-y",
-        "-ss",
-        "0",
-        "-t",
-        limit,
+        "-v",
+        "error",
         "-i",
         inputPath,
         "-vn",
+        "-t",
+        String(limit),
+        "-ar",
+        "16000",
+        "-ac",
+        "1",
         "-c:a",
         "libopus",
         "-b:a",
-        "48k",
-        "-ac",
-        "1",
-        "-ar",
-        "48000",
+        "32k",
+        "-vbr",
+        "on",
+        "-compression_level",
+        "10",
+        "-frame_duration",
+        "20",
+        "-application",
+        "voip",
+        "-avoid_negative_ts",
+        "make_zero",
+        "-map_metadata",
+        "-1",
         "-f",
         "ogg",
         outFile,
@@ -500,30 +516,45 @@ async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
       FFMPEG_TIMEOUT_MS
     );
 
-    const [outInfo, waveform] = await Promise.all([
-      probeMedia(outFile),
-      generateAudioWaveform(outFile),
-    ]);
+    const buffer = await fsp.readFile(outFile);
+    const { stdout: pcmBuffer } = await runBinary(
+      "ffmpeg",
+      [
+        "-v",
+        "error",
+        "-i",
+        outFile,
+        "-ac",
+        "1",
+        "-ar",
+        String(WAVEFORM_SAMPLE_RATE),
+        "-f",
+        "s16le",
+        "pipe:1",
+      ],
+      30000,
+      true
+    );
 
-    if (!outInfo.hasAudio || outInfo.duration <= 0) {
+    const durationSeconds = Math.ceil(pcmBuffer.length / 2 / WAVEFORM_SAMPLE_RATE);
+    if (!buffer.length || durationSeconds < 1) {
       throw new MediaValidationError(
         "INVALID_MEDIA_FILE",
-        "❌ O arquivo não possui uma faixa de áudio válida."
+        "❌ O arquivo não contém áudio compatível com uma figurinha sonora."
       );
     }
 
-    const buffer = await fsp.readFile(outFile);
     return {
       buffer,
-      duration: outInfo.duration,
-      waveform,
+      duration: Math.min(durationSeconds, MAX_MUSIC_SECONDS),
+      waveform: createWaveform(pcmBuffer),
       mimetype: "audio/ogg; codecs=opus",
     };
   });
 }
 
 /**
- * Processa MODO 3 (vídeo até 10s -> figurinha animada WebP + áudio sincronizado)
+ * Processa MODO 3 (vídeo até 10s -> figurinha animada WebP + áudio VOIP Opus sincronizado)
  * 100% local, sem consumo de créditos da Spider X API.
  */
 async function processVideoMode(videoBuffer, metadata = {}) {
@@ -568,17 +599,19 @@ async function processVideoMode(videoBuffer, metadata = {}) {
     }
 
     const targetDuration = Math.min(info.duration, MAX_VIDEO_SECONDS);
-    const [webpBuffer, audioResult] = await Promise.all([
+    const [webpResult, audioResult] = await Promise.all([
       convertVideoToAnimatedWebp(videoFile, targetDuration, metadata),
       extractAndEncodeOpusAudio(videoFile, targetDuration),
     ]);
 
     return {
-      webpBuffer,
+      webpBuffer: webpResult.buffer,
+      width: webpResult.width,
+      height: webpResult.height,
+      isAnimated: webpResult.isAnimated,
       audioBuffer: audioResult.buffer,
       audioDuration: audioResult.duration,
       waveform: audioResult.waveform,
-      isAnimated: true,
       mode: 3,
       usesApiCredits: false,
     };
@@ -586,7 +619,7 @@ async function processVideoMode(videoBuffer, metadata = {}) {
 }
 
 /**
- * Processa MODO 4 (imagem + áudio recebido no WhatsApp -> figurinha WebP + áudio OGG/Opus)
+ * Processa MODO 4 (imagem/figurinha + áudio recebido no WhatsApp -> figurinha WebP + áudio VOIP Opus)
  * 100% local, sem consumo de créditos da Spider X API.
  */
 async function processImageAudioMode(imageBuffer, audioBuffer, metadata = {}) {
@@ -625,17 +658,19 @@ async function processImageAudioMode(imageBuffer, audioBuffer, metadata = {}) {
       ? prepareExistingStickerWebp(imageBuffer, metadata)
       : convertImageToStickerWebp(imageBuffer, metadata);
 
-    const [webpBuffer, opusAudio] = await Promise.all([
+    const [webpResult, opusAudio] = await Promise.all([
       visualPromise,
       extractAndEncodeOpusAudio(audioFile, Math.min(audioInfo.duration, MAX_MUSIC_SECONDS)),
     ]);
 
     return {
-      webpBuffer,
+      webpBuffer: webpResult.buffer,
+      width: webpResult.width,
+      height: webpResult.height,
+      isAnimated: webpResult.isAnimated,
       audioBuffer: opusAudio.buffer,
       audioDuration: opusAudio.duration,
       waveform: opusAudio.waveform,
-      isAnimated: false,
       mode: 4,
       usesApiCredits: false,
     };
@@ -675,7 +710,7 @@ async function processMusicStickerMode(
       );
     }
 
-    const [webpBuffer, opusAudio] = await Promise.all([
+    const [webpResult, opusAudio] = await Promise.all([
       visualIsSticker
         ? prepareExistingStickerWebp(visualBuffer, metadata)
         : convertImageToStickerWebp(visualBuffer, metadata),
@@ -683,11 +718,13 @@ async function processMusicStickerMode(
     ]);
 
     return {
-      webpBuffer,
+      webpBuffer: webpResult.buffer,
+      width: webpResult.width,
+      height: webpResult.height,
+      isAnimated: webpResult.isAnimated,
       audioBuffer: opusAudio.buffer,
       audioDuration: opusAudio.duration,
       waveform: opusAudio.waveform,
-      isAnimated: visualIsSticker && isWebpBuffer(webpBuffer),
       mode: modeNumber,
       usesApiCredits: true,
     };
@@ -714,8 +751,7 @@ function detectStickerAudioInput(info, rawQuery = "") {
   const quotedAudio = quotedUnwrapped.audioMessage || null;
   const quotedSticker = quotedUnwrapped.stickerMessage || null;
 
-  // MODO 4: Responder a um áudio enviando uma imagem com /stickeraudio na legenda
-  // (também aceita o inverso: responder a imagem/figurinha com áudio, ou imagem + áudio)
+  // MODO 4: Imagem/figurinha + Áudio (ex.: responder áudio enviando imagem com legenda)
   if ((currentImage || quotedImage || quotedSticker) && (quotedAudio || currentAudio)) {
     const visualMsg = currentImage || quotedImage || quotedSticker;
     const visualType = currentImage || quotedImage ? "image" : "sticker";
@@ -728,7 +764,7 @@ function detectStickerAudioInput(info, rawQuery = "") {
     };
   }
 
-  // MODO 3: Enviar ou responder a um vídeo de até 10 segundos (sem necessidade de query)
+  // MODO 3: Enviar ou responder a um vídeo de até 10 segundos (sem créditos)
   if (currentVideo || quotedVideo) {
     return {
       mode: 3,
@@ -736,7 +772,7 @@ function detectStickerAudioInput(info, rawQuery = "") {
     };
   }
 
-  // MODOS 1 e 2: Responder figurinha ou enviar/responder imagem + link do YouTube ou nome da música
+  // MODOS 1 e 2: Responder figurinha ou enviar/responder imagem + link YouTube ou nome da música
   const visualMsg = quotedSticker || currentImage || quotedImage;
   const visualType = quotedSticker ? "sticker" : currentImage || quotedImage ? "image" : null;
 
@@ -775,6 +811,7 @@ function buildUsageHelp(prefix, commandName = "stickeraudio") {
   const cmd = `${prefix}${commandName}`;
   return (
     `╭─「 🎵 *sᴛɪᴄᴋᴇʀ ᴀ́ᴜᴅɪᴏ* 🎵 」─╮\n` +
+    `│ _Aliases: \`${prefix}stickeraudio\`, \`${prefix}figaudio\`, \`${prefix}audiosticker\`_\n` +
     `│\n` +
     `│ *1️⃣ Link do YouTube* _(até 30s · Spider X)_\n` +
     `│ 么 Responda uma figurinha ou envie uma imagem:\n` +
@@ -813,7 +850,7 @@ async function handleStickerAudioCommand({
   settings,
   httpClient,
 }) {
-  // Corrigir bug de autocapitalização no celular onde index.js pode passar "!Stickeraudio" em q
+  // Sanitizar q caso o teclado do celular tenha capitalizado o comando (ex.: !Stickeraudio)
   let cleanQ = String(q || "").trim();
   const cmdPattern = new RegExp(
     `^${String(prefix || "!").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:stickeraudio|audiosticker|figaudio)\\b`,
@@ -830,7 +867,7 @@ async function handleStickerAudioCommand({
     if (detected.reason === "MISSING_AUDIO_OR_QUERY") {
       return await reply(
         `🎵 Informe o *nome da música* ou *link do YouTube* junto com o comando, ou responda a um áudio enviando a imagem!\n\n` +
-        buildUsageHelp(prefix, command)
+          buildUsageHelp(prefix, command)
       );
     }
     return await reply(buildUsageHelp(prefix, command));
@@ -843,8 +880,7 @@ async function handleStickerAudioCommand({
   };
 
   try {
-    // Reação inicial não-bloqueante
-    conn.sendMessage(from, { react: { text: "🎵", key: info.key } }).catch(() => { });
+    conn.sendMessage(from, { react: { text: "⏳", key: info.key } }).catch(() => {});
 
     let processed;
 
@@ -863,7 +899,6 @@ async function handleStickerAudioCommand({
         );
       }
 
-      await reply("⏳ Processando vídeo em figurinha animada com áudio...");
       const videoBuffer = await downloadMediaBuffer(
         detected.videoMsg,
         "video",
@@ -875,7 +910,6 @@ async function handleStickerAudioCommand({
 
     // ─── MODO 4: Imagem + Áudio respondido (local, sem créditos) ───
     else if (detected.mode === 4) {
-      await reply("⏳ Combinando imagem e áudio na figurinha...");
       const [visualBuffer, audioBuffer] = await Promise.all([
         downloadMediaBuffer(
           detected.visualMsg,
@@ -898,151 +932,98 @@ async function handleStickerAudioCommand({
       if (!isValidYouTubeUrl(detected.query)) {
         return await reply(
           "❌ *Link do YouTube inválido.*\n" +
-          "> Envie um link válido como `https://youtu.be/...` ou `https://www.youtube.com/watch?v=...`."
+            "> Envie um link válido como `https://youtu.be/...` ou `https://www.youtube.com/watch?v=...`."
         );
       }
 
-      await reply("⏳ Buscando áudio do YouTube (até 30s) via Spider X API...");
-      const reuseQuotedSticker =
-        detected.visualType === "sticker" &&
-        Boolean(detected.visualMsg?.mediaKey && (detected.visualMsg?.url || detected.visualMsg?.directPath));
-
       const [visualBuffer, musicData] = await Promise.all([
-        reuseQuotedSticker
-          ? Promise.resolve(null)
-          : downloadMediaBuffer(
-            detected.visualMsg,
-            detected.visualType,
-            downloadContentFromMessage,
-            { maxBytes: MAX_IMAGE_BYTES }
-          ),
+        downloadMediaBuffer(
+          detected.visualMsg,
+          detected.visualType,
+          downloadContentFromMessage,
+          { maxBytes: MAX_IMAGE_BYTES }
+        ),
         fetchYouTubeAudioByUrl(detected.query, { settings, httpClient }),
       ]);
 
-      if (reuseQuotedSticker) {
-        const opusAudio = await withTempDir(async (dir) => {
-          const musicFile = path.join(dir, "music_in");
-          await fsp.writeFile(musicFile, musicData.buffer);
-          const musicInfo = await probeMedia(musicFile);
-          if (!musicInfo.hasAudio || musicInfo.duration <= 0) {
-            throw new MediaValidationError(
-              "INVALID_MEDIA_FILE",
-              "❌ O áudio retornado pela Spider X API está em formato incompatível."
-            );
-          }
-          return await extractAndEncodeOpusAudio(musicFile, MAX_MUSIC_SECONDS);
-        });
-        processed = {
-          existingStickerMessage: detected.visualMsg,
-          webpBuffer: null,
-          audioBuffer: opusAudio.buffer,
-          audioDuration: opusAudio.duration,
-          waveform: opusAudio.waveform,
-          isAnimated: Boolean(detected.visualMsg?.isAnimated),
-          mode: 1,
-          usesApiCredits: true,
-        };
-      } else {
-        processed = await processMusicStickerMode(
-          visualBuffer,
-          detected.visualType === "sticker",
-          musicData.buffer,
-          1,
-          metadata
-        );
-      }
+      processed = await processMusicStickerMode(
+        visualBuffer,
+        detected.visualType === "sticker",
+        musicData.buffer,
+        1,
+        metadata
+      );
     }
 
     // ─── MODO 2: Nome da música (Spider X API — consome créditos) ───
     else if (detected.mode === 2) {
-      await reply(`⏳ Pesquisando *"${detected.query}"* (até 30s) via Spider X API...`);
-      const reuseQuotedSticker =
-        detected.visualType === "sticker" &&
-        Boolean(detected.visualMsg?.mediaKey && (detected.visualMsg?.url || detected.visualMsg?.directPath));
-
       const [visualBuffer, musicData] = await Promise.all([
-        reuseQuotedSticker
-          ? Promise.resolve(null)
-          : downloadMediaBuffer(
-            detected.visualMsg,
-            detected.visualType,
-            downloadContentFromMessage,
-            { maxBytes: MAX_IMAGE_BYTES }
-          ),
+        downloadMediaBuffer(
+          detected.visualMsg,
+          detected.visualType,
+          downloadContentFromMessage,
+          { maxBytes: MAX_IMAGE_BYTES }
+        ),
         fetchYouTubeAudioByName(detected.query, { settings, httpClient }),
       ]);
 
-      if (reuseQuotedSticker) {
-        const opusAudio = await withTempDir(async (dir) => {
-          const musicFile = path.join(dir, "music_in");
-          await fsp.writeFile(musicFile, musicData.buffer);
-          const musicInfo = await probeMedia(musicFile);
-          if (!musicInfo.hasAudio || musicInfo.duration <= 0) {
-            throw new MediaValidationError(
-              "INVALID_MEDIA_FILE",
-              "❌ O áudio retornado pela Spider X API está em formato incompatível."
-            );
-          }
-          return await extractAndEncodeOpusAudio(musicFile, MAX_MUSIC_SECONDS);
-        });
-        processed = {
-          existingStickerMessage: detected.visualMsg,
-          webpBuffer: null,
-          audioBuffer: opusAudio.buffer,
-          audioDuration: opusAudio.duration,
-          waveform: opusAudio.waveform,
-          isAnimated: Boolean(detected.visualMsg?.isAnimated),
-          mode: 2,
-          usesApiCredits: true,
-        };
-      } else {
-        processed = await processMusicStickerMode(
-          visualBuffer,
-          detected.visualType === "sticker",
-          musicData.buffer,
-          2,
-          metadata
-        );
-      }
+      processed = await processMusicStickerMode(
+        visualBuffer,
+        detected.visualType === "sticker",
+        musicData.buffer,
+        2,
+        metadata
+      );
     }
 
     const delivery = await sendStickerWithAudio(conn, from, processed, {
       quoted: info,
     });
 
-    conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { });
+    conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => {});
 
     return {
       ok: true,
       mode: processed.mode,
       usesApiCredits: processed.usesApiCredits,
       audioDuration: processed.audioDuration,
-      webpBytes: processed.webpBuffer ? processed.webpBuffer.length : 0,
+      webpBytes: processed.webpBuffer.length,
       audioBytes: processed.audioBuffer.length,
       deliveryMode: delivery.deliveryMode,
       nativeAudioSticker: delivery.nativeAudioSticker,
       messageId: delivery.messageId || null,
     };
   } catch (err) {
-    conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
+    conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
 
     if (err instanceof SpiderXError || err instanceof MediaValidationError) {
-      console.error(`[STICKERAUDIO][MODO ${detected.mode}] ${err.code}: ${sanitizeSecrets(err.message)}`);
+      console.error(
+        `[STICKERAUDIO][MODO ${detected.mode}] ${err.code}: ${sanitizeSecrets(err.message)}`
+      );
       await reply(err.userMessage);
       return { ok: false, mode: detected.mode, code: err.code };
     }
 
     const code = err?.code || "UNKNOWN_ERROR";
-    console.error(`[STICKERAUDIO][MODO ${detected.mode}] ${code}:`, sanitizeSecrets(err?.message || err));
+    console.error(
+      `[STICKERAUDIO][MODO ${detected.mode}] ${code}:`,
+      sanitizeSecrets(err?.message || err)
+    );
 
     if (code === "MEDIA_TOO_LARGE") {
       await reply("❌ O arquivo enviado excede o tamanho máximo permitido.");
     } else if (code === "MEDIA_TIMEOUT" || code === "MEDIA_PROCESS_TIMEOUT") {
-      await reply("⏱️ Tempo limite excedido ao processar a mídia. Tente com um arquivo menor.");
+      await reply(
+        "⏱️ Tempo limite excedido ao processar a mídia. Tente com um arquivo menor."
+      );
     } else if (code === "MISSING_CREDENTIALS" || code === "MEDIA_UNAVAILABLE") {
-      await reply("⚠️ Mídia indisponível ou expirada no WhatsApp. Reenvie e tente novamente.");
+      await reply(
+        "⚠️ Mídia indisponível ou expirada no WhatsApp. Reenvie e tente novamente."
+      );
     } else {
-      await reply("❌ Ocorreu um erro ao processar a figurinha com áudio. Verifique o arquivo e tente novamente.");
+      await reply(
+        "❌ Ocorreu um erro ao processar a figurinha com áudio. Verifique o arquivo e tente novamente."
+      );
     }
 
     return { ok: false, mode: detected.mode, code };
@@ -1056,6 +1037,9 @@ module.exports = {
   MAX_ANIMATED_WEBP_BYTES,
   MediaValidationError,
   probeMedia,
+  isWebpBuffer,
+  isAnimatedWebpBuffer,
+  createWaveform,
   convertImageToStickerWebp,
   prepareExistingStickerWebp,
   convertVideoToAnimatedWebp,
