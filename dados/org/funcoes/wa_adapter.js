@@ -3,6 +3,10 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const protobuf = require("protobufjs/minimal");
+
+const AUDIO_STICKER_INNER_TAG_BYTES = Buffer.from([0xd2, 0x01]);
+const AUDIO_STICKER_OUTER_TAG_BYTES = Buffer.from([0xb2, 0x08]);
 
 /**
  * Camada de compatibilidade e abstração WhatsApp (Aleatory v8/v9).
@@ -103,6 +107,78 @@ function installNativeAudioStickerProtoExtension(baileysOrProto) {
       message.audioStickerMessage = FutureProofMessage.fromObject(
         object.audioStickerMessage
       );
+    }
+    return message;
+  };
+
+  const extractRawSlice = (readerOrBuf, length) => {
+    if (readerOrBuf instanceof Uint8Array) {
+      return length === undefined ? readerOrBuf : readerOrBuf.subarray(0, length);
+    }
+    if (readerOrBuf && readerOrBuf.buf instanceof Uint8Array) {
+      const start = readerOrBuf.pos || 0;
+      const end = length === undefined ? readerOrBuf.len : start + length;
+      return readerOrBuf.buf.subarray(start, end);
+    }
+    return null;
+  };
+
+  const scanEmbeddedField = (rawSlice, targetTag, decodeFn) => {
+    const reader = protobuf.Reader.create(rawSlice);
+    while (reader.pos < reader.len) {
+      const tag = reader.uint32();
+      if (tag === targetTag) {
+        return decodeFn(reader.bytes());
+      }
+      reader.skipType(tag & 7);
+    }
+    return null;
+  };
+
+  const stickerDecode = StickerMessage.decode.bind(StickerMessage);
+  StickerMessage.decode = function decode(reader, length) {
+    const rawSlice = extractRawSlice(reader, length);
+    const message = stickerDecode(reader, length);
+    if (
+      rawSlice &&
+      Buffer.from(rawSlice.buffer, rawSlice.byteOffset, rawSlice.byteLength).includes(
+        AUDIO_STICKER_INNER_TAG_BYTES
+      )
+    ) {
+      try {
+        const audioMsg = scanEmbeddedField(
+          rawSlice,
+          AUDIO_STICKER_INNER_TAG,
+          (bytes) => AudioMessage.decode(bytes)
+        );
+        if (audioMsg) message.audioMessage = audioMsg;
+      } catch {
+        // preservar decodificação padrão em caso de bytes inesperados
+      }
+    }
+    return message;
+  };
+
+  const messageDecode = Message.decode.bind(Message);
+  Message.decode = function decode(reader, length) {
+    const rawSlice = extractRawSlice(reader, length);
+    const message = messageDecode(reader, length);
+    if (
+      rawSlice &&
+      Buffer.from(rawSlice.buffer, rawSlice.byteOffset, rawSlice.byteLength).includes(
+        AUDIO_STICKER_OUTER_TAG_BYTES
+      )
+    ) {
+      try {
+        const fpMsg = scanEmbeddedField(
+          rawSlice,
+          AUDIO_STICKER_OUTER_TAG,
+          (bytes) => FutureProofMessage.decode(bytes)
+        );
+        if (fpMsg) message.audioStickerMessage = fpMsg;
+      } catch {
+        // preservar decodificação padrão em caso de bytes inesperados
+      }
     }
     return message;
   };
@@ -312,6 +388,10 @@ function unwrapMessageContainer(messageObj) {
     }
     if (current.documentWithCaptionMessage?.message) {
       current = current.documentWithCaptionMessage.message;
+      continue;
+    }
+    if (current.audioStickerMessage?.message) {
+      current = current.audioStickerMessage.message;
       continue;
     }
     break;
@@ -662,6 +742,15 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     throw new Error("prepareWAMessageMedia não está disponível nesta versão do Baileys.");
   }
 
+  const normalizedSeconds = Math.max(
+    1,
+    Math.min(30, Math.ceil(Number(audioDuration) || 1))
+  );
+  const normalizedWaveform =
+    Buffer.isBuffer(waveform) || waveform instanceof Uint8Array
+      ? Buffer.from(waveform)
+      : Buffer.alloc(64, 15);
+
   const [stickerMedia, audioMedia] = await Promise.all([
     prepareWAMessageMedia(
       { sticker: webpBuffer },
@@ -672,6 +761,8 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
         audio: audioBuffer,
         mimetype: "audio/ogg; codecs=opus",
         ptt: true,
+        seconds: normalizedSeconds,
+        waveform: normalizedWaveform,
       },
       { upload: conn.waUploadToServer }
     ),
@@ -687,6 +778,7 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   stickerMessage.height = Number(height) || 512;
   stickerMessage.isAnimated = isAnimated === true;
   stickerMessage.isLottie = false;
+  stickerMessage.stickerSentTs = Date.now();
 
   const quoted = sendOptions.quoted;
   if (quoted?.key?.id && quoted?.message) {
@@ -699,11 +791,8 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
 
   audioMessage.mimetype = "audio/ogg; codecs=opus";
   audioMessage.ptt = true;
-  audioMessage.seconds = Math.max(1, Math.min(30, Math.ceil(Number(audioDuration) || 1)));
-  audioMessage.waveform =
-    Buffer.isBuffer(waveform) || waveform instanceof Uint8Array
-      ? Buffer.from(waveform)
-      : Buffer.alloc(64, 15);
+  audioMessage.seconds = normalizedSeconds;
+  audioMessage.waveform = normalizedWaveform;
 
   const protoPayload = buildNativeAudioStickerMessage(
     baileys.proto || baileys.WAProto,
@@ -737,6 +826,7 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     conn.ws.once(ackEvent, onAck);
   }
 
+  // Relay exato conforme validado no protocolo Baileys 7.x (sem injetar mediatype inválido na tag <message>)
   await conn.relayMessage(jid, protoPayload, { messageId });
 
   console.log(
@@ -749,6 +839,39 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     messageId,
     nativeMessage: protoPayload,
   };
+}
+
+/**
+ * Registra no console metadados técnicos (sem chaves/segredos) quando qualquer
+ * figurinha com áudio chega de um celular ou outro bot, facilitando diagnóstico.
+ */
+function logIncomingAudioSticker(info) {
+  try {
+    const msg = info?.message;
+    if (!msg || typeof msg !== "object") return false;
+    const fromWrapper = Boolean(msg.audioStickerMessage?.message?.stickerMessage);
+    const sm =
+      msg.audioStickerMessage?.message?.stickerMessage ||
+      (msg.stickerMessage?.audioMessage ? msg.stickerMessage : null);
+    if (!sm) return false;
+    const am = sm.audioMessage || null;
+    console.log(
+      `[STICKERAUDIO-IN] id=${info?.key?.id || "?"} wrapper134=${fromWrapper} ` +
+        `sticker={w:${sm.width},h:${sm.height},anim:${Boolean(sm.isAnimated)},lottie:${Boolean(sm.isLottie)},` +
+        `sentTs:${Boolean(sm.stickerSentTs)},firstFrame:${sm.firstFrameLength || 0},` +
+        `path:${String(sm.directPath || "").slice(0, 24)}} ` +
+        `audio=${
+          am
+            ? `{mime:${am.mimetype},ptt:${Boolean(am.ptt)},sec:${am.seconds},` +
+              `wfLen:${am.waveform?.length || 0},sidecar:${am.streamingSidecar?.length || 0},` +
+              `path:${String(am.directPath || "").slice(0, 24)}}`
+            : "null"
+        }`
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 module.exports = {
@@ -764,4 +887,5 @@ module.exports = {
   downloadMediaBuffer,
   hasNativeAudioStickerSupport,
   sendStickerWithAudio,
+  logIncomingAudioSticker,
 };

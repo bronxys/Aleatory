@@ -35,12 +35,18 @@ const {
 const {
   getQuotedMessage,
   extractViewOncePayload,
+  logIncomingAudioSticker,
 } = require("./dados/org/funcoes/wa_adapter.js");
 const {
   handleRevelarCommand,
   rememberViewOnceText,
 } = require("./dados/org/funcoes/revelar.js");
-const { handleStickerAudioCommand } = require("./dados/org/funcoes/stickeraudio.js");
+const {
+  handleStickerAudioCommand,
+  handleAutoFiguVideoAudioSticker,
+  buildInfoFigAudioTutorial,
+} = require("./dados/org/funcoes/stickeraudio.js");
+const tttGame = require("./dados/org/tictactoe");
 
 const {
   fs,
@@ -902,7 +908,7 @@ function getNovidadesBroadcastText(customHeader = "", pfx = "!") {
     "🎁  *PRESENTES DA v9.0*",
     sep,
     "",
-    ...item("01", "🎵", "Figurinhas com Áudio", "Crie figurinhas sonoras de música, vídeo (≤10s) ou imagem + áudio.", c("stickeraudio") + "  ·  " + c("figaudio") + "  ·  " + c("audiosticker")),
+    ...item("01", "🎵", "Figurinhas com Áudio + AutoFigu", "Crie figurinhas sonoras de música, qualquer vídeo (corta os 10 primeiros seg.), imagem + áudio ou automático via autofigu!", c("figaudio") + "  ·  " + c("figuaudio") + "  ·  " + c("sa") + "  ·  " + c("fa") + "  ·  " + c("infofigaudio")),
     ...item("02", "👁️", "Revelar 2.0", "Revela foto, vídeo, áudio e texto de visualização única.", c("revelar")),
     ...item("03", "⭐", "Menu Gold Atualizado", "Economia, jogos, ranking e saldo de Gold integrado.", c("menugold") + "  ·  " + c("perfil")),
     ...item("04", "🗳️", "Votação de Ban", "O próprio grupo decide quem sai.", c("votarban") + " @membro"),
@@ -1211,9 +1217,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       const isGroup = from.endsWith("@g.us");
 
-      const JOGO_D_V = fs?.existsSync(`./dados/org/tictactoe/db/${from}.json`)
-        ? JSON?.parse(fs?.readFileSync(`./dados/org/tictactoe/db/${from}.json`))
-        : false;
+      const JOGO_D_V = isGroup ? tttGame.getGame(from) || false : false;
 
       const VR_JSON_GLOBAL = fs.existsSync(`./dados/grupos/${from}.json`)
         ? true
@@ -1519,6 +1523,7 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       if (upsert.type === "append") return;
       rememberViewOnceText(info);
+      logIncomingAudioSticker(info);
       const type = baileys.getContentType(info.message);
       const content = JSON.stringify(info.message);
       const pushname = info.pushName ? info.pushName : "";
@@ -2761,16 +2766,26 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       if (isAutofigu && isGroup) {
         async function autofiguf() {
           setTimeout(async () => {
-            if (
-              budy.includes(`${prefix}sticker`) ||
-              budy.includes(`${prefix}s`) ||
-              budy.includes(`${prefix}stk`) ||
-              budy.includes(`${prefix}st`) ||
-              budy.includes(`${prefix}fsticker`) ||
-              budy.includes(`${prefix}f`) ||
-              budy.includes(`${prefix}fstiker`)
-            )
-              return;
+            try {
+              const budyLower = String(budy || "").trim().toLowerCase();
+              const prefLower = String(prefix || "!").toLowerCase();
+              if (
+                budyLower.startsWith(prefLower) ||
+                budyLower.includes(`${prefLower}sticker`) ||
+                budyLower.includes(`${prefLower}s`) ||
+                budyLower.includes(`${prefLower}stk`) ||
+                budyLower.includes(`${prefLower}st`) ||
+                budyLower.includes(`${prefLower}fsticker`) ||
+                budyLower.includes(`${prefLower}f`) ||
+                budyLower.includes(`${prefLower}fstiker`) ||
+                budyLower.includes(`${prefLower}stickeraudio`) ||
+                budyLower.includes(`${prefLower}audiosticker`) ||
+                budyLower.includes(`${prefLower}figaudio`) ||
+                budyLower.includes(`${prefLower}figuaudio`) ||
+                budyLower.includes(`${prefLower}sa`) ||
+                budyLower.includes(`${prefLower}fa`)
+              )
+                return;
 
             if (type == "imageMessage") {
               var pack = `⚝ ⇝ Grupo:\n${groupName}`;
@@ -2786,20 +2801,20 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
               DLT_FL(encmediaa);
             }
 
-            if (type == "videoMessage") {
-              if (isMedia && info.message.videoMessage.seconds < 10) {
-                var pack = `⚝ ⇝ Grupo:\n${groupName}`;
-                var author2 = `⚒${pushname}\n⚒${NomeDoBot}\n⚒${NickDono}`;
-                owgi = await getFileBuffer(info.message.videoMessage, "video");
-                let encmedia = await sendVideoAsSticker2(
-                  conn,
-                  from,
-                  owgi,
-                  info,
-                  { packname: pack, author: author2 },
-                );
-                DLT_FL(encmedia);
-              }
+            if (type == "videoMessage" || type == "ptvMessage") {
+              await handleAutoFiguVideoAudioSticker({
+                conn,
+                from,
+                info,
+                groupName,
+                pushname,
+                NomeDoBot,
+                NickDono,
+                downloadContentFromMessage,
+              });
+            }
+            } catch (errAutoFigu) {
+              console.error("[AUTOFIGU]", errAutoFigu?.message || errAutoFigu);
             }
           }, 1000);
         }
@@ -3128,118 +3143,150 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
       //======(JOGO-DA-VELHA)=======(Função)===\\
 
       async function joguinhodavelha() {
-        const cmde = budy.toLowerCase().split(" ")[0] || "";
-        let arrNum = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
-        if (JOGO_D_V != false) {
-          const boardnow = setGame(`${from}`);
-          if (budy == "Cex") return reply("why");
-          if (
-            budy.toLowerCase() == "s" ||
-            budy.toLowerCase() == "sim" ||
-            budy.toLowerCase() == "ok"
-          ) {
-            if (boardnow.O == sender.replace(SNET, "")) {
-              if (boardnow.status) return reply(`O jogo já começou antes!`);
-              const matrix = boardnow._matrix;
-              boardnow.status = true;
-              fs.writeFileSync(
-                `./dados/org/tictactoe/db/${from}.json`,
-                JSON.stringify(boardnow, null, 2),
-              );
-              const chatAccept = `*🎮Ꮐ̸Ꭺ̸Ꮇ̸Ꭼ̸ Ꭰ̸Ꭺ̸ Ꮩ̸Ꭼ̸Ꮮ̸Ꮋ̸Ꭺ̸🕹️*
+        if (!isGroup || !JOGO_D_V || !JOGO_D_V.X || !JOGO_D_V.O) return;
 
-❌ : @${boardnow.X}
-⭕ : @${boardnow.O}
- 
-Sua vez... : @${boardnow.turn == "X" ? boardnow.X : boardnow.O}
+        const rawText = String(budy || "").trim();
+        const lowerText = rawText.toLowerCase();
+        if (!lowerText) return;
 
-${matrix[0][0]}${matrix[0][1]}${matrix[0][2]}
-${matrix[1][0]}${matrix[1][1]}${matrix[1][2]}
-${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
-`;
-              mention(chatAccept);
-            }
-          } else if (
-            budy.toLowerCase() == "n" ||
-            budy.toLowerCase() == "não" ||
-            budy.toLowerCase() == "no"
-          ) {
-            if (boardnow.O == sender.replace(SNET, "")) {
-              if (boardnow.status) return reply(`O jogo já começou!`);
-              DLT_FL(`./dados/org/tictactoe/db/${from}.json`);
-              mention(
-                `@${boardnow.X} *_Seu oponente não aceitou o desafio deve ter ficado com medinho de ser massacrado 👹_*`,
-              );
-            }
-          }
+        const boardnow = tttGame.getGame(from);
+        if (!boardnow || !boardnow.X || !boardnow.O) return;
+
+        const gmList = Array.isArray(groupMembers) ? groupMembers : [];
+        const isPlayerX = tttGame.isSamePlayer(boardnow.X, boardnow.XIds, sender, senderAlt, gmList);
+        const isPlayerO = tttGame.isSamePlayer(boardnow.O, boardnow.OIds, sender, senderAlt, gmList);
+
+        const dispX = tttGame.stripDeviceAndDomain(boardnow.X);
+        const dispO = tttGame.stripDeviceAndDomain(boardnow.O);
+        const pairMentions = [boardnow.X, boardnow.O].filter(Boolean);
+
+        const resetInactivityTimer = () => {
+          tttGame.scheduleGameExpiration(from, boardnow.gameId, async () => {
+            await conn
+              .sendMessage(from, {
+                text: `⏱️ *🕹️ JOGO DA VELHA EXPIRADO!*\n> A partida ficou 5 minutos sem jogadas e foi resetada automaticamente.`,
+              })
+              .catch(() => {});
+          });
+        };
+
+        // 1) Aceitar desafio (apenas jogador O, antes de iniciar)
+        if (!boardnow.status && (lowerText === "s" || lowerText === "sim" || lowerText === "ok")) {
+          if (!isPlayerO) return;
+          boardnow.status = true;
+          boardnow.OIds = tttGame.resolvePlayerAliases(boardnow.O, senderAlt || sender, gmList);
+          tttGame.saveGame(from, boardnow);
+          resetInactivityTimer();
+
+          const currentDisp = boardnow.turn === "X" ? dispX : dispO;
+          const chatAccept =
+            `*🎮 ᴊᴏɢᴏ ᴅᴀ ᴠᴇʟʜᴀ 🕹️*\n\n` +
+            `❌ : @${dispX}\n` +
+            `⭕ : @${dispO}\n\n` +
+            `🎯 Sua vez: @${currentDisp}\n\n` +
+            `${tttGame.renderBoard(boardnow._matrix)}\n\n` +
+            `_Envie um número de *1 a 9* para jogar!_`;
+          await conn.sendMessage(
+            from,
+            { text: chatAccept, mentions: pairMentions },
+            { quoted: info }
+          );
+          return;
         }
 
-        if (arrNum.includes(cmde)) {
-          const boardnow = setGame(`${from}`);
-          if (!boardnow.status)
-            return reply(
-              `Parece que seu oponente não aceitou o desafio ainda 😏`,
-            );
-          if (
-            (boardnow.turn == "X" ? boardnow.X : boardnow.O) !=
-            sender.replace(SNET, "")
-          )
-            return;
-          const moving = validmove(Number(budy), `${from}`);
-          const matrix = moving._matrix;
-          if (moving.isWin) {
-            if (moving.winner == "SERI") {
-              const chatEqual = `*🎮Ꮐ̸Ꭺ̸Ꮇ̸Ꭼ̸ Ꭰ̸Ꭺ̸ Ꮩ̸Ꭼ̸Ꮮ̸Ꮋ̸Ꭺ̸🕹️*
+        // 2) Recusar desafio (apenas jogador O, antes de iniciar)
+        if (
+          !boardnow.status &&
+          (lowerText === "n" || lowerText === "não" || lowerText === "nao" || lowerText === "no")
+        ) {
+          if (!isPlayerO) return;
+          tttGame.deleteGame(from);
+          await conn.sendMessage(
+            from,
+            {
+              text: `@${dispX} *_Seu oponente (@${dispO}) não aceitou o desafio — ficou com medinho de ser massacrado! 👹_*`,
+              mentions: pairMentions,
+            },
+            { quoted: info }
+          );
+          return;
+        }
 
-Jogo termina empatado 😐
-`;
-              reply(chatEqual);
-              DLT_FL("./dados/org/tictactoe/db/" + from + ".json");
+        // 3) Jogada (somente número exato de 1 a 9)
+        if (/^[1-9]$/.test(rawText)) {
+          if (!isPlayerX && !isPlayerO) return;
+
+          if (!boardnow.status) {
+            return reply(`😏 Calma! O seu oponente (@${dispO}) ainda não aceitou o desafio (precisa responder *S*).`);
+          }
+
+          const isMyTurn = boardnow.turn === "X" ? isPlayerX : isPlayerO;
+          if (!isMyTurn) {
+            const turnDisp = boardnow.turn === "X" ? dispX : dispO;
+            await conn.sendMessage(
+              from,
+              {
+                text: `⏳ Ainda não é sua vez! Aguarde a jogada de @${turnDisp}.`,
+                mentions: [boardnow.turn === "X" ? boardnow.X : boardnow.O],
+              },
+              { quoted: info }
+            );
+            return;
+          }
+
+          const moving = tttGame.validmove(Number(rawText), from);
+          if (!moving || moving.status === false) {
+            return reply(`⚠️ ${moving?.message || "Jogada inválida! Escolha um número livre de 1 a 9."}`);
+          }
+
+          const boardStr = tttGame.renderBoard(moving._matrix);
+
+          if (moving.isWin) {
+            tttGame.deleteGame(from);
+
+            if (moving.winner === "SERI") {
+              const chatEqual =
+                `*🎮 ᴊᴏɢᴏ ᴅᴀ ᴠᴇʟʜᴀ 🕹️*\n\n` +
+                `${boardStr}\n\n` +
+                `😐 *Empate (Deu Velha)!*\n` +
+                `❌ @${dispX}  ×  ⭕ @${dispO}`;
+              await conn.sendMessage(
+                from,
+                { text: chatEqual, mentions: pairMentions },
+                { quoted: info }
+              );
               return;
             }
-            const abt = Math.ceil(Math.random() + 4000);
-            const winnerJID = moving.winner == "O" ? moving.O : moving.X;
-            const looseJID = moving.winner == "O" ? moving.X : moving.O;
-            const limWin = Math.floor(Math.random() * 1) + 10;
-            const limLoose = Math.floor(Math.random() * 1) + 5;
-            const chatWon = `*🎮Ꮐ̸Ꭺ̸Ꮇ̸Ꭼ̸ Ꭰ̸Ꭺ̸ Ꮩ̸Ꭼ̸Ꮮ̸Ꮋ̸Ꭺ̸🕹️*
 
-Vencido por @${winnerJID} 😎👑
-`;
-
-            mention(chatWon);
-            setTimeout(() => {
-              if (fs.existsSync("./dados/org/tictactoe/db/" + from + ".json")) {
-                DLT_FL("./dados/org/tictactoe/db/" + from + ".json");
-                reply(`*🕹️JOGO DA VOVÓ RESETADO...😼*`);
-              } else {
-                console.log(
-                  colors.red(time, "red"),
-                  colors.magenta("[ EXPIRADO ]"),
-                  colors.red("Jogo da velha espirado"),
-                );
-                DLT_FL("./dados/org/tictactoe/db/" + from + ".json");
-                reply(`*🕹️JOGO DA VELHA RESETADO, PORQUE EXPIROU 🕹️*`);
-              }
-            }, 300000); //5 minutos
-            mention(
-              `_*🥳Parabéns @${winnerJID} por ter ganhado o jogo da vovó 😏🎉...*_`,
+            const winnerJid = moving.winner === "O" ? moving.O : moving.X;
+            const winnerDisp = tttGame.stripDeviceAndDomain(winnerJid);
+            const winnerSymbol = moving.winner === "O" ? "⭕" : "❌";
+            const chatWon =
+              `*🎮 ᴊᴏɢᴏ ᴅᴀ ᴠᴇʟʜᴀ 🕹️*\n\n` +
+              `${boardStr}\n\n` +
+              `🏆 *Vencedor:* ${winnerSymbol} @${winnerDisp} 😎👑\n` +
+              `_*🥳 Parabéns @${winnerDisp} pela vitória! 🎉*_`;
+            await conn.sendMessage(
+              from,
+              { text: chatWon, mentions: pairMentions },
+              { quoted: info }
             );
-            DLT_FL(`./dados/org/tictactoe/db/${from}.json`);
-          } else {
-            const chatMove = `*🎮Ꮐ̸Ꭺ̸Ꮇ̸Ꭼ̸ Ꭰ̸Ꭺ̸ Ꮩ̸Ꭼ̸Ꮮ̸Ꮋ̸Ꭺ̸🕹️*
-
-❌ : @${moving.X}
-⭕ : @${moving.O}
-
-Sua vez : @${moving.turn == "X" ? moving.X : moving.O}
-
-${matrix[0][0]}${matrix[0][1]}${matrix[0][2]}
-${matrix[1][0]}${matrix[1][1]}${matrix[1][2]}
-${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
-`;
-            mention(chatMove);
+            return;
           }
+
+          resetInactivityTimer();
+          const nextDisp = moving.turn === "X" ? dispX : dispO;
+          const chatMove =
+            `*🎮 ᴊᴏɢᴏ ᴅᴀ ᴠᴇʟʜᴀ 🕹️*\n\n` +
+            `❌ : @${dispX}\n` +
+            `⭕ : @${dispO}\n\n` +
+            `🎯 Sua vez: @${nextDisp}\n\n` +
+            `${boardStr}`;
+          await conn.sendMessage(
+            from,
+            { text: chatMove, mentions: pairMentions },
+            { quoted: info }
+          );
         }
       }
 
@@ -3253,7 +3300,7 @@ ${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
         return total;
       }
 
-      joguinhodavelha();
+      joguinhodavelha().catch((e) => console.error("[JOGODAVELHA]", e?.message || e));
 
       if (
         isAntilinkgp &&
@@ -16168,8 +16215,8 @@ aqui, boa sorte..`);
           setGp(dataGp);
           reply(
             dataGp[0]?.autosticker
-              ? "♻️ 𝘼𝙏𝙄𝙑𝙊𝙐 ♻️\nCom sucesso𝙖𝙪𝙩𝙤-𝙛𝙞𝙜𝙪𝙧𝙞𝙣𝙝𝙖𝙨,Neste grupo 📸"
-              : "❌𝘿𝙀𝙎𝘼𝙏𝙄𝙑𝙊𝙐❌\nCom sucesso o 𝙖𝙪𝙩𝙤-𝙛𝙞𝙜𝙪𝙧𝙞𝙣𝙝𝙖𝙨Neste grupo 📸",
+              ? `♻️ *AUTO-FIGURINHAS ATIVADO!* 📸🎵\n\n• Fotos enviadas no grupo viram figurinhas automaticamente.\n• Vídeos de qualquer duração têm os *primeiros 10s* convertidos automaticamente em *figurinha com áudio*!\n\n📖 Veja o guia completo em \`${prefix}infofigaudio\``
+              : "❌ *AUTO-FIGURINHAS DESATIVADO* neste grupo 📸",
           );
           break;
 
@@ -19318,7 +19365,10 @@ _Remove da lista negra global_
 
         case "stickeraudio":
         case "audiosticker":
-        case "figaudio": {
+        case "figaudio":
+        case "figuaudio":
+        case "sa":
+        case "fa": {
           await handleStickerAudioCommand({
             conn,
             from,
@@ -19333,6 +19383,11 @@ _Remove da lista negra global_
             downloadContentFromMessage,
             settings: setting,
           });
+          break;
+        }
+
+        case "infofigaudio": {
+          await reply(buildInfoFigAudioTutorial(prefix, NomeDoBot));
           break;
         }
 
@@ -21347,98 +21402,123 @@ _→ Áudio enviado todo dia às 14:30_
           });
           break;
 
-        case "jogodavelha":
+        case "jogodavelha": {
           if (!isModobn) return reply(Res_SoModoBN);
           if (!isGroup) return reply(Res_SoGrupo);
-          if (!menc_jid2)
-            return reply(
-              "Marque junto com o comando, o @ da pessoa que deseja desafiar..",
-            );
-          if (JOGO_D_V != false) {
-            const boardnow = await setGame(`${from}`);
-            const matrix = boardnow._matrix;
-            if (!boardnow.X && !boardnow.O) {
-              DLT_FL("./dados/org/tictactoe/db/" + from + ".json");
-              return reply(
-                `Jogo da vovó foi resetado, faça o desafio novamente para o usuário, tive um imprevisto na hora de calcular os dados, e então acabei não registrando ninguém, desculpe o ocorrido.`,
-              );
-            }
-            const chatMove = `*🎮ꮐ̸Ꭺ̸Ꮇ̸Ꭼ̸ Ꭰ̸Ꭺ̸ Ꮩ̸Ꭼ̸Ꮮ̸Ꮋ̸Ꭺ̸🕹️*
- 
-[❗] Alguém está jogando no momento...\n\n@${boardnow.X.split("@")[0]} VS @${boardnow.O.split("@")[0]
-              }
- 
-❌ : @${boardnow.X.split("@")[0]}
-⭕ : @${boardnow.O.split("@")[0]}
- 
- Sua vez : @${(boardnow.turn == "X" ? boardnow.X : boardnow.O).split("@")[0]}
- 
-${matrix[0][0]}${matrix[0][1]}${matrix[0][2]}
-${matrix[1][0]}${matrix[1][1]}${matrix[1][2]}
-${matrix[2][0]}${matrix[2][1]}${matrix[2][2]}
 
-caso queira resetar o jogo, mande um adm ou os jogadores que estão jogando utilizar o comando ${prefix}rv
-`;
-            const mentions_array = [boardnow.X, boardnow.O];
-            conn.sendMessage(
-              from,
-              {
-                text: chatMove,
-                mentions: mentions_array,
-              },
-              { quoted: info },
-            );
-            return;
+          const gmListTtt = Array.isArray(groupMembers) ? groupMembers : [];
+          const existingGame = tttGame.getGame(from);
+          if (existingGame) {
+            if (!existingGame.X || !existingGame.O) {
+              tttGame.deleteGame(from);
+            } else {
+              const dispX = tttGame.stripDeviceAndDomain(existingGame.X);
+              const dispO = tttGame.stripDeviceAndDomain(existingGame.O);
+              const turnDisp = existingGame.turn === "X" ? dispX : dispO;
+              const statusTxt = existingGame.status
+                ? `🎯 Sua vez: @${turnDisp}`
+                : `⏳ Aguardando @${dispO} responder *S* ou *N*`;
+              const chatMove =
+                `*🎮 ᴊᴏɢᴏ ᴅᴀ ᴠᴇʟʜᴀ 🕹️*\n\n` +
+                `❗ Já existe uma partida em andamento neste grupo:\n` +
+                `❌ @${dispX}  ×  ⭕ @${dispO}\n\n` +
+                `${statusTxt}\n\n` +
+                `${tttGame.renderBoard(existingGame._matrix)}\n\n` +
+                `_Para resetar, um ADM ou um dos jogadores pode usar \`${prefix}rv\`._`;
+              await conn.sendMessage(
+                from,
+                {
+                  text: chatMove,
+                  mentions: [existingGame.X, existingGame.O],
+                },
+                { quoted: info }
+              );
+              break;
+            }
           }
-          if (!menc_jid2 || menc_jid2.length === 0)
-            return reply(`*⟨❗⟩ Jogue com Alguem!!!!*
-*para inicar a partida : ${prefix + command} @membro do gp*`);
-          const boardnow = setGame(`${from}`);
-          console.log(`Start No jogodavelha ${boardnow.session}`);
+
+          const targetOpponent =
+            (Array.isArray(menc_jid2) && menc_jid2[0]) ||
+            info.message?.extendedTextMessage?.contextInfo?.participant ||
+            null;
+
+          if (!targetOpponent) {
+            return reply(
+              `*⟨❗⟩ Marque alguém para desafiar!*\n` +
+                `> Exemplo: \`${prefix + command} @membro\` ou responda a mensagem da pessoa com \`${prefix + command}\`.`
+            );
+          }
+
+          if (tttGame.isSamePlayer(targetOpponent, [], sender, senderAlt, gmListTtt)) {
+            return reply("❌ Você não pode desafiar a si mesmo! Marque outra pessoa do grupo.");
+          }
+
+          if (tttGame.isSamePlayer(targetOpponent, [], botJid, botLid, gmListTtt)) {
+            return reply("❌ Você não pode desafiar o bot! Marque outro membro do grupo.");
+          }
+
+          const boardnow = tttGame.setGame(from);
           boardnow.status = false;
-          boardnow.X = sender; // Manter JID completo
-          boardnow.O = menc_jid2[0]; // Usar menc_jid2[0] ao invés de argss[1]
-          var blabord = [`${boardnow.X}`, `${boardnow.O}`];
-          fs.writeFileSync(
-            `./dados/org/tictactoe/db/${from}.json`,
-            JSON.stringify(boardnow, null, 2),
-          );
-          const strChat = `*『📌ᎬᏕᏒᎬᏕᎪᏂᎠᏃ Ꭳ ᎣᏒᎣᏂᎬᏂᎲᎬ⚔️』*
- 
-@${sender.split("@")[0]
-            } _está te desafiando para uma partida de jogo da velha..._
-_[ @${menc_jid2[0].split("@")[0]
-            } ] Use *『S』* para aceitar ou *『N』* para não aceitar..._\n\nEm caso de problemas, marque algum administrador para resetar o jogo com o comando ${prefix}rv`;
-          conn.sendMessage(
+          boardnow.X = sender;
+          boardnow.O = targetOpponent;
+          boardnow.XIds = tttGame.resolvePlayerAliases(sender, senderAlt, gmListTtt);
+          boardnow.OIds = tttGame.resolvePlayerAliases(targetOpponent, null, gmListTtt);
+          tttGame.saveGame(from, boardnow);
+
+          tttGame.scheduleGameExpiration(from, boardnow.gameId, async () => {
+            await conn
+              .sendMessage(from, {
+                text: `⏱️ *🕹️ JOGO DA VELHA EXPIRADO!*\n> O desafio não foi respondido/concluído em 5 minutos e foi resetado automaticamente.`,
+              })
+              .catch(() => {});
+          });
+
+          const xDisp = tttGame.stripDeviceAndDomain(boardnow.X);
+          const oDisp = tttGame.stripDeviceAndDomain(boardnow.O);
+          const strChat =
+            `*『⚔️ ᴅᴇsᴀғɪᴏ: ᴊᴏɢᴏ ᴅᴀ ᴠᴇʟʜᴀ ⚔️』*\n\n` +
+            `@${xDisp} _está te desafiando para uma partida de Jogo da Velha!_\n\n` +
+            `👉 @${oDisp}, responda *S* (ou *sim*) para aceitar ou *N* (ou *não*) para recusar.\n\n` +
+            `_Caso precise cancelar depois, os jogadores ou um ADM podem usar \`${prefix}rv\`._`;
+          await conn.sendMessage(
             from,
             {
               text: strChat,
-              mentions: [sender, menc_jid2[0]],
+              mentions: [boardnow.X, boardnow.O],
             },
-            { quoted: info },
+            { quoted: info }
           );
           break;
+        }
 
         case "resetarvelha":
         case "resetavelha":
         case "resetarv":
         case "resetav":
         case "resetvelha":
-        case "rv":
-          if (
-            !sender.includes(JOGO_D_V?.X) &&
-            !sender.includes(JOGO_D_V?.O) &&
-            !isGroupAdmins
-          )
-            return reply(`Fale com algum dos jogadores que jogaram ou espere eles terminar para
-você jogar, se não tiver nenhum dos 2 online, fale com algum adm para digitar ${prefix}rv para resetar o jogo.`);
-          if (fs.existsSync("./dados/org/tictactoe/db/" + from + ".json")) {
-            DLT_FL("./dados/org/tictactoe/db/" + from + ".json");
-            reply(`Jogo da vovó resetado com sucesso nesse grupo!`);
-          } else {
-            reply(`Não a nenhuma sessão em andamento...`);
+        case "rv": {
+          if (!isGroup) return reply(Res_SoGrupo);
+          const currentGame = tttGame.getGame(from);
+          if (!currentGame) {
+            return reply("ℹ️ Não há nenhuma partida de Jogo da Velha em andamento neste grupo.");
           }
+          const gmListRv = Array.isArray(groupMembers) ? groupMembers : [];
+          const canReset =
+            isGroupAdmins ||
+            SoDono ||
+            !currentGame.X ||
+            !currentGame.O ||
+            tttGame.isSamePlayer(currentGame.X, currentGame.XIds, sender, senderAlt, gmListRv) ||
+            tttGame.isSamePlayer(currentGame.O, currentGame.OIds, sender, senderAlt, gmListRv);
+          if (!canReset) {
+            return reply(
+              `❌ Apenas os jogadores da partida atual ou um ADM podem resetar o jogo usando \`${prefix}rv\`.`
+            );
+          }
+          tttGame.deleteGame(from);
+          reply("✅ *Jogo da Velha resetado com sucesso neste grupo!*");
           break;
+        }
 
         case "ppt":
           if (!isModobn) return reply(Res_SoModoBN);

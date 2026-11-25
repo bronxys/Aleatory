@@ -54,6 +54,8 @@ const menu = (prefix, NomeDoBot, sender) => {
 │ 么 ${prefix}pesquisar
 │ 么 ${prefix}play "música"
 │ 么 ${prefix}sticker
+│ 么 ${prefix}figaudio
+│ 么 ${prefix}infofigaudio
 │ 么 ${prefix}tiktok "link"
 │ 么 ${prefix}gtts "texto"
 │ 么 ${prefix}tagme
@@ -387,6 +389,10 @@ const menumidias = (prefix, sender) => {
 │ 么 ${prefix}sticker
 │ 么 ${prefix}stickeraudio
 │ 么 ${prefix}figaudio
+│ 么 ${prefix}figuaudio
+│ 么 ${prefix}sa
+│ 么 ${prefix}fa
+│ 么 ${prefix}infofigaudio
 │ 么 ${prefix}fstiker
 │ 么 ${prefix}attp "texto"
 │ 么 ${prefix}toimg

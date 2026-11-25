@@ -369,7 +369,7 @@
   },
   {
     "comando": "autofigu",
-    "info": "Este comando serve para fazer figurinhas automáticas, você após habilitar, envie uma foto no grupo.\n\nE o bot enviará a figurinha feita."
+    "info": "🤖 *Auto-Figurinhas (Fotos + Vídeos com Áudio)*\n\nQuando ativado no grupo:\n• Fotos enviadas viram figurinhas automaticamente.\n• Vídeos de qualquer duração têm os *primeiros 10 segundos* convertidos automaticamente em *figurinha com áudio*!\n• Vídeos sem áudio/GIFs viram figurinhas animadas normais.\n\nUse `#prefixo#infofigaudio` para o tutorial completo."
   },
   {
     "comando": "simih",
@@ -505,15 +505,31 @@
   },
   {
     "comando": "stickeraudio",
-    "info": "🎵 *Figurinha com Áudio* (aliases: #prefixo#figaudio, #prefixo#audiosticker)\n\nModos disponíveis:\n1️⃣ Link do YouTube (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <link>`\n\n2️⃣ Nome da música (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <nome>`\n\n3️⃣ Vídeo com áudio (até 10s · gratuito/local):\nEnvie ou responda um vídeo com `#prefixo#stickeraudio`\n\n4️⃣ Imagem + Áudio (gratuito/local):\nResponda uma mensagem de áudio enviando uma imagem com `#prefixo#stickeraudio` na legenda."
+    "info": "🎵 *Figurinha com Áudio* (gatilhos: #prefixo#figaudio, #prefixo#figuaudio, #prefixo#audiosticker, #prefixo#sa, #prefixo#fa)\n\nModos disponíveis:\n1️⃣ Link do YouTube (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <link>`\n\n2️⃣ Nome da música (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <nome>`\n\n3️⃣ Vídeo com áudio (qualquer duração → recorta os primeiros 10s · gratuito/local):\nEnvie ou responda qualquer vídeo com `#prefixo#stickeraudio`\n\n4️⃣ Imagem + Áudio (gratuito/local):\nResponda uma mensagem de áudio enviando uma imagem com `#prefixo#stickeraudio` na legenda.\n\n📖 Use `#prefixo#infofigaudio` para o tutorial completo (incluindo o modo automático com `#prefixo#autofigu`)."
   },
   {
     "comando": "audiosticker",
-    "info": "🎵 Alias do comando `#prefixo#stickeraudio`. Use `#prefixo#info stickeraudio` para ver todos os 4 modos."
+    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
   },
   {
     "comando": "figaudio",
-    "info": "🎵 Alias do comando `#prefixo#stickeraudio`. Use `#prefixo#info stickeraudio` para ver todos os 4 modos."
+    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+  },
+  {
+    "comando": "figuaudio",
+    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+  },
+  {
+    "comando": "sa",
+    "info": "🎵 Gatilho rápido de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+  },
+  {
+    "comando": "fa",
+    "info": "🎵 Gatilho rápido de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+  },
+  {
+    "comando": "infofigaudio",
+    "info": "📖 Exibe o tutorial completo das Figurinhas com Áudio (todos os gatilhos, 4 modos manuais e modo automático via `#prefixo#autofigu`)."
   },
   {
     "comando": "revelar",

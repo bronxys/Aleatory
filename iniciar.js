@@ -435,6 +435,10 @@ async function loadBaileys() {
   if (_baileysMod) return; // Já carregado
 
   _baileysMod = await import("@whiskeysockets/baileys");
+  try {
+    const { installNativeAudioStickerProtoExtension } = require("./dados/org/funcoes/wa_adapter.js");
+    installNativeAudioStickerProtoExtension(_baileysMod);
+  } catch { }
   _makeWASocket = _baileysMod.default || _baileysMod.makeWASocket;
   _baileysUtils = {
     useMultiFileAuthState: _baileysMod.useMultiFileAuthState,
@@ -473,7 +477,7 @@ function initializeSchedulers() {
   let aluguelAtivo = false;
   // Silencia apenas os 5 logs verbosos síncronos de inicialização para exibir no painel consolidado
   const _origLog = console.log;
-  console.log = () => {};
+  console.log = () => { };
 
   try {
     try {
@@ -641,7 +645,7 @@ async function createConnection() {
     const { state, saveCreds } = await useMultiFileAuthState(qrcode);
 
     // ═══ BUSCAR VERSÃO ATUALIZADA DO WA WEB ═══
-    const waVersion = await getWAVersionFromWPP() || [2, 3000, 1042742319];
+    const waVersion = await getWAVersionFromWPP() || [2, 3000, 1044006379];
 
     const conn = _makeWASocket({
       logger: _logger,
@@ -842,7 +846,7 @@ async function createConnection() {
                   });
                   if (result?.success) {
                     showSuccess(`Novidades enviadas: ${result.successCount} grupos · ${result.audioCount || 0} áudios`);
-                    try { fs.writeFileSync(_broadcastFlagPath, new Date().toISOString(), "utf-8"); } catch {}
+                    try { fs.writeFileSync(_broadcastFlagPath, new Date().toISOString(), "utf-8"); } catch { }
                   }
                 }
               } catch (err) {

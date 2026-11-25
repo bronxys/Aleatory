@@ -51,15 +51,14 @@ const {
  */
 
 const MAX_VIDEO_SECONDS = 10;
-const MAX_VIDEO_SECONDS_TOLERANCE = 10.5;
 const MAX_MUSIC_SECONDS = 30;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB
-const MAX_VIDEO_BYTES = 15 * 1024 * 1024; // 15 MB
+const MAX_VIDEO_BYTES = 64 * 1024 * 1024; // 64 MB (suporta vídeos longos; recorta só os primeiros 10s)
 const MAX_STATIC_WEBP_BYTES = 100 * 1024; // 100 KB (limite WhatsApp)
 const MAX_ANIMATED_WEBP_BYTES = 500 * 1024; // 500 KB (padrão estável WhatsApp)
-const FFMPEG_TIMEOUT_MS = 45000;
-const FFPROBE_TIMEOUT_MS = 10000;
+const FFMPEG_TIMEOUT_MS = 60000;
+const FFPROBE_TIMEOUT_MS = 12000;
 const WAVEFORM_SAMPLE_RATE = 8000;
 const WAVEFORM_BARS = 64;
 
@@ -310,7 +309,7 @@ async function convertImageToStickerWebp(imageBuffer, metadata = {}) {
           "-vcodec",
           "libwebp",
           "-vf",
-          "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000",
+          "scale=512:512:force_original_aspect_ratio=increase,crop=512:512",
           "-frames:v",
           "1",
           "-lossless",
@@ -369,8 +368,14 @@ async function prepareExistingStickerWebp(stickerBuffer, metadata = {}) {
 }
 
 /**
- * Converte vídeo (até 10s) para figurinha animada WebP (padrão WhatsApp, preset icon)
- * reduzindo resolução/FPS adaptativamente para respeitar o limite de tamanho.
+ * Converte vídeo (até 10s) para figurinha animada WebP quadrada (padrão WhatsApp).
+ *
+ * Usa center-crop para forçar aspecto 1:1 real, garantindo que clientes
+ * iOS/Android reconheçam o sticker como quadrado e habilitem o áudio.
+ * Padding transparente (RGBA + pad) NÃO funciona em clientes móveis porque
+ * o WhatsApp descarta a área transparente e mostra o conteúdo original.
+ *
+ * Escada adaptativa: reduz resolução/FPS/qualidade até caber em <= 500 KB.
  */
 async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata = {}) {
   return await withTempDir(async (dir) => {
@@ -378,8 +383,8 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
     const durationLimit = Math.min(maxSeconds, MAX_VIDEO_SECONDS).toFixed(3);
 
     const attempts = [
-      { size: 512, fps: 15, quality: 55 },
-      { size: 512, fps: 12, quality: 45 },
+      { size: 512, fps: 15, quality: 50 },
+      { size: 512, fps: 12, quality: 40 },
       { size: 448, fps: 10, quality: 35 },
       { size: 384, fps: 10, quality: 30 },
       { size: 320, fps: 10, quality: 25 },
@@ -390,6 +395,9 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
     let finalSize = 512;
 
     for (const attempt of attempts) {
+      // Center-crop quadrado 1:1 (equivalente ao modo cover): garante figurinha quadrada sem barras verticais
+      const vf = `fps=${attempt.fps},scale=${attempt.size}:${attempt.size}:force_original_aspect_ratio=increase,crop=${attempt.size}:${attempt.size}`;
+
       await runBinary(
         "ffmpeg",
         [
@@ -404,7 +412,7 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
           inputVideoPath,
           "-an",
           "-vf",
-          `fps=${attempt.fps},scale=${attempt.size}:${attempt.size}:force_original_aspect_ratio=decrease,format=rgba,pad=${attempt.size}:${attempt.size}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`,
+          vf,
           "-c:v",
           "libwebp",
           "-loop",
@@ -484,6 +492,10 @@ async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
         "-y",
         "-v",
         "error",
+        "-ss",
+        "0",
+        "-t",
+        String(limit),
         "-i",
         inputPath,
         "-vn",
@@ -554,10 +566,14 @@ async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
 }
 
 /**
- * Processa MODO 3 (vídeo até 10s -> figurinha animada WebP + áudio VOIP Opus sincronizado)
+ * Processa MODO 3 (vídeo de QUALQUER duração -> recorta automaticamente os primeiros 10s
+ * em figurinha animada WebP quadrada + áudio VOIP Opus sincronizado).
  * 100% local, sem consumo de créditos da Spider X API.
+ *
+ * Quando `options.allowSilentFallback === true` (usado no autofigu), vídeos sem faixa de
+ * áudio ainda viram figurinha animada normal (sem som) em vez de lançar erro.
  */
-async function processVideoMode(videoBuffer, metadata = {}) {
+async function processVideoMode(videoBuffer, metadata = {}, options = {}) {
   if (!Buffer.isBuffer(videoBuffer) || !videoBuffer.length) {
     throw new MediaValidationError("INVALID_MEDIA_FILE", "❌ Vídeo vazio ou inválido.");
   }
@@ -579,26 +595,38 @@ async function processVideoMode(videoBuffer, metadata = {}) {
         "❌ O arquivo enviado não contém um fluxo de vídeo válido."
       );
     }
+
+    const detectedDuration = info.duration > 0 ? info.duration : MAX_VIDEO_SECONDS;
+    const targetDuration = Math.min(detectedDuration, MAX_VIDEO_SECONDS);
+
     if (!info.hasAudio) {
+      if (options.allowSilentFallback) {
+        const webpResult = await convertVideoToAnimatedWebp(
+          videoFile,
+          targetDuration,
+          metadata
+        );
+        return {
+          webpBuffer: webpResult.buffer,
+          width: webpResult.width,
+          height: webpResult.height,
+          isAnimated: webpResult.isAnimated,
+          hasAudio: false,
+          audioBuffer: null,
+          audioDuration: 0,
+          waveform: null,
+          originalDuration: detectedDuration,
+          trimmedToSeconds: targetDuration,
+          mode: 3,
+          usesApiCredits: false,
+        };
+      }
       throw new MediaValidationError(
         "NO_AUDIO_TRACK",
-        "❌ Este vídeo *não possui áudio*. Envie um vídeo com som (até 10 segundos)."
-      );
-    }
-    if (info.duration <= 0) {
-      throw new MediaValidationError(
-        "INVALID_MEDIA_FILE",
-        "❌ Não foi possível identificar a duração do vídeo."
-      );
-    }
-    if (info.duration > MAX_VIDEO_SECONDS_TOLERANCE) {
-      throw new MediaValidationError(
-        "VIDEO_TOO_LONG",
-        `⏱️ O vídeo tem *${info.duration.toFixed(1)}s*. O limite máximo para figurinha com áudio é de *${MAX_VIDEO_SECONDS} segundos*.`
+        "❌ Este vídeo *não possui áudio*. Envie um vídeo com som (o bot recorta automaticamente os primeiros 10 segundos)."
       );
     }
 
-    const targetDuration = Math.min(info.duration, MAX_VIDEO_SECONDS);
     const [webpResult, audioResult] = await Promise.all([
       convertVideoToAnimatedWebp(videoFile, targetDuration, metadata),
       extractAndEncodeOpusAudio(videoFile, targetDuration),
@@ -609,9 +637,12 @@ async function processVideoMode(videoBuffer, metadata = {}) {
       width: webpResult.width,
       height: webpResult.height,
       isAnimated: webpResult.isAnimated,
+      hasAudio: true,
       audioBuffer: audioResult.buffer,
       audioDuration: audioResult.duration,
       waveform: audioResult.waveform,
+      originalDuration: detectedDuration,
+      trimmedToSeconds: targetDuration,
       mode: 3,
       usesApiCredits: false,
     };
@@ -811,7 +842,7 @@ function buildUsageHelp(prefix, commandName = "stickeraudio") {
   const cmd = `${prefix}${commandName}`;
   return (
     `╭─「 🎵 *sᴛɪᴄᴋᴇʀ ᴀ́ᴜᴅɪᴏ* 🎵 」─╮\n` +
-    `│ _Aliases: \`${prefix}stickeraudio\`, \`${prefix}figaudio\`, \`${prefix}audiosticker\`_\n` +
+    `│ _Gatilhos: \`${prefix}stickeraudio\`, \`${prefix}figaudio\`, \`${prefix}figuaudio\`, \`${prefix}audiosticker\`, \`${prefix}sa\`, \`${prefix}fa\`_\n` +
     `│\n` +
     `│ *1️⃣ Link do YouTube* _(até 30s · Spider X)_\n` +
     `│ 么 Responda uma figurinha ou envie uma imagem:\n` +
@@ -821,19 +852,75 @@ function buildUsageHelp(prefix, commandName = "stickeraudio") {
     `│ 么 Responda uma figurinha ou envie uma imagem:\n` +
     `│   \`${cmd} nome da música\`\n` +
     `│\n` +
-    `│ *3️⃣ Vídeo com áudio* _(até 10s · gratuito)_\n` +
-    `│ 么 Envie ou responda um vídeo com:\n` +
+    `│ *3️⃣ Vídeo com áudio* _(qualquer duração → recorta 10s · gratuito)_\n` +
+    `│ 么 Envie ou responda qualquer vídeo com:\n` +
     `│   \`${cmd}\`\n` +
     `│\n` +
     `│ *4️⃣ Imagem + Áudio* _(gratuito)_\n` +
     `│ 么 Responda um áudio enviando uma imagem com\n` +
     `│   \`${cmd}\` na legenda\n` +
+    `│\n` +
+    `│ 📖 Tutorial completo: \`${prefix}infofigaudio\`\n` +
     `╰─────────────────────────╯`
   );
 }
 
 /**
- * Orquestrador principal do comando /stickeraudio (aliases: /audiosticker, /figaudio).
+ * Tutorial completo e detalhado exibido pelo comando /infofigaudio.
+ */
+function buildInfoFigAudioTutorial(prefix = "!", NomeDoBot = "Aleatory-Bot") {
+  const p = prefix || "!";
+  return (
+    `╭─「 🎵 *ᴛᴜᴛᴏʀɪᴀʟ: ꜰɪɢᴜʀɪɴʜᴀꜱ ᴄᴏᴍ ᴀ́ᴜᴅɪᴏ* 🎵 」─╮\n` +
+    `│ 🤖 *${NomeDoBot}* — Guia Completo de Uso\n` +
+    `│\n` +
+    `│ ⚡ *COMANDOS / GATILHOS:*\n` +
+    `│ 么 \`${p}stickeraudio\`  •  \`${p}audiosticker\`\n` +
+    `│ 么 \`${p}figaudio\`      •  \`${p}figuaudio\`\n` +
+    `│ 么 \`${p}sa\`            •  \`${p}fa\`\n` +
+    `│\n` +
+    `│ ━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `│ 🎬 *MODO 1 — Vídeo com Áudio* _(100% gratuito)_\n` +
+    `│ • Envie ou responda *qualquer vídeo* (pode ter vários\n` +
+    `│   minutos!) com \`${p}figaudio\`, \`${p}sa\` ou \`${p}fa\`.\n` +
+    `│ • O bot recorta automaticamente os *primeiros 10 segundos*,\n` +
+    `│   ajusta em formato quadrado 1:1 e preserva o som original!\n` +
+    `│\n` +
+    `│ 🎙️ *MODO 2 — Imagem + Áudio* _(100% gratuito)_\n` +
+    `│ • Responda uma mensagem de áudio (ou voz) enviando\n` +
+    `│   uma imagem com \`${p}figaudio\` na legenda.\n` +
+    `│ • Também funciona respondendo um áudio com uma figurinha!\n` +
+    `│\n` +
+    `│ 🔗 *MODO 3 — Link do YouTube* _(até 30s · Spider X)_\n` +
+    `│ • Responda uma figurinha ou envie uma imagem com:\n` +
+    `│   \`${p}figaudio https://youtu.be/...\`\n` +
+    `│\n` +
+    `│ 🔎 *MODO 4 — Nome da Música* _(até 30s · Spider X)_\n` +
+    `│ • Responda uma figurinha ou envie uma imagem com:\n` +
+    `│   \`${p}figaudio nome da música\`\n` +
+    `│\n` +
+    `│ ━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `│ 🤖 *MODO AUTOMÁTICO (${p}autofigu):*\n` +
+    `│ • Quando um ADM ativa \`${p}autofigu\` no grupo:\n` +
+    `│   📸 Fotos viram figurinhas automaticamente.\n` +
+    `│   🎬 *Vídeos de qualquer duração* têm os *primeiros 10s*\n` +
+    `│      convertidos automaticamente em *figurinha com áudio*!\n` +
+    `│   🎞️ Vídeos sem som/GIFs viram figurinha animada normal.\n` +
+    `│\n` +
+    `│ ━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `│ 🔊 *COMO OUVIR A FIGURINHA:*\n` +
+    `│ • As figurinhas sonoras chegam mutadas por padrão.\n` +
+    `│ • Toque no ícone de som *(canto superior esquerdo no\n` +
+    `│   celular ou superior direito no WhatsApp Web)*.\n` +
+    `│ • Mantenha o WhatsApp atualizado na Play Store / App Store\n` +
+    `│   e verifique se o celular não está no modo silencioso.\n` +
+    `╰──────────────────────────────────╯`
+  );
+}
+
+/**
+ * Orquestrador principal do comando /stickeraudio
+ * (aliases: /audiosticker, /figaudio, /figuaudio, /sa, /fa).
  */
 async function handleStickerAudioCommand({
   conn,
@@ -850,10 +937,10 @@ async function handleStickerAudioCommand({
   settings,
   httpClient,
 }) {
-  // Sanitizar q caso o teclado do celular tenha capitalizado o comando (ex.: !Stickeraudio)
+  // Sanitizar q caso o teclado do celular tenha capitalizado o comando (ex.: !Figaudio, !Sa)
   let cleanQ = String(q || "").trim();
   const cmdPattern = new RegExp(
-    `^${String(prefix || "!").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:stickeraudio|audiosticker|figaudio)\\b`,
+    `^${String(prefix || "!").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:stickeraudio|audiosticker|figaudio|figuaudio|sa|fa)\\b`,
     "i"
   );
   cleanQ = cleanQ.replace(cmdPattern, "").trim();
@@ -884,14 +971,8 @@ async function handleStickerAudioCommand({
 
     let processed;
 
-    // ─── MODO 3: Vídeo até 10s (local, sem créditos) ───
+    // ─── MODO 3: Vídeo de QUALQUER duração -> recorta os primeiros 10s (local, sem créditos) ───
     if (detected.mode === 3) {
-      const preSeconds = Number(detected.videoMsg?.seconds || 0);
-      if (preSeconds > MAX_VIDEO_SECONDS_TOLERANCE) {
-        return await reply(
-          `⏱️ O vídeo tem *${preSeconds}s*. O limite máximo para figurinha com áudio é de *${MAX_VIDEO_SECONDS} segundos*.`
-        );
-      }
       const preLength = Number(detected.videoMsg?.fileLength || 0);
       if (preLength > MAX_VIDEO_BYTES) {
         return await reply(
@@ -903,7 +984,7 @@ async function handleStickerAudioCommand({
         detected.videoMsg,
         "video",
         downloadContentFromMessage,
-        { maxBytes: MAX_VIDEO_BYTES }
+        { maxBytes: MAX_VIDEO_BYTES, timeoutMs: 60000 }
       );
       processed = await processVideoMode(videoBuffer, metadata);
     }
@@ -1030,9 +1111,100 @@ async function handleStickerAudioCommand({
   }
 }
 
+/**
+ * Integração automática com !autofigu para vídeos em grupos:
+ * - Aceita vídeos de QUALQUER duração (recorta automaticamente os primeiros 10s).
+ * - Se o vídeo tiver áudio: envia figurinha animada quadrada COM ÁUDIO nativo (#134/#26).
+ * - Se o vídeo for mudo/GIF (sem faixa de áudio): envia figurinha animada normal como fallback.
+ * - Não envia spam de erro no grupo em caso de falha ou arquivo acima do limite.
+ */
+async function handleAutoFiguVideoAudioSticker({
+  conn,
+  from,
+  info,
+  groupName,
+  pushname,
+  NomeDoBot,
+  NickDono,
+  downloadContentFromMessage,
+}) {
+  const unwrapped = unwrapMessageContainer(info?.message)?.unwrapped || {};
+  const videoMsg = unwrapped.videoMessage || unwrapped.ptvMessage || null;
+  if (!videoMsg) return { ok: false, skipped: true, reason: "NO_VIDEO" };
+
+  const preLength = Number(videoMsg.fileLength || 0);
+  if (preLength > MAX_VIDEO_BYTES) {
+    console.warn(
+      `[AUTOFIGU] Vídeo ignorado por exceder ${Math.round(MAX_VIDEO_BYTES / (1024 * 1024))} MB (${preLength}B) em ${from}`
+    );
+    return { ok: false, skipped: true, reason: "MEDIA_TOO_LARGE" };
+  }
+
+  const metadata = {
+    packname: `⚝ ⇝ Grupo:\n${groupName || NomeDoBot || "Aleatory-Bot"}`,
+    author: `⚒${pushname || "Usuário"}\n⚒${NomeDoBot || "Aleatory-Bot"}\n${NickDono || "Aleatory"}`,
+    categories: ["🎵"],
+  };
+
+  try {
+    const videoBuffer = await downloadMediaBuffer(
+      videoMsg,
+      "video",
+      downloadContentFromMessage,
+      { maxBytes: MAX_VIDEO_BYTES, timeoutMs: 60000 }
+    );
+
+    const processed = await processVideoMode(videoBuffer, metadata, {
+      allowSilentFallback: true,
+    });
+
+    if (processed.hasAudio && processed.audioBuffer) {
+      const delivery = await sendStickerWithAudio(conn, from, processed, {
+        quoted: info,
+      });
+      console.log(
+        `[AUTOFIGU][AUDIOSTICKER] from=${from} orig=${processed.originalDuration.toFixed(1)}s -> ${processed.audioDuration}s sticker=${processed.webpBuffer.length}B`
+      );
+      return {
+        ok: true,
+        mode: "autofigu_audio_sticker",
+        hasAudio: true,
+        audioDuration: processed.audioDuration,
+        webpBytes: processed.webpBuffer.length,
+        deliveryMode: delivery.deliveryMode,
+        messageId: delivery.messageId || null,
+      };
+    }
+
+    await conn.sendMessage(
+      from,
+      { sticker: processed.webpBuffer },
+      { quoted: info }
+    );
+    console.log(
+      `[AUTOFIGU][VIDEO-MUDO] from=${from} orig=${processed.originalDuration.toFixed(1)}s sticker=${processed.webpBuffer.length}B`
+    );
+    return {
+      ok: true,
+      mode: "autofigu_silent_sticker",
+      hasAudio: false,
+      audioDuration: 0,
+      webpBytes: processed.webpBuffer.length,
+      deliveryMode: "standard_sticker",
+    };
+  } catch (err) {
+    console.error(
+      `[AUTOFIGU][ERRO] from=${from}:`,
+      sanitizeSecrets(err?.message || err)
+    );
+    return { ok: false, code: err?.code || "AUTOFIGU_ERROR" };
+  }
+}
+
 module.exports = {
   MAX_VIDEO_SECONDS,
   MAX_MUSIC_SECONDS,
+  MAX_VIDEO_BYTES,
   MAX_STATIC_WEBP_BYTES,
   MAX_ANIMATED_WEBP_BYTES,
   MediaValidationError,
@@ -1049,5 +1221,7 @@ module.exports = {
   processMusicStickerMode,
   detectStickerAudioInput,
   buildUsageHelp,
+  buildInfoFigAudioTutorial,
   handleStickerAudioCommand,
+  handleAutoFiguVideoAudioSticker,
 };
