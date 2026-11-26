@@ -30,6 +30,69 @@ const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30000;
 
 const AUDIO_STICKER_INNER_TAG = 210; // (26 << 3) | 2  -> 0xd2 0x01 (StickerMessage.audioMessage)
 const AUDIO_STICKER_OUTER_TAG = 1074; // (134 << 3) | 2 -> 0xb2 0x08 (Message.audioStickerMessage)
+const STREAMING_SIDECAR_CHUNK_SIZE = 64 * 1024; // 65536 bytes (padrão WhatsApp/whatsmeow)
+
+/**
+ * Calcula o `streamingSidecar` criptograficamente exato (HMAC-SHA256 truncado para 10B
+ * a cada 64 KiB + overlap de 16B do AES-CBC) sobre o payload enviado à CDN do WhatsApp
+ * (`ciphertext || mac10`), idêntico ao cliente nativo iOS/Android e ao `whatsmeow/upload.go`.
+ *
+ * Faz autoverificação contra `expectedFileEncSha256` para garantir 100% de integridade.
+ */
+async function computeVerifiedStreamingSidecar(
+  baileys,
+  plainBuffer,
+  mediaKey,
+  mediaType,
+  expectedFileEncSha256
+) {
+  try {
+    if (
+      !Buffer.isBuffer(plainBuffer) ||
+      !plainBuffer.length ||
+      !mediaKey ||
+      typeof baileys?.getMediaKeys !== "function"
+    ) {
+      return null;
+    }
+
+    const { iv, cipherKey, macKey } = await baileys.getMediaKeys(mediaKey, mediaType);
+    if (!iv || !cipherKey || !macKey) return null;
+
+    const aes = crypto.createCipheriv("aes-256-cbc", cipherKey, iv);
+    const ciphertext = Buffer.concat([aes.update(plainBuffer), aes.final()]);
+    const fileMac = crypto
+      .createHmac("sha256", macKey)
+      .update(iv)
+      .update(ciphertext)
+      .digest()
+      .subarray(0, 10);
+    const dataToUpload = Buffer.concat([ciphertext, fileMac]);
+
+    if (expectedFileEncSha256) {
+      const expectedBuf = Buffer.from(expectedFileEncSha256);
+      const actualEncSha = crypto.createHash("sha256").update(dataToUpload).digest();
+      if (!actualEncSha.equals(expectedBuf)) {
+        return null;
+      }
+    }
+
+    const stream = Buffer.concat([iv, dataToUpload]);
+    const chunks = [];
+    for (let pos = 0; pos < dataToUpload.length; pos += STREAMING_SIDECAR_CHUNK_SIZE) {
+      const slice = stream.subarray(
+        pos,
+        Math.min(pos + STREAMING_SIDECAR_CHUNK_SIZE + 16, stream.length)
+      );
+      chunks.push(
+        crypto.createHmac("sha256", macKey).update(slice).digest().subarray(0, 10)
+      );
+    }
+    return Buffer.concat(chunks);
+  } catch {
+    return null;
+  }
+}
 
 let _cachedCapabilities = null;
 
@@ -784,8 +847,9 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     throw new Error("O Baileys não preparou o stickerMessage ou audioMessage.");
   }
 
-  stickerMessage.width = Number(width) || 512;
-  stickerMessage.height = Number(height) || 512;
+  // Padrão oficial WhatsApp (exigido especialmente pelo cliente iOS): metadados 512x512
+  stickerMessage.width = 512;
+  stickerMessage.height = 512;
   stickerMessage.isAnimated = isAnimated === true;
   stickerMessage.isLottie = false;
   stickerMessage.isAvatar = false;
@@ -806,6 +870,19 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   audioMessage.seconds = normalizedSeconds;
   audioMessage.waveform = normalizedWaveform;
 
+  // Calcula e valida criptograficamente o streamingSidecar (HMAC-SHA256 10B/64KiB),
+  // metadado verificado pelo cliente iOS para streaming/reprodução de AudioMessage.
+  const audioSidecar = await computeVerifiedStreamingSidecar(
+    baileys,
+    audioBuffer,
+    audioMessage.mediaKey,
+    "audio",
+    audioMessage.fileEncSha256
+  );
+  if (audioSidecar && audioSidecar.length > 0) {
+    audioMessage.streamingSidecar = audioSidecar;
+  }
+
   const protoPayload = buildNativeAudioStickerMessage(
     baileys.proto || baileys.WAProto,
     stickerMessage,
@@ -823,10 +900,13 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     stickerMessage: { __aleatoryEncHintOnly: true },
   };
 
-  const messageId = crypto.randomBytes(10).toString("hex").toUpperCase();
+  const messageId =
+    typeof baileys.generateMessageIDV2 === "function"
+      ? baileys.generateMessageIDV2(conn?.user?.id)
+      : crypto.randomBytes(10).toString("hex").toUpperCase();
 
   if (typeof global._storeOutgoingMessage === "function") {
-    global._storeOutgoingMessage(messageId, protoPayload);
+    global._storeOutgoingMessage(messageId, relayPayload);
   }
 
   // Escuta de diagnóstico não-bloqueante para ACK do servidor (auto-limpa em 8s)
@@ -851,7 +931,7 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   await conn.relayMessage(jid, relayPayload, { messageId });
 
   console.log(
-    `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#26, stanza media/sticker) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated})`
+    `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#26, stanza media/sticker) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated}, sidecar=${audioSidecar?.length || 0}B)`
   );
 
   return {
@@ -879,8 +959,9 @@ function logIncomingAudioSticker(info) {
     console.log(
       `[STICKERAUDIO-IN] id=${info?.key?.id || "?"} wrapper134=${fromWrapper} ` +
         `sticker={w:${sm.width},h:${sm.height},anim:${Boolean(sm.isAnimated)},lottie:${Boolean(sm.isLottie)},` +
+        `avatar:${Boolean(sm.isAvatar)},ai:${Boolean(sm.isAiSticker)},` +
         `sentTs:${Boolean(sm.stickerSentTs)},firstFrame:${sm.firstFrameLength || 0},` +
-        `path:${String(sm.directPath || "").slice(0, 24)}} ` +
+        `ffSidecar:${sm.firstFrameSidecar?.length || 0},path:${String(sm.directPath || "").slice(0, 24)}} ` +
         `audio=${
           am
             ? `{mime:${am.mimetype},ptt:${Boolean(am.ptt)},sec:${am.seconds},` +
@@ -898,6 +979,7 @@ function logIncomingAudioSticker(info) {
 module.exports = {
   AUDIO_STICKER_INNER_TAG,
   AUDIO_STICKER_OUTER_TAG,
+  computeVerifiedStreamingSidecar,
   installNativeAudioStickerProtoExtension,
   buildNativeAudioStickerMessage,
   getRuntimeCapabilities,

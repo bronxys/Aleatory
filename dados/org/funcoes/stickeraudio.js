@@ -415,6 +415,7 @@ function buildAnimatedWebpAttempts(durationSec) {
     { size: 352, fps: 14, quality: 24 },
     { size: 320, fps: 14, quality: 28 },
     { size: 320, fps: 12, quality: 22 },
+    { size: 288, fps: 12, quality: 16 },
   ];
 }
 
@@ -991,14 +992,29 @@ function buildInfoFigAudioTutorial(prefix = "!", NomeDoBot = "Aleatory-Bot") {
 async function fetchAudioViaBronxysFallback(queryOrUrl, reqapi, httpClient = axios) {
   if (!reqapi || typeof reqapi.play !== "function") return null;
   const mediaUrl = reqapi.play(queryOrUrl, true);
-  const res = await httpClient.get(mediaUrl, {
-    timeout: 35000,
-    responseType: "arraybuffer",
-    maxContentLength: 25 * 1024 * 1024,
-    maxBodyLength: 25 * 1024 * 1024,
-    validateStatus: () => true,
-    headers: { "User-Agent": "Aleatory-Bot/9.0" },
-  });
+  let res;
+  try {
+    res = await httpClient.get(mediaUrl, {
+      timeout: 35000,
+      responseType: "arraybuffer",
+      maxContentLength: 25 * 1024 * 1024,
+      maxBodyLength: 25 * 1024 * 1024,
+      validateStatus: () => true,
+      headers: { "User-Agent": "Aleatory-Bot/9.0" },
+    });
+  } catch (err) {
+    const isTimeout =
+      err?.code === "ECONNABORTED" ||
+      err?.code === "ETIMEDOUT" ||
+      /timeout|timed out/i.test(String(err?.message || ""));
+    throw new SpiderXError(
+      isTimeout ? "SPIDERX_TIMEOUT" : "SPIDERX_UNAVAILABLE",
+      isTimeout
+        ? "⏱️ *Tempo limite excedido* ao baixar o áudio do YouTube. Tente novamente em instantes."
+        : "🌐 *Não foi possível baixar o áudio do YouTube no momento.* Tente novamente em instantes.",
+      sanitizeSecrets(err?.message || err?.code || "bronxys_network_error")
+    );
+  }
   if (!res || res.status < 200 || res.status >= 300) {
     throw new SpiderXError(
       "SPIDERX_UNAVAILABLE",

@@ -38,7 +38,7 @@ class SpiderXError extends Error {
  */
 function sanitizeSecrets(input) {
   return String(input || "")
-    .replace(/([?&](?:api_key|apikey|token|key)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/((?:[?&]|\b)(?:api_key|apikey|token|key)=)[^&\s]+/gi, "$1[REDACTED]")
     .replace(/(Bearer\s+)[A-Za-z0-9._-]+/gi, "$1[REDACTED]");
 }
 
