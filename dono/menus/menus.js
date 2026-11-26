@@ -156,6 +156,7 @@ const adms = (prefix, sender) => {
 │ 么 ${prefix}multiprefixo
 │ 么 ${prefix}atividades
 │ 么 ${prefix}x9
+│ 么 ${prefix}antispam
 │ 么 ${prefix}antistatus
 │ 么 ${prefix}duelo
 ╰──────────╯

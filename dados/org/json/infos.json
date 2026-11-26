@@ -542,5 +542,9 @@
   {
     "comando": "revelar",
     "info": "👁️ *Revelar Visualização Única*\n\nResponda a uma imagem, vídeo, áudio ou texto de visualização única com `#prefixo#revelar` para exibir o conteúdo disponível na mensagem."
+  },
+  {
+    "comando": "antispam",
+    "info": "🛡️ *Sistema Anti-Spam (Somente ADMs)*\n\nAtive ou desative com `#prefixo#antispam`.\n\n• *Mensagens:* 6 em 8s (ou 4 repetidas) → apaga e aplica *+1 ADV*\n• *Figurinhas:* 5 em 8s (normais, animadas e com áudio) → apaga e aplica *+1 ADV*\n• *Comandos:* 3 em 6s → bloqueia e pede para aguardar *5s*\n• *3/3 ADV* = banimento automático (integrado ao `#prefixo#perfil` e `#prefixo#advertidos`)."
   }
 ]
