@@ -1088,21 +1088,24 @@ function logIncomingAudioSticker(info) {
       msg.audioStickerMessage?.message?.stickerMessage ||
       (msg.stickerMessage?.audioMessage ? msg.stickerMessage : null);
     if (!sm) return false;
-    const am = sm.audioMessage || null;
-    console.log(
-      `[STICKERAUDIO-IN] id=${info?.key?.id || "?"} wrapper134=${fromWrapper} ` +
-        `sticker={w:${sm.width},h:${sm.height},anim:${Boolean(sm.isAnimated)},lottie:${Boolean(sm.isLottie)},` +
-        `avatar:${Boolean(sm.isAvatar)},ai:${Boolean(sm.isAiSticker)},` +
-        `sentTs:${Boolean(sm.stickerSentTs)},firstFrame:${sm.firstFrameLength || 0},` +
-        `ffSidecar:${sm.firstFrameSidecar?.length || 0},path:${String(sm.directPath || "").slice(0, 24)}} ` +
-        `audio=${
-          am
-            ? `{mime:${am.mimetype},ptt:${Boolean(am.ptt)},sec:${am.seconds},` +
-              `wfLen:${am.waveform?.length || 0},sidecar:${am.streamingSidecar?.length || 0},` +
-              `path:${String(am.directPath || "").slice(0, 24)}}`
-            : "null"
-        }`
-    );
+    // Log técnico detalhado somente quando DEBUG_AUDIO_STICKER=1 para não poluir o painel
+    if (process.env.DEBUG_AUDIO_STICKER === "1") {
+      const am = sm.audioMessage || null;
+      console.log(
+        `[STICKERAUDIO-IN] id=${info?.key?.id || "?"} wrapper134=${fromWrapper} ` +
+          `sticker={w:${sm.width},h:${sm.height},anim:${Boolean(sm.isAnimated)},lottie:${Boolean(sm.isLottie)},` +
+          `avatar:${Boolean(sm.isAvatar)},ai:${Boolean(sm.isAiSticker)},` +
+          `sentTs:${Boolean(sm.stickerSentTs)},firstFrame:${sm.firstFrameLength || 0},` +
+          `ffSidecar:${sm.firstFrameSidecar?.length || 0},path:${String(sm.directPath || "").slice(0, 24)}} ` +
+          `audio=${
+            am
+              ? `{mime:${am.mimetype},ptt:${Boolean(am.ptt)},sec:${am.seconds},` +
+                `wfLen:${am.waveform?.length || 0},sidecar:${am.streamingSidecar?.length || 0},` +
+                `path:${String(am.directPath || "").slice(0, 24)}}`
+              : "null"
+          }`
+      );
+    }
     return true;
   } catch {
     return false;

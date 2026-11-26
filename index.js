@@ -49,7 +49,13 @@ const {
   handleAutoFiguVideoAudioSticker,
   handleAutoFiguMedia,
   buildInfoFigAudioTutorial,
+  fetchTikTokMediaBuffer,
+  downloadExternalMediaBuffer,
 } = require("./dados/org/funcoes/stickeraudio.js");
+const {
+  normalizeYouTubeUrl,
+  sanitizeSecrets,
+} = require("./dados/org/funcoes/spiderx_api.js");
 const {
   ensureAntipalavraoConfig,
   extractMessageTextForFilter,
@@ -14933,21 +14939,27 @@ vota em quem mandou melhor! 🏆
             if (!q.trim())
               return reply(`Exemplo: ${prefix + command} link do Tiktok`);
             reply(Res_Aguarde);
-            conn
-              .sendMessage(
+            const _ttRes = await fetchTikTokMediaBuffer(q.trim(), reqapi);
+            if (_ttRes?.kind === "images" && Array.isArray(_ttRes.images) && _ttRes.images.length > 0) {
+              for (const _imgUrl of _ttRes.images.slice(0, 6)) {
+                await conn.sendMessage(from, { image: { url: _imgUrl } }, { quoted: info }).catch(() => { });
+              }
+            } else if (_ttRes?.buffer) {
+              await conn.sendMessage(
                 from,
                 {
-                  video: { url: reqapi.tiktok(q.trim()) },
+                  video: _ttRes.buffer,
                   mimetype: "video/mp4",
-                  caption: `Se deseja baixar em formato audio, use o comando: ${prefix}tiktok_audio ${q.trim()}`,
+                  caption: `> 🎵 Para baixar só o áudio: \`${prefix}tiktok_audio ${q.trim()}\``,
                 },
                 { quoted: info },
-              )
-              .catch((e) => {
-                return reply("Erro... 🥱");
-              });
+              );
+            } else {
+              return reply("> ⚠️ *Não consegui baixar esse TikTok*\n> 💡 Verifique se o vídeo é público");
+            }
           } catch (e) {
-            return reply("Erro... 🥱");
+            console.error("[TIKTOK] Erro:", sanitizeSecrets(e?.message || e));
+            return reply("> ⚠️ *Não consegui baixar esse TikTok*\n> 💡 Verifique se o vídeo é público");
           }
           break;
         case "tiktok_audio":
@@ -14955,20 +14967,22 @@ vota em quem mandou melhor! 🏆
             if (!q.trim())
               return reply(`Exemplo: ${prefix + command} link do Tiktok`);
             reply(Res_Aguarde);
-            conn
-              .sendMessage(
+            const _ttAud = await fetchTikTokMediaBuffer(q.trim(), reqapi, undefined, { preferAudio: true });
+            if (_ttAud?.buffer) {
+              await conn.sendMessage(
                 from,
                 {
-                  audio: { url: reqapi.tiktok(q.trim()) },
+                  audio: _ttAud.buffer,
                   mimetype: "audio/mpeg",
                 },
                 { quoted: info },
-              )
-              .catch((e) => {
-                return reply("Erro... 🥱");
-              });
+              );
+            } else {
+              return reply("> ⚠️ *Não consegui extrair o áudio desse TikTok*");
+            }
           } catch (e) {
-            return reply("Erro... 🥱");
+            console.error("[TIKTOK-AUDIO] Erro:", sanitizeSecrets(e?.message || e));
+            return reply("> ⚠️ *Não consegui extrair o áudio desse TikTok*");
           }
           break;
         case "face_video":
@@ -22988,8 +23002,8 @@ _→ Áudio enviado todo dia às 14:30_
           const _autobaixarAtivo = isGroup ? dataGp[0]?.autobaixar : true;
 
           if (_autobaixarAtivo) {
-            // Usar body original (com case correto) para extração de links
-            const _bodyTxt = body || budy || "";
+            // Usar body original (com case correto) e também desembrulhar ephemeralMessage
+            const _bodyTxt = body || budy || extractMessageTextForFilter(info, "") || "";
             const _foundLinks = linkfy.find(_bodyTxt);
             let _extractedUrl = _foundLinks.length > 0 ? _foundLinks[0].href : null;
 
@@ -23091,7 +23105,10 @@ _→ Áudio enviado todo dia às 14:30_
               // ── Download de links ──
               if (_abType && _extractedUrl) {
                 try {
-                  console.log(`[AUTOBAIXAR] Detectado: ${_abType} → ${_extractedUrl}`);
+                  const _shortAbUrl = _extractedUrl.length > 48
+                    ? _extractedUrl.slice(0, 45) + "..."
+                    : _extractedUrl;
+                  console.log(`[AUTOBAIXAR] ${_abType}: ${_shortAbUrl}`);
 
                   // Reação visual para o usuário saber que detectou
                   conn.sendMessage(from, { react: { text: "📥", key: info.key } }).catch(() => { });
@@ -23107,16 +23124,17 @@ _→ Áudio enviado todo dia às 14:30_
                               mimetype: "audio/mpeg",
                               fileName: (_spAutoData.title || 'spotify') + '.mp3',
                             }, { quoted: info })
+                            .then(() => conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { }))
                             .catch((e) => {
-                              console.error("[AUTOBAIXAR] Spotify envio erro:", e?.message || e);
+                              console.error("[AUTOBAIXAR] spotify erro:", sanitizeSecrets(e?.message || e));
                               conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                             });
                         } else {
-                          console.error("[AUTOBAIXAR] Spotify: buffer vazio");
+                          console.error("[AUTOBAIXAR] spotify: buffer vazio");
                           conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                         }
                       } catch (e) {
-                        console.error("[AUTOBAIXAR] Spotify erro:", e?.message || e);
+                        console.error("[AUTOBAIXAR] spotify erro:", sanitizeSecrets(e?.message || e));
                         conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                       }
                       break;
@@ -23143,68 +23161,110 @@ _→ Áudio enviado todo dia às 14:30_
                               video: { url: _igData.msg[0].url },
                               mimetype: _igMime,
                             };
-                          conn.sendMessage(from, _igMsg, { quoted: info }).catch((e) => {
-                            console.error("[AUTOBAIXAR] Instagram envio erro:", e?.message || e);
-                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
-                          });
+                          conn.sendMessage(from, _igMsg, { quoted: info })
+                            .then(() => conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { }))
+                            .catch((e) => {
+                              console.error("[AUTOBAIXAR] instagram erro:", sanitizeSecrets(e?.message || e));
+                              conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
+                            });
                         } else {
-                          console.error("[AUTOBAIXAR] Instagram retornou sem mídia:", JSON.stringify(_igData).slice(0, 200));
+                          console.error("[AUTOBAIXAR] instagram: sem mídia");
                           conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                         }
                       } catch (e) {
-                        console.error("[AUTOBAIXAR] Instagram erro:", e?.message || e);
+                        console.error("[AUTOBAIXAR] instagram erro:", sanitizeSecrets(e?.message || e));
+                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
+                      }
+                      break;
+
+                    case "tiktok":
+                      try {
+                        const _ttAb = await fetchTikTokMediaBuffer(_extractedUrl, reqapi);
+                        if (_ttAb?.kind === "images" && Array.isArray(_ttAb.images) && _ttAb.images.length > 0) {
+                          for (const _ttImg of _ttAb.images.slice(0, 6)) {
+                            await conn.sendMessage(from, { image: { url: _ttImg } }, { quoted: info }).catch(() => { });
+                          }
+                          conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { });
+                        } else if (_ttAb?.buffer) {
+                          await conn.sendMessage(
+                            from,
+                            _ttAb.kind === "audio"
+                              ? { audio: _ttAb.buffer, mimetype: "audio/mpeg" }
+                              : { video: _ttAb.buffer, mimetype: "video/mp4" },
+                            { quoted: info },
+                          );
+                          conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { });
+                        } else {
+                          throw new Error("TikTok sem mídia");
+                        }
+                      } catch (e) {
+                        console.error("[AUTOBAIXAR] tiktok erro:", sanitizeSecrets(e?.message || e));
                         conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                       }
                       break;
 
                     case "youtube":
+                    case "shorts":
                       try {
-                        conn
-                          .sendMessage(from, {
-                            video: { url: reqapi.play(_extractedUrl, false) },
-                            mimetype: "video/mp4",
-                          }, { quoted: info })
-                          .catch((e) => {
-                            console.error("[AUTOBAIXAR] YouTube vídeo erro:", e?.message || e);
-                            conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
-                          });
+                        const _ytCanon = normalizeYouTubeUrl(_extractedUrl);
+                        const _ytUrls = [_ytCanon];
+                        if (_ytCanon !== _extractedUrl) _ytUrls.push(_extractedUrl);
+                        let _ytBuf = null;
+                        let _ytLastErr = null;
+                        for (const _u of _ytUrls) {
+                          try {
+                            _ytBuf = await downloadExternalMediaBuffer(
+                              reqapi.play(_u, false),
+                              "YouTube",
+                              undefined,
+                              64 * 1024 * 1024,
+                              45000,
+                            );
+                            if (_ytBuf) break;
+                          } catch (errYt) {
+                            _ytLastErr = errYt;
+                          }
+                        }
+                        if (!_ytBuf) throw _ytLastErr || new Error("YouTube sem vídeo");
+                        await conn.sendMessage(
+                          from,
+                          { video: _ytBuf, mimetype: "video/mp4" },
+                          { quoted: info },
+                        );
+                        conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { });
                       } catch (e) {
-                        console.error("[AUTOBAIXAR] YouTube erro:", e?.message || e);
+                        console.error(`[AUTOBAIXAR] ${_abType} erro:`, sanitizeSecrets(e?.message || e));
+                        conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                       }
                       break;
 
-                    case "tiktok":
                     case "twitter":
                     case "facebook":
                     case "kwai":
-                    case "shorts":
                       try {
                         const _vidUrl =
-                          _abType === "tiktok"
-                            ? reqapi.tiktok(_extractedUrl)
-                            : _abType === "twitter"
-                              ? reqapi.twitter(_extractedUrl, false)
-                              : _abType === "kwai"
-                                ? reqapi.kwai_mp4(_extractedUrl)
-                                : _abType === "shorts"
-                                  ? reqapi.play(_extractedUrl, false)
-                                  : reqapi.facebook(_extractedUrl, false);
+                          _abType === "twitter"
+                            ? reqapi.twitter(_extractedUrl, false)
+                            : _abType === "kwai"
+                              ? reqapi.kwai_mp4(_extractedUrl)
+                              : reqapi.facebook(_extractedUrl, false);
                         conn
                           .sendMessage(from, {
                             video: { url: _vidUrl },
                             mimetype: "video/mp4",
                           }, { quoted: info })
+                          .then(() => conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { }))
                           .catch((e) => {
-                            console.error(`[AUTOBAIXAR] ${_abType} envio erro:`, e?.message || e);
+                            console.error(`[AUTOBAIXAR] ${_abType} erro:`, sanitizeSecrets(e?.message || e));
                             conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
                           });
                       } catch (e) {
-                        console.error(`[AUTOBAIXAR] ${_abType} erro:`, e?.message || e);
+                        console.error(`[AUTOBAIXAR] ${_abType} erro:`, sanitizeSecrets(e?.message || e));
                       }
                       break;
                   }
                 } catch (e) {
-                  console.error("[AUTOBAIXAR] Erro geral:", e?.message || e);
+                  console.error("[AUTOBAIXAR] erro:", sanitizeSecrets(e?.message || e));
                 }
               }
             }

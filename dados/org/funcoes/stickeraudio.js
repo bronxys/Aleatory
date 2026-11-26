@@ -1621,20 +1621,134 @@ async function searchAndFetchTikTokAudioByName(query, options = {}) {
   throw lastErr || new Error("TIKTOK_DOWNLOAD_FAILED");
 }
 
+const TIKWM_INFO_ENDPOINT = "https://www.tikwm.com/api/";
+
 /**
- * Baixa mídia (vídeo/áudio) de link do TikTok usando a API já existente no bot (reqapi.tiktok).
+ * Resolve e baixa vídeo ou áudio de um link do TikTok (incluindo vt.tiktok.com / vm.tiktok.com)
+ * via TikWM como fallback quando a API Bronxys falhar.
  */
-async function fetchTikTokMediaBuffer(rawUrl, reqapi, httpClient = axios) {
-  if (!reqapi || typeof reqapi.tiktok !== "function") {
+async function fetchTikTokViaTikWm(rawUrl, options = {}) {
+  const httpClient = options.httpClient || axios;
+  const preferAudio = options.preferAudio === true;
+  const isMockHttp = Boolean(options.httpClient && options.httpClient !== axios);
+  const cleanUrl = normalizeHttpUrl(rawUrl);
+
+  const res = await runTikWmSerialized(async () => {
+    return await httpClient.get(TIKWM_INFO_ENDPOINT, {
+      params: { url: cleanUrl, hd: 0 },
+      timeout: 15000,
+      responseType: "arraybuffer",
+      validateStatus: () => true,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        Accept: "application/json",
+      },
+    });
+  }, !isMockHttp);
+
+  if (!res || res.status < 200 || res.status >= 300) {
+    throw new Error(`TIKWM_URL_HTTP_${res?.status || "ERR"}`);
+  }
+
+  const rawText = Buffer.isBuffer(res.data)
+    ? res.data.toString("utf8")
+    : typeof res.data === "string"
+      ? res.data
+      : JSON.stringify(res.data || {});
+
+  let parsed;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    throw new Error("TIKWM_URL_NON_JSON");
+  }
+
+  if (!parsed || parsed.code !== 0 || !parsed.data) {
+    throw new Error(`TIKWM_URL_API_ERR:${String(parsed?.msg || parsed?.code || "err").slice(0, 60)}`);
+  }
+
+  const d = parsed.data;
+  const videoUrl = resolveTikWmUrl(d.play) || resolveTikWmUrl(d.wmplay);
+  const audioUrl = resolveTikWmUrl(d.music_info?.play) || resolveTikWmUrl(d.music);
+  const images = Array.isArray(d.images)
+    ? d.images.map(resolveTikWmUrl).filter(Boolean)
+    : [];
+
+  const urlsToTry = preferAudio
+    ? [audioUrl, videoUrl].filter(Boolean)
+    : [videoUrl, audioUrl].filter(Boolean);
+
+  if (!urlsToTry.length && images.length > 0) {
+    return {
+      kind: "images",
+      images,
+      audioUrl: audioUrl || null,
+      title: d.title || "TikTok",
+      source: "tikwm_url",
+    };
+  }
+
+  let lastErr = null;
+  for (const mediaUrl of urlsToTry) {
+    try {
+      const buffer = await downloadExternalMediaBuffer(
+        mediaUrl,
+        "TikTok",
+        httpClient,
+        MAX_VIDEO_BYTES,
+        25000
+      );
+      return {
+        kind: mediaUrl === audioUrl && !videoUrl ? "audio" : preferAudio && mediaUrl === audioUrl ? "audio" : "video",
+        buffer,
+        title: d.title || "TikTok",
+        duration: Number(d.duration || 0) || null,
+        source: "tikwm_url",
+      };
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  throw lastErr || new Error("TIKWM_URL_DOWNLOAD_FAILED");
+}
+
+/**
+ * Baixa mídia (vídeo/áudio) de link do TikTok usando a API do bot (reqapi.tiktok)
+ * com fallback automático via TikWM (excelente para links curtos vt.tiktok.com / vm.tiktok.com).
+ */
+async function fetchTikTokMediaBuffer(rawUrl, reqapi, httpClient = axios, options = {}) {
+  const cleanUrl = normalizeHttpUrl(rawUrl);
+  const preferAudio = options.preferAudio === true;
+  let bronxysErr = null;
+
+  if (reqapi && typeof reqapi.tiktok === "function") {
+    try {
+      const endpointUrl = reqapi.tiktok(cleanUrl);
+      const buffer = await downloadExternalMediaBuffer(
+        endpointUrl,
+        "TikTok",
+        httpClient,
+        MAX_VIDEO_BYTES,
+        22000
+      );
+      return { kind: preferAudio ? "audio" : "video", buffer, title: "TikTok", duration: null, source: "bronxys_tiktok" };
+    } catch (err) {
+      bronxysErr = err;
+    }
+  }
+
+  try {
+    return await fetchTikTokViaTikWm(cleanUrl, { httpClient, preferAudio });
+  } catch (tikwmErr) {
+    if (bronxysErr instanceof SpiderXError) throw bronxysErr;
     throw new SpiderXError(
       "SPIDERX_UNAVAILABLE",
-      "⚠️ A API do TikTok não está disponível nesta instância do bot."
+      "> ⚠️ *Não consegui baixar esse TikTok*\n> 💡 Verifique se o vídeo é público",
+      sanitizeSecrets(tikwmErr?.message || bronxysErr?.message || "tiktok_download_failed")
     );
   }
-  const cleanUrl = normalizeHttpUrl(rawUrl);
-  const endpointUrl = reqapi.tiktok(cleanUrl);
-  const buffer = await downloadExternalMediaBuffer(endpointUrl, "TikTok", httpClient, MAX_VIDEO_BYTES);
-  return { buffer, title: "TikTok Audio", duration: null, source: "bronxys_tiktok" };
 }
 
 /**
@@ -1732,25 +1846,22 @@ async function handleStickerAudioCommand({
     const cmd = `${prefix}${command}`;
     if (detected.reason === "GIF_NEEDS_AUDIO") {
       return await reply(
-        `🎞️ *GIFs não possuem som próprio!*\n\n` +
-        `Para transformar esse GIF em *figurinha animada com áudio*:\n` +
-        `• *Responda o GIF* com o nome da música:\n  \`${cmd} nome da música\`\n` +
-        `• *Responda o GIF* com um link do YouTube:\n  \`${cmd} https://youtu.be/...\`\n` +
-        `• Ou *responda um áudio* enviando o GIF com \`${cmd}\` na legenda!`
+        `> 🎞️ *GIF não tem som próprio*\n` +
+        `> 💡 Responda o GIF com \`${cmd} nome\` ou link _(TikTok/YouTube/Reels)_`
       );
     }
     if (detected.reason === "MISSING_AUDIO_OR_QUERY") {
       return await reply(
-        `🎵 Informe o *nome da música* ou *link do YouTube* junto com o comando, ou responda a um áudio enviando a imagem/GIF!\n\n` +
-        buildUsageHelp(prefix, command)
+        `> 🎵 *Faltou informar o áudio*\n` +
+        `> 💡 Use \`${cmd} nome ou link\` ou responda um áudio com a mídia\n` +
+        `> 📖 Tutorial: \`${prefix}infofig\``
       );
     }
     if (detected.reason === "MISSING_VISUAL_FOR_QUERY") {
       return await reply(
-        `🖼️ *Faltou a figurinha, imagem ou GIF* para colocar esse áudio!\n\n` +
-        `• *Responda uma figurinha ou GIF* com:\n  \`${cmd} ${detected.query}\`\n` +
-        `• Ou *envie uma imagem/GIF* com \`${cmd} ${detected.query}\` na legenda.\n` +
-        `• Para transformar um *vídeo direto* em figurinha com som, envie/responda o vídeo apenas com \`${cmd}\`.`
+        `> 🖼️ *Faltou a figurinha, foto ou GIF*\n` +
+        `> 💡 Responda uma mídia com \`${cmd} ${detected.query}\` ou envie na legenda\n` +
+        `> 📖 Tutorial: \`${prefix}infofig\``
       );
     }
     return await reply(buildUsageHelp(prefix, command));
@@ -1789,10 +1900,8 @@ async function handleStickerAudioCommand({
           const cmd = `${prefix}${command}`;
           throw new MediaValidationError(
             "NO_AUDIO_TRACK",
-            `🎞️ *Este GIF não possui áudio próprio!*\n\n` +
-              `Para transformar esse GIF em *figurinha animada com áudio*:\n` +
-              `• *Responda o GIF* com: \`${cmd} nome da música\` ou \`${cmd} https://youtu.be/...\`\n` +
-              `• Ou *responda um áudio* enviando o GIF com \`${cmd}\` na legenda!`
+            `> 🎞️ *GIF não tem som próprio*\n` +
+              `> 💡 Responda o GIF com \`${cmd} nome\` ou link _(TikTok/YouTube/Reels)_`
           );
         }
         throw vidErr;
@@ -2304,8 +2413,10 @@ module.exports = {
   isValidTikTokUrl,
   isValidInstagramUrl,
   searchAndFetchTikTokAudioByName,
+  fetchTikTokViaTikWm,
   fetchTikTokMediaBuffer,
   fetchInstagramMediaBuffer,
+  downloadExternalMediaBuffer,
   buildUsageHelp,
   buildInfoFigAudioTutorial,
   handleStickerAudioCommand,
