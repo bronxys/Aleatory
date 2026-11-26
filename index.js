@@ -728,8 +728,48 @@ function getMutedUsers(groupId) {
 
 // ========== SISTEMA DE ADVERTÊNCIAS ==========
 const _muteDeleteThrottle = new Map(); // throttle de deletes p/ evitar rate-overlimit
+const _antiSpamDeleteThrottle = new Map(); // throttle de deletes do anti-spam p/ evitar ban do bot
 const _antiSpamTracker = new Map(); // rastreia msgs por user p/ anti-spam
 const _antiSpamWarnings = new Map(); // advertências do anti-spam (in-memory, reset ao reiniciar)
+
+// Apaga mensagens de uma rajada de flood com espaçamento (350ms) para proteger o número do bot contra 429/ban
+function _deleteAntiSpamBurst(conn, from, sender, keysToDelete) {
+  if (!Array.isArray(keysToDelete) || !keysToDelete.length) return;
+  const maxDel = ANTISPAM_CFG.maxDeletePerBurst || 5;
+  const uniqueKeys = [];
+  const seenIds = new Set();
+  for (const k of keysToDelete.slice(-maxDel)) {
+    if (!k) continue;
+    const id = k.id || "";
+    if (id && seenIds.has(id)) continue;
+    if (id) seenIds.add(id);
+    uniqueKeys.push(k);
+  }
+  if (!uniqueKeys.length) return;
+
+  (async () => {
+    for (let i = 0; i < uniqueKeys.length; i += 1) {
+      const delKey = uniqueKeys[i];
+      if (i > 0) await new Promise((r) => setTimeout(r, 350));
+      try {
+        await conn.sendMessage(from, { delete: delKey });
+      } catch {
+        if (delKey?.id) {
+          await conn
+            .sendMessage(from, {
+              delete: {
+                remoteJid: from,
+                fromMe: false,
+                id: delKey.id,
+                participant: delKey.participant || sender,
+              },
+            })
+            .catch(() => { });
+        }
+      }
+    }
+  })().catch(() => { });
+}
 
 function loadGroupWarnings(groupId) {
   try {
@@ -2958,6 +2998,169 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
         conn.sendMessage(from, { sticker: { url: figu } }, { quoted: tag });
       };
 
+      // ═══════════════════════════════════════════════════════
+      // ═══════ SISTEMA ANTI-SPAM RÍGIDO (RODA ANTES DE AUTOFIGU / AUTOBAIXAR / COMANDOS) ═══════
+      // - Limite estrito: 1 comando a cada 5s por membro (bloqueia excesso sem spam do bot)
+      // - Flood de figurinhas, vídeos, links, mídias, textos, repetidas ou misto -> apaga c/ espaçamento + ADV (3/3 = BAN)
+      if (
+        isGroup &&
+        !info.key.fromMe &&
+        !SoDono &&
+        !isGroupAdmins &&
+        dataGp?.[0]?.antispam === true &&
+        !isIgnoredForAntiSpam(info.message)
+      ) {
+        try {
+          const _asText = extractMessageTextForFilter(info, body);
+          const _asIsSticker =
+            type == "stickerMessage" || isStickerMessage(info.message);
+          const _asEval = evaluateAntiSpam({
+            groupId: from,
+            userKey: extractNumber(sender) || sender,
+            isCmd: Boolean(isCmd),
+            isSticker: _asIsSticker,
+            messageObj: info.message,
+            text: _asText,
+            msgKey: info.key,
+          });
+
+          // 1) Cooldown rígido de comandos (1 comando a cada 5s por pessoa)
+          if (_asEval.action === "cmd_cooldown") {
+            if (_asEval.shouldNotify) {
+              const _asCmdMention = resolveMentionForMember(
+                sender,
+                groupMembers,
+                senderAlt && !String(senderAlt).endsWith("@lid") ? senderAlt : null,
+              );
+              await conn
+                .sendMessage(
+                  from,
+                  {
+                    text:
+                      `> ⏳ *Aguarde ${_asEval.remainingSec}s* para usar outro comando, @${_asCmdMention.display}\n` +
+                      `> 🛡️ Anti-spam ativo · 1 comando a cada *${ANTISPAM_CFG.cmdCooldownMs / 1000}s*`,
+                    mentions: [_asCmdMention.mentionJid],
+                  },
+                  { quoted: info },
+                )
+                .catch(() => { });
+            }
+            return; // Bloqueia execução do comando e evita spam de respostas do bot
+          }
+
+          // 2) Mensagens residuais na mesma rajada pós-ADV -> apaga com throttle anti-ban e bloqueia processamento
+          if (_asEval.action === "grace_skip") {
+            if (IS_DELETE && isBotGroupAdmins && _asEval.deleteKey) {
+              const _lastAsDel = _antiSpamDeleteThrottle.get(from) || 0;
+              const _nowAsDel = Date.now();
+              if (_nowAsDel - _lastAsDel >= 700) {
+                _antiSpamDeleteThrottle.set(from, _nowAsDel);
+                conn.sendMessage(from, { delete: _asEval.deleteKey }).catch(() => { });
+              }
+            }
+            return; // Não dispara autofigu, autobaixar nem comandos em rajada bloqueada
+          }
+
+          // 3) Flood detectado (figurinhas, vídeos, links, mídias, mensagens, repetidas ou comandos) -> ADV (3/3 = BAN)
+          if (_asEval.action === "warn") {
+            if (IS_DELETE && isBotGroupAdmins && Array.isArray(_asEval.keysToDelete)) {
+              _deleteAntiSpamBurst(conn, from, sender, _asEval.keysToDelete);
+            }
+
+            const _asMentionInfo = resolveMentionForMember(
+              sender,
+              groupMembers,
+              senderAlt && !String(senderAlt).endsWith("@lid") ? senderAlt : null,
+            );
+            const _asDisplay = _asMentionInfo.display;
+            const _asMentionJid = _asMentionInfo.mentionJid;
+            const _asRemoveJid = _asMentionInfo.removeJid || sender;
+            const _asWarnKey = resolveWarningTargetJid(
+              from,
+              sender,
+              senderAlt,
+              groupMembers,
+            );
+            const _asAllKeys = [
+              sender,
+              senderAlt,
+              _asWarnKey,
+              _asMentionInfo.phoneNumber,
+              _asMentionInfo.member?.id,
+              _asMentionInfo.member?.lid,
+              _asMentionInfo.member?.phoneNumber,
+            ].filter(Boolean);
+
+            const _asMotivo = _asEval.reason || "Flood (anti-spam)";
+            const _asWarnCount = addWarning(from, _asWarnKey, _asMotivo, {
+              phoneNumber: _asMentionInfo.phoneNumber,
+            });
+            if (dataGp?.[0]) {
+              dataGp[0].warnings = loadGroupWarnings(from);
+            }
+
+            if (_asWarnCount >= 3) {
+              let _asRemoved = false;
+              try {
+                await conn.sendMessage(from, {
+                  text:
+                    `> 🚫 *BANIDO POR SPAM* — @${_asDisplay}\n` +
+                    `> ⚠️ Limite de *${_asWarnCount}/3* advertências atingido\n` +
+                    `> 📝 Motivo: ${_asMotivo}`,
+                  mentions: [_asMentionJid],
+                });
+              } catch { }
+
+              if (isBotGroupAdmins) {
+                try {
+                  await conn.groupParticipantsUpdate(from, [_asRemoveJid], "remove");
+                  _asRemoved = true;
+                } catch {
+                  if (_asRemoveJid !== sender) {
+                    try {
+                      await conn.groupParticipantsUpdate(from, [sender], "remove");
+                      _asRemoved = true;
+                    } catch { }
+                  }
+                }
+                if (_asRemoved) {
+                  clearUserWarningsAllKeys(from, _asAllKeys);
+                  resetAntiSpamState(from, extractNumber(sender) || sender);
+                  if (dataGp?.[0]) {
+                    dataGp[0].warnings = loadGroupWarnings(from);
+                  }
+                }
+              } else {
+                try {
+                  await conn.sendMessage(from, {
+                    text: `> ⚠️ Não consegui remover @${_asDisplay} porque não sou admin do grupo.`,
+                    mentions: [_asMentionJid],
+                  });
+                } catch { }
+              }
+            } else {
+              const _asRodape =
+                _asWarnCount >= 2
+                  ? `> 🚫 Próxima advertência = *BANIMENTO AUTOMÁTICO*`
+                  : `> 💡 Reduza o ritmo · com *3/3* = banimento automático`;
+              try {
+                await conn.sendMessage(from, {
+                  text:
+                    `> ⚠️ *Anti-Spam — ${_asMotivo}*\n` +
+                    `> 👤 @${_asDisplay} · Advertência *${_asWarnCount}/3*\n` +
+                    _asRodape,
+                  mentions: [_asMentionJid],
+                });
+              } catch { }
+            }
+            return; // Impede que a mensagem de flood dispare autofigu, autobaixar ou comandos
+          }
+        } catch (errAs) {
+          console.error("[ANTISPAM] Erro:", errAs?.message || errAs);
+        }
+      }
+      // ═══════════════ FIM ANTI-SPAM ═══════════════
+
       if (isAutofigu && isGroup) {
         setTimeout(() => {
           handleAutoFiguMedia({
@@ -5069,177 +5272,7 @@ https://wa.me/${numerodono_ofc}`);
           return;
         }
       }
-      // ═══════════════════════════════════════════════════════
-      // ═══════ SISTEMA ANTI-SPAM — FLOOD DE MENSAGENS, FIGURINHAS E COMANDOS ═══════
-      if (
-        isGroup &&
-        !info.key.fromMe &&
-        !SoDono &&
-        !isGroupAdmins &&
-        dataGp?.[0]?.antispam === true &&
-        !isIgnoredForAntiSpam(info.message)
-      ) {
-        try {
-          const _asText = extractMessageTextForFilter(info, body);
-          const _asEval = evaluateAntiSpam({
-            groupId: from,
-            userKey: extractNumber(sender) || sender,
-            isCmd: Boolean(isCmd),
-            isSticker: Boolean(isSticker),
-            text: _asText,
-            msgKey: info.key,
-          });
-
-          // 1) Flood de comandos -> bloqueia e pede para aguardar 5s
-          if (_asEval.action === "cmd_cooldown") {
-            if (_asEval.shouldNotify) {
-              const _asCmdMention = resolveMentionForMember(
-                sender,
-                groupMembers,
-                senderAlt && !String(senderAlt).endsWith("@lid") ? senderAlt : null,
-              );
-              await conn
-                .sendMessage(
-                  from,
-                  {
-                    text:
-                      `> ⏳ *Calma, @${_asCmdMention.display}!*\n` +
-                      `> 🚫 Muitos comandos seguidos — aguarde *${_asEval.remainingSec}s* para evitar flood`,
-                    mentions: [_asCmdMention.mentionJid],
-                  },
-                  { quoted: info },
-                )
-                .catch(() => { });
-            }
-            return; // Impede a execução do comando durante o cooldown
-          }
-
-          // 2) Mensagens residuais na mesma rajada pós-ADV -> apenas apagar se possível
-          if (_asEval.action === "grace_skip") {
-            if (IS_DELETE && isBotGroupAdmins && _asEval.deleteKey) {
-              conn.sendMessage(from, { delete: _asEval.deleteKey }).catch(() => { });
-            }
-          }
-
-          // 3) Flood de mensagens ou figurinhas -> apaga rajada + aplica ADV (3/3 = BAN)
-          if (_asEval.action === "warn") {
-            // Apagar mensagens/figurinhas da rajada de spam (best-effort)
-            if (IS_DELETE && isBotGroupAdmins && Array.isArray(_asEval.keysToDelete)) {
-              for (const _delKey of _asEval.keysToDelete.slice(-6)) {
-                conn
-                  .sendMessage(from, { delete: _delKey })
-                  .catch(() => {
-                    if (_delKey?.id) {
-                      conn
-                        .sendMessage(from, {
-                          delete: {
-                            remoteJid: from,
-                            fromMe: false,
-                            id: _delKey.id,
-                            participant: _delKey.participant || sender,
-                          },
-                        })
-                        .catch(() => { });
-                    }
-                  });
-              }
-            }
-
-            // Resolver menção real (sem LID cru) e chave unificada de ADV
-            const _asMentionInfo = resolveMentionForMember(
-              sender,
-              groupMembers,
-              senderAlt && !String(senderAlt).endsWith("@lid") ? senderAlt : null,
-            );
-            const _asDisplay = _asMentionInfo.display;
-            const _asMentionJid = _asMentionInfo.mentionJid;
-            const _asRemoveJid = _asMentionInfo.removeJid || sender;
-            const _asWarnKey = resolveWarningTargetJid(
-              from,
-              sender,
-              senderAlt,
-              groupMembers,
-            );
-            const _asAllKeys = [
-              sender,
-              senderAlt,
-              _asWarnKey,
-              _asMentionInfo.phoneNumber,
-              _asMentionInfo.member?.id,
-              _asMentionInfo.member?.lid,
-              _asMentionInfo.member?.phoneNumber,
-            ].filter(Boolean);
-
-            const _asMotivo = _asEval.reason || "Flood (anti-spam)";
-            const _asWarnCount = addWarning(from, _asWarnKey, _asMotivo, {
-              phoneNumber: _asMentionInfo.phoneNumber,
-            });
-            if (dataGp?.[0]) {
-              dataGp[0].warnings = loadGroupWarnings(from);
-            }
-
-            if (_asWarnCount >= 3) {
-              // 3/3 ADVs -> BANIMENTO AUTOMÁTICO
-              let _asRemoved = false;
-              try {
-                await conn.sendMessage(from, {
-                  text:
-                    `> 🚫 *BANIDO POR SPAM* — @${_asDisplay}\n` +
-                    `> ⚠️ Limite de *${_asWarnCount}/3* advertências atingido\n` +
-                    `> 📝 Motivo: ${_asMotivo}`,
-                  mentions: [_asMentionJid],
-                });
-              } catch { }
-
-              if (isBotGroupAdmins) {
-                try {
-                  await conn.groupParticipantsUpdate(from, [_asRemoveJid], "remove");
-                  _asRemoved = true;
-                } catch {
-                  if (_asRemoveJid !== sender) {
-                    try {
-                      await conn.groupParticipantsUpdate(from, [sender], "remove");
-                      _asRemoved = true;
-                    } catch { }
-                  }
-                }
-                if (_asRemoved) {
-                  clearUserWarningsAllKeys(from, _asAllKeys);
-                  resetAntiSpamState(from, extractNumber(sender) || sender);
-                  if (dataGp?.[0]) {
-                    dataGp[0].warnings = loadGroupWarnings(from);
-                  }
-                }
-              } else {
-                try {
-                  await conn.sendMessage(from, {
-                    text: `> ⚠️ Não consegui remover @${_asDisplay} porque não sou admin do grupo.`,
-                    mentions: [_asMentionJid],
-                  });
-                } catch { }
-              }
-            } else {
-              // 1/3 ou 2/3 ADVs
-              const _asRodape =
-                _asWarnCount >= 2
-                  ? `> 🚫 Próxima advertência = *BANIMENTO AUTOMÁTICO*`
-                  : `> 💡 Reduza o ritmo · com *3/3* = banimento automático`;
-              try {
-                await conn.sendMessage(from, {
-                  text:
-                    `> ⚠️ *Anti-Spam — ${_asMotivo}*\n` +
-                    `> 👤 @${_asDisplay} · Advertência *${_asWarnCount}/3*\n` +
-                    _asRodape,
-                  mentions: [_asMentionJid],
-                });
-              } catch { }
-            }
-          }
-        } catch (errAs) {
-          console.error("[ANTISPAM] Erro:", errAs?.message || errAs);
-        }
-      }
-      // ═══════════════ FIM ANTI-SPAM ═══════════════
+      // (Anti-Spam rígido movido para antes de autofigu/autobaixar/comandos para proteção anti-ban)
 
       // ═══════ SISTEMA DE MUTE — AUTO-DELETE + FLOOD DETECTION ═══════
       if (isGroup && !SoDono && !isGroupAdmins) {
@@ -19528,10 +19561,11 @@ _Remove da lista negra global_
 
             const _asStatus = !_asAtual;
             const _asTxt = _asStatus
-              ? `> 🛡️ *Anti-Spam ativado*\n` +
-                `> 💬 Mensagens: *${ANTISPAM_CFG.msgLimit}* em *${ANTISPAM_CFG.msgWindowMs / 1000}s* _(ou ${ANTISPAM_CFG.repeatLimit} repetidas)_ → *ADV*\n` +
-                `> 🎭 Figurinhas: *${ANTISPAM_CFG.stickerLimit}* em *${ANTISPAM_CFG.stickerWindowMs / 1000}s* _(inclui c/ áudio)_ → *ADV*\n` +
-                `> ⚡ Comandos: *${ANTISPAM_CFG.cmdLimit}* em *${ANTISPAM_CFG.cmdWindowMs / 1000}s* → pausa de *${ANTISPAM_CFG.cmdCooldownMs / 1000}s*\n` +
+              ? `> 🛡️ *Anti-Spam Rígido ativado*\n` +
+                `> ⚡ Comandos: *1 a cada ${ANTISPAM_CFG.cmdCooldownMs / 1000}s* por pessoa _(insistir = ADV)_\n` +
+                `> 🔗 Links: *${ANTISPAM_CFG.linkLimit}* em *${ANTISPAM_CFG.linkWindowMs / 1000}s* · 🎬 Vídeos: *${ANTISPAM_CFG.videoLimit}* em *${ANTISPAM_CFG.videoWindowMs / 1000}s* → *ADV*\n` +
+                `> 🎭 Figurinhas: *${ANTISPAM_CFG.stickerLimit}* em *${ANTISPAM_CFG.stickerWindowMs / 1000}s* · 🖼️ Mídias: *${ANTISPAM_CFG.mediaLimit}* em *${ANTISPAM_CFG.mediaWindowMs / 1000}s* → *ADV*\n` +
+                `> 💬 Mensagens: *${ANTISPAM_CFG.msgLimit}* em *${ANTISPAM_CFG.msgWindowMs / 1000}s* _(ou ${ANTISPAM_CFG.repeatLimit} repetidas / ${ANTISPAM_CFG.mixedLimit} mistas)_ → *ADV*\n` +
                 `> 🚫 *3/3 ADV* = banimento automático · ADMs e dono isentos\n` +
                 `> 💡 Detalhes: \`${prefix}infoantispam\``
               : `> 🔓 *Anti-Spam desativado*`;
@@ -19622,10 +19656,13 @@ _Remove da lista negra global_
         case "antispaminfo":
         case "infoantispan": {
           const _infoAsTxt =
-            `🛡️ *Guia — Anti-Spam*\n\n` +
-            `> 💬 *Flood de mensagens:* ${ANTISPAM_CFG.msgLimit} msgs em ${ANTISPAM_CFG.msgWindowMs / 1000}s (ou ${ANTISPAM_CFG.repeatLimit} repetidas) → apaga e aplica *+1 ADV*\n` +
-            `> 🎭 *Flood de figurinhas:* ${ANTISPAM_CFG.stickerLimit} figurinhas em ${ANTISPAM_CFG.stickerWindowMs / 1000}s (normais, animadas e com áudio) → apaga e aplica *+1 ADV*\n` +
-            `> ⚡ *Flood de comandos:* ${ANTISPAM_CFG.cmdLimit} comandos em ${ANTISPAM_CFG.cmdWindowMs / 1000}s → bloqueia e pede para aguardar *${ANTISPAM_CFG.cmdCooldownMs / 1000}s*\n\n` +
+            `🛡️ *Guia — Anti-Spam Rígido*\n\n` +
+            `> ⚡ *Comandos:* limite estrito de *1 comando a cada ${ANTISPAM_CFG.cmdCooldownMs / 1000}s* por pessoa _(tentar forçar ${ANTISPAM_CFG.cmdFloodWarnLimit}+ comandos bloqueados em ${ANTISPAM_CFG.cmdFloodWindowMs / 1000}s = +1 ADV)_\n` +
+            `> 🔗 *Flood de links:* ${ANTISPAM_CFG.linkLimit} links em ${ANTISPAM_CFG.linkWindowMs / 1000}s → apaga e aplica *+1 ADV*\n` +
+            `> 🎬 *Flood de vídeos:* ${ANTISPAM_CFG.videoLimit} vídeos em ${ANTISPAM_CFG.videoWindowMs / 1000}s → apaga e aplica *+1 ADV*\n` +
+            `> 🎭 *Flood de figurinhas:* ${ANTISPAM_CFG.stickerLimit} figurinhas em ${ANTISPAM_CFG.stickerWindowMs / 1000}s _(normais, animadas e c/ áudio)_ → apaga e aplica *+1 ADV*\n` +
+            `> 🖼️ *Flood de mídias:* ${ANTISPAM_CFG.mediaLimit} fotos/áudios/docs em ${ANTISPAM_CFG.mediaWindowMs / 1000}s → apaga e aplica *+1 ADV*\n` +
+            `> 💬 *Flood de mensagens:* ${ANTISPAM_CFG.msgLimit} msgs em ${ANTISPAM_CFG.msgWindowMs / 1000}s _(ou ${ANTISPAM_CFG.repeatLimit} repetidas / ${ANTISPAM_CFG.mixedLimit} mistas)_ → apaga e aplica *+1 ADV*\n\n` +
             `*Punições (integradas ao \`${prefix}perfil\` e \`${prefix}advertidos\`):*\n` +
             `• 1ª vez: Advertência *1/3*\n` +
             `• 2ª vez: Advertência *2/3*\n` +

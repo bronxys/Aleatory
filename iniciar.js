@@ -88,8 +88,59 @@ global._storeOutgoingMessage = (id, message) => {
   if (id && message) _messageStore.set(id, { message });
 };
 
-// Cache de metadados de grupo para evitar rate-limits
-const _groupMetadataCache = new NodeCache({ stdTTL: 300, useClones: false }); // 5min TTL
+// Cache de metadados de grupo para evitar rate-limits (5min TTL + fallback stale + deduplicação)
+const _groupMetadataCache = new NodeCache({ stdTTL: 300, useClones: false });
+const _groupMetadataStale = new Map();
+const _groupMetadataInFlight = new Map();
+let _groupMetadataRateLimitedUntil = 0;
+
+function _findGroupMetadataOnDisk(groupId) {
+  try {
+    if (fs.existsSync("./dados/global/groups.json")) {
+      const diskGroups = JSON.parse(fs.readFileSync("./dados/global/groups.json", "utf8"));
+      if (Array.isArray(diskGroups)) {
+        return diskGroups.find((g) => g && g.id === groupId) || null;
+      }
+    }
+  } catch { }
+  return null;
+}
+
+function _applyParticipantUpdateToCache(groupId, action, participants) {
+  const cached = _groupMetadataCache.get(groupId) || _groupMetadataStale.get(groupId);
+  if (!cached || !Array.isArray(cached.participants) || !Array.isArray(participants)) return;
+
+  for (const p of participants) {
+    const pId = typeof p === "string" ? p : (p.id || p.phoneNumber || "");
+    const pPn = typeof p === "object" && p.phoneNumber ? p.phoneNumber : "";
+    const pNum = String(pPn || pId).split("@")[0].split(":")[0];
+    if (!pId && !pNum) continue;
+
+    const idx = cached.participants.findIndex((m) => {
+      if (!m) return false;
+      if (pId && (m.id === pId || m.lid === pId || m.phoneNumber === pId)) return true;
+      if (pPn && (m.id === pPn || m.phoneNumber === pPn)) return true;
+      const mNum = String(m.phoneNumber || m.id || "").split("@")[0].split(":")[0];
+      return Boolean(pNum && mNum === pNum);
+    });
+
+    if (action === "add" && idx === -1) {
+      cached.participants.push({
+        id: pId || pPn,
+        ...(pPn ? { phoneNumber: pPn } : {}),
+        admin: null,
+      });
+    } else if (action === "remove" && idx !== -1) {
+      cached.participants.splice(idx, 1);
+    } else if (action === "promote" && idx !== -1) {
+      cached.participants[idx].admin = "admin";
+    } else if (action === "demote" && idx !== -1) {
+      cached.participants[idx].admin = null;
+    }
+  }
+  _groupMetadataCache.set(groupId, cached);
+  _groupMetadataStale.set(groupId, cached);
+}
 
 // ═══════════════════════════════════════════════════════════
 // FUNÇÃO PARA BUSCAR VERSÃO MAIS RECENTE DO WA WEB
@@ -673,8 +724,54 @@ async function createConnection() {
         return stored?.message || undefined;
       },
       // ═══ Cache de metadados de grupo — Evita rate-limits ═══
-      cachedGroupMetadata: async (jid) => _groupMetadataCache.get(jid),
+      cachedGroupMetadata: async (jid) => _groupMetadataCache.get(jid) || _groupMetadataStale.get(jid),
     });
+
+    // ═══ WRAPPER GLOBAL DE conn.groupMetadata (Cache 5min + Dedup + Proteção 429) ═══
+    // Impede que chamadas frequentes no index.js (rgGroupM) ou eventos de grupo disparem 429 rate-overlimit
+    const _rawGroupMetadata = conn.groupMetadata.bind(conn);
+    conn.groupMetadata = async (jid) => {
+      if (!jid) return null;
+      const cached = _groupMetadataCache.get(jid);
+      if (cached) return cached;
+
+      if (Date.now() < _groupMetadataRateLimitedUntil) {
+        const fallback = _groupMetadataStale.get(jid) || _findGroupMetadataOnDisk(jid);
+        if (fallback) return fallback;
+      }
+
+      if (_groupMetadataInFlight.has(jid)) {
+        return _groupMetadataInFlight.get(jid);
+      }
+
+      const fetchPromise = (async () => {
+        try {
+          const fresh = await _rawGroupMetadata(jid);
+          if (fresh) {
+            _groupMetadataCache.set(jid, fresh);
+            _groupMetadataStale.set(jid, fresh);
+          }
+          return fresh;
+        } catch (err) {
+          const msg = String(err?.message || err || "");
+          const code = err?.data || err?.output?.statusCode || err?.statusCode;
+          if (code === 429 || /rate-overlimit|429/i.test(msg)) {
+            _groupMetadataRateLimitedUntil = Date.now() + 60_000;
+            const fallback = _groupMetadataStale.get(jid) || _findGroupMetadataOnDisk(jid);
+            if (fallback) {
+              _groupMetadataCache.set(jid, fallback, 60);
+              return fallback;
+            }
+          }
+          throw err;
+        } finally {
+          _groupMetadataInFlight.delete(jid);
+        }
+      })();
+
+      _groupMetadataInFlight.set(jid, fetchPromise);
+      return fetchPromise;
+    };
 
     // ═══ GUARDAR REFERÊNCIA DO SOCKET ATUAL ═══
     _currentSocket = conn;
@@ -806,14 +903,14 @@ async function createConnection() {
             }
           });
 
-          // ═══ POPULAR CACHE DE METADADOS DE GRUPO ═══
+          // ═══ POPULAR CACHE DE METADADOS DE GRUPO (protegido contra 429 rate-overlimit) ═══
           conn.ev.on("groups.update", async (updates) => {
             for (const update of updates) {
-              if (update.id) {
-                try {
-                  const metadata = await conn.groupMetadata(update.id);
-                  _groupMetadataCache.set(update.id, metadata);
-                } catch (e) { /* grupo pode ter sido deletado */ }
+              if (!update?.id) continue;
+              const existing = _groupMetadataCache.get(update.id);
+              if (existing && typeof existing === "object") {
+                Object.assign(existing, update);
+                _groupMetadataCache.set(update.id, existing);
               }
             }
           });
@@ -875,6 +972,7 @@ async function createConnection() {
 
         // ─── LOGGING SEMPRE (independente de config) ───────────────────
         const acao = ale2.action; // 'add' | 'remove' | 'promote' | 'demote'
+        _applyParticipantUpdateToCache(groupId, acao, ale2.participants);
         const autorJid = ale2.authorPn || ale2.author || null;
         const autorNum = autorJid ? String(autorJid).split("@")[0] : null;
 
@@ -932,20 +1030,8 @@ async function createConnection() {
           return;
         }
 
-        let Links_P = {};
-        try {
-          Links_P = JSON.parse(fs.readFileSync("./dados/links.json"));
-        } catch (e) { }
-
-        const setting = JSON.parse(fs.readFileSync("./dados/settings.json"));
-
-        let GroupMetadata_;
-        try {
-          GroupMetadata_ = await conn.groupMetadata(groupId);
-        } catch (e) {
-          console.error("[BEMVINDO] Erro ao obter metadados:", e);
-          return;
-        }
+        // Só processar boas-vindas/saída/antifake/listanegra em eventos add/remove
+        if (ale2.action !== "add" && ale2.action !== "remove") return;
 
         const isWelkom = jsonGpBV[0]?.wellcome?.[0]?.bemvindo1 || false;
         const isWelkom2 = jsonGpBV[0]?.wellcome?.[1]?.bemvindo2 || false;
@@ -958,7 +1044,44 @@ async function createConnection() {
           const _nesCheck = JSON.parse(fs.readFileSync("./dono/nescessario.json"));
           _hasListaNegraG = Array.isArray(_nesCheck?.listanegraG) && _nesCheck.listanegraG.length > 0;
         } catch { }
-        if (!isWelkom && !isWelkom2 && !isSaiu1 && !isSaiu2 && !jsonGpBV[0]?.antifake && !_hasListaNegra && !_hasListaNegraG) return;
+
+        const _precisaNoAdd =
+          ale2.action === "add" &&
+          (isWelkom || isWelkom2 || jsonGpBV[0]?.antifake || _hasListaNegra || _hasListaNegraG);
+        const _precisaNoRemove =
+          ale2.action === "remove" && (isSaiu1 || isSaiu2);
+
+        if (!_precisaNoAdd && !_precisaNoRemove) return;
+
+        let Links_P = {};
+        try {
+          Links_P = JSON.parse(fs.readFileSync("./dados/links.json"));
+        } catch (e) { }
+
+        const setting = JSON.parse(fs.readFileSync("./dados/settings.json"));
+
+        // Usar cache primeiro para evitar 429 rate-overlimit no WhatsApp!
+        let GroupMetadata_ = _groupMetadataCache.get(groupId) || null;
+        if (!GroupMetadata_) {
+          try {
+            GroupMetadata_ = await conn.groupMetadata(groupId);
+            if (GroupMetadata_) _groupMetadataCache.set(groupId, GroupMetadata_);
+          } catch (e) {
+            // Fallback para cache em disco (dados/global/groups.json) se bater 429 rate-overlimit
+            try {
+              if (fs.existsSync("./dados/global/groups.json")) {
+                const _diskGroups = JSON.parse(fs.readFileSync("./dados/global/groups.json", "utf8"));
+                if (Array.isArray(_diskGroups)) {
+                  GroupMetadata_ = _diskGroups.find((g) => g && g.id === groupId) || null;
+                }
+              }
+            } catch { }
+            if (!GroupMetadata_) {
+              console.warn(`[BEMVINDO] Metadados indisponíveis (${e?.message || e}); usando fallback mínimo.`);
+              GroupMetadata_ = { id: groupId, subject: "", desc: "", participants: [] };
+            }
+          }
+        }
 
         const jsonGp = jsonGpBV;
 

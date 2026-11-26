@@ -771,54 +771,76 @@ async function downloadMediaBuffer(
     throw err;
   }
 
-  let timer = null;
-  let stream = null;
+  const runDownloadAttempt = async () => {
+    let timer = null;
+    let stream = null;
+    try {
+      const downloadPromise = (async () => {
+        stream = await downloadFn(mediaObj, mediaType);
+        const chunks = [];
+        let total = 0;
 
-  try {
-    const downloadPromise = (async () => {
-      stream = await downloadFn(mediaObj, mediaType);
-      const chunks = [];
-      let total = 0;
+        for await (const chunk of stream) {
+          const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          total += buf.length;
+          if (total > maxBytes) {
+            if (typeof stream.destroy === "function") stream.destroy();
+            const err = new Error(
+              `Mídia excede o limite permitido de ${Math.round(maxBytes / (1024 * 1024))} MB.`
+            );
+            err.code = "MEDIA_TOO_LARGE";
+            throw err;
+          }
+          chunks.push(buf);
+        }
 
-      for await (const chunk of stream) {
-        const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-        total += buf.length;
-        if (total > maxBytes) {
-          if (typeof stream.destroy === "function") stream.destroy();
-          const err = new Error(
-            `Mídia excede o limite permitido de ${Math.round(maxBytes / (1024 * 1024))} MB.`
-          );
-          err.code = "MEDIA_TOO_LARGE";
+        const fullBuffer = Buffer.concat(chunks);
+        if (!fullBuffer.length) {
+          const err = new Error("Mídia baixada está vazia.");
+          err.code = "EMPTY_MEDIA";
           throw err;
         }
-        chunks.push(buf);
-      }
+        return fullBuffer;
+      })();
 
-      const fullBuffer = Buffer.concat(chunks);
-      if (!fullBuffer.length) {
-        const err = new Error("Mídia baixada está vazia.");
-        err.code = "EMPTY_MEDIA";
-        throw err;
-      }
-      return fullBuffer;
-    })();
-
-    const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(() => {
-        if (stream && typeof stream.destroy === "function") {
-          try {
-            stream.destroy();
-          } catch {
-            // ignorar
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          if (stream && typeof stream.destroy === "function") {
+            try {
+              stream.destroy();
+            } catch {
+              // ignorar
+            }
           }
-        }
-        const err = new Error("Tempo limite excedido ao baixar a mídia do WhatsApp.");
-        err.code = "MEDIA_TIMEOUT";
-        reject(err);
-      }, timeoutMs);
-    });
+          const err = new Error("Tempo limite excedido ao baixar a mídia do WhatsApp.");
+          err.code = "MEDIA_TIMEOUT";
+          reject(err);
+        }, timeoutMs);
+      });
 
-    return await Promise.race([downloadPromise, timeoutPromise]);
+      return await Promise.race([downloadPromise, timeoutPromise]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+
+  try {
+    try {
+      return await runDownloadAttempt();
+    } catch (firstErr) {
+      const fMsg = String(firstErr?.message || firstErr || "");
+      const fStatus = firstErr?.output?.statusCode || firstErr?.statusCode || firstErr?.response?.status;
+      const isTransient =
+        !firstErr?.code &&
+        (fStatus === 429 ||
+          fStatus === 500 ||
+          fStatus === 502 ||
+          fStatus === 503 ||
+          /rate-overlimit|429|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|network|500|502|503/i.test(fMsg));
+      if (!isTransient) throw firstErr;
+      await new Promise((r) => setTimeout(r, 1000));
+      return await runDownloadAttempt();
+    }
   } catch (err) {
     if (err?.code) throw err;
     const msg = String(err?.message || err || "");
@@ -838,8 +860,6 @@ async function downloadMediaBuffer(
     const wrapped = new Error(`Falha ao baixar/descriptografar mídia: ${msg}`);
     wrapped.code = "DECRYPT_ERROR";
     throw wrapped;
-  } finally {
-    if (timer) clearTimeout(timer);
   }
 }
 
@@ -949,10 +969,38 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     return await conn.waUploadToServer(filePath, opts);
   };
 
+  const isTransientUploadError = (err) => {
+    const msg = String(err?.message || err || "");
+    const code = err?.data || err?.output?.statusCode || err?.statusCode;
+    return (
+      code === 429 ||
+      code === 500 ||
+      code === 502 ||
+      code === 503 ||
+      code === 504 ||
+      /rate-overlimit|429|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|timeout|500|502|503|504/i.test(msg)
+    );
+  };
+
+  const uploadWithRetry = async (uploadFn, filePath, opts) => {
+    try {
+      return await uploadFn(filePath, opts);
+    } catch (err) {
+      if (isTransientUploadError(err)) {
+        console.warn(
+          `[STICKERAUDIO] Upload falhou (${String(err?.message || err).slice(0, 70)}); tentando novamente em 1.5s...`
+        );
+        await new Promise((r) => setTimeout(r, 1500));
+        return await uploadFn(filePath, opts);
+      }
+      throw err;
+    }
+  };
+
   const [stickerMedia, audioMedia] = await Promise.all([
     prepareWAMessageMedia(
       { sticker: webpBuffer },
-      { upload: uploadStickerToMms }
+      { upload: (fp, opts) => uploadWithRetry(uploadStickerToMms, fp, opts) }
     ),
     prepareWAMessageMedia(
       {
@@ -962,7 +1010,7 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
         seconds: normalizedSeconds,
         waveform: normalizedWaveform,
       },
-      { upload: conn.waUploadToServer }
+      { upload: (fp, opts) => uploadWithRetry(conn.waUploadToServer, fp, opts) }
     ),
   ]);
 
@@ -1057,7 +1105,22 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     conn.ws.once(ackEvent, onAck);
   }
 
-  await conn.relayMessage(jid, relayPayload, { messageId });
+  const doRelay = async () => {
+    await conn.relayMessage(jid, relayPayload, { messageId });
+  };
+  try {
+    await doRelay();
+  } catch (relayErr) {
+    const rMsg = String(relayErr?.message || relayErr || "");
+    const rCode = relayErr?.data || relayErr?.output?.statusCode || relayErr?.statusCode;
+    if (rCode === 429 || /rate-overlimit|429|ECONNRESET|ETIMEDOUT|timeout|500|503/i.test(rMsg)) {
+      console.warn(`[STICKERAUDIO] relayMessage falhou (${rMsg.slice(0, 80)}); tentando novamente em 1.5s...`);
+      await new Promise((r) => setTimeout(r, 1500));
+      await doRelay();
+    } else {
+      throw relayErr;
+    }
+  }
 
   console.log(
     `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#24/#25/#26, /mms/sticker, stanza media/sticker) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated}, sidecar=${audioSidecar?.length || 0}B, path=${String(stickerMessage.directPath || "").slice(0, 22)})`

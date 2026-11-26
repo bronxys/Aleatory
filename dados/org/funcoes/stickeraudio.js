@@ -406,25 +406,25 @@ function buildAnimatedWebpAttempts(durationSec) {
     ];
   }
 
-  // Clipes de 7.5s a 10s: começa direto em 448/384 @ 15fps para máxima fluidez sem desperdiçar CPU
+  // Clipes de 7.5s a 10s: escada monotônica rápida com piso seguro para vídeos complexos
   return [
     { size: 448, fps: 15, quality: 36 },
-    { size: 384, fps: 15, quality: 36 },
-    { size: 384, fps: 15, quality: 28 },
-    { size: 352, fps: 15, quality: 32 },
-    { size: 352, fps: 14, quality: 24 },
-    { size: 320, fps: 14, quality: 28 },
+    { size: 384, fps: 15, quality: 30 },
+    { size: 352, fps: 14, quality: 26 },
     { size: 320, fps: 12, quality: 22 },
     { size: 288, fps: 12, quality: 16 },
+    { size: 256, fps: 10, quality: 14 },
+    { size: 224, fps: 10, quality: 10 },
   ];
 }
 
 /**
  * Converte vídeo (até 10s) para figurinha animada WebP quadrada (padrão WhatsApp).
  *
+ * - Compatível com vídeos 10-bit/HDR/HEVC/iPhone/TikTok (format=yuv420p,setsar=1 + -map 0:V:0).
+ * - Limita threads (-threads 2) para não estourar RAM em containers de 1 GB.
  * - Center-crop quadrado 1:1 com filtro Lanczos (nítido, sem barras verticais).
  * - Encoder libwebp_anim + preset default + compression_level 4 (~33% menor que preset icon).
- * - Mantém FPS alto (14–20 fps, piso mínimo 12 fps) cabendo com folga de EXIF em <= 500 KB.
  */
 async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata = {}) {
   return await withTempDir(async (dir) => {
@@ -437,20 +437,28 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
     let finalSize = 512;
     let chosenAttempt = attempts[0];
     let encoderName = "libwebp_anim";
+    let videoMapSpec = "0:V:0";
 
-    for (const attempt of attempts) {
-      const vf = `fps=${attempt.fps},scale=${attempt.size}:${attempt.size}:force_original_aspect_ratio=increase:flags=lanczos,crop=${attempt.size}:${attempt.size}`;
-      const buildArgs = (codec) => [
+    for (let i = 0; i < attempts.length; i += 1) {
+      const attempt = attempts[i];
+      const vf = `fps=${attempt.fps},scale=${attempt.size}:${attempt.size}:force_original_aspect_ratio=increase:flags=lanczos,crop=${attempt.size}:${attempt.size},setsar=1,format=yuv420p`;
+      const buildArgs = (codec, mapSpec) => [
         "-y",
         "-v",
         "error",
-        "-ss",
-        "0",
-        "-t",
-        durationLimit,
+        "-threads",
+        "2",
+        "-err_detect",
+        "ignore_err",
         "-i",
         inputVideoPath,
+        "-t",
+        durationLimit,
+        "-map",
+        mapSpec,
         "-an",
+        "-sn",
+        "-dn",
         "-vf",
         vf,
         "-c:v",
@@ -469,11 +477,23 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
       ];
 
       try {
-        await runBinary("ffmpeg", buildArgs(encoderName), FFMPEG_TIMEOUT_MS);
+        await runBinary("ffmpeg", buildArgs(encoderName, videoMapSpec), FFMPEG_TIMEOUT_MS);
       } catch (err) {
-        if (encoderName === "libwebp_anim") {
+        if (videoMapSpec === "0:V:0") {
+          videoMapSpec = "0:v:0";
+          try {
+            await runBinary("ffmpeg", buildArgs(encoderName, videoMapSpec), FFMPEG_TIMEOUT_MS);
+          } catch (err2) {
+            if (encoderName === "libwebp_anim") {
+              encoderName = "libwebp";
+              await runBinary("ffmpeg", buildArgs(encoderName, videoMapSpec), FFMPEG_TIMEOUT_MS);
+            } else {
+              throw err2;
+            }
+          }
+        } else if (encoderName === "libwebp_anim") {
           encoderName = "libwebp";
-          await runBinary("ffmpeg", buildArgs(encoderName), FFMPEG_TIMEOUT_MS);
+          await runBinary("ffmpeg", buildArgs(encoderName, videoMapSpec), FFMPEG_TIMEOUT_MS);
         } else {
           throw err;
         }
@@ -484,16 +504,28 @@ async function convertVideoToAnimatedWebp(inputVideoPath, maxSeconds, metadata =
       finalSize = attempt.size;
       chosenAttempt = attempt;
       if (candidate.length <= MAX_RAW_ANIMATED_WEBP_BYTES) break;
+      // Convergência rápida em vídeos com muito movimento: pula 1 degrau quando ficar > 1.65x do teto
+      if (candidate.length > MAX_RAW_ANIMATED_WEBP_BYTES * 1.65 && i + 2 < attempts.length) {
+        i += 1;
+      }
     }
 
     if (!finalBuffer || !finalBuffer.length) {
       throw new MediaValidationError(
         "INVALID_MEDIA_FILE",
-        "❌ Falha ao converter o vídeo em figurinha animada."
+        "> ❌ *Falha ao converter o vídeo em figurinha animada*"
       );
     }
 
-    const stamped = await stampStickerExif(finalBuffer, metadata);
+    let stamped = finalBuffer;
+    try {
+      stamped = await stampStickerExif(finalBuffer, metadata);
+    } catch (exifErr) {
+      console.warn(
+        `[STICKERAUDIO] EXIF ignorado no WebP animado (${exifErr?.message || exifErr}); enviando WebP puro.`
+      );
+      stamped = finalBuffer;
+    }
     console.log(
       `[STICKERAUDIO] WebP animado: ${finalSize}x${finalSize} @ ${chosenAttempt.fps}fps q=${chosenAttempt.quality} (${encoderName}) -> ${Math.round(stamped.length / 1024)}KB (${clippedSec.toFixed(1)}s)`
     );
@@ -551,13 +583,15 @@ async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
         "-y",
         "-v",
         "error",
-        "-ss",
-        "0",
-        "-t",
-        String(limit),
+        "-threads",
+        "2",
+        "-err_detect",
+        "ignore_err",
         "-i",
         inputPath,
         "-vn",
+        "-sn",
+        "-dn",
         "-map",
         "0:a:0",
         "-t",
@@ -688,10 +722,9 @@ async function processVideoMode(videoBuffer, metadata = {}, options = {}) {
       );
     }
 
-    const [webpResult, audioResult] = await Promise.all([
-      convertVideoToAnimatedWebp(videoFile, targetDuration, metadata),
-      extractAndEncodeOpusAudio(videoFile, targetDuration),
-    ]);
+    // Sequencial (áudio primeiro, depois vídeo) para evitar pico duplo de RAM em containers de 1 GB
+    const audioResult = await extractAndEncodeOpusAudio(videoFile, targetDuration);
+    const webpResult = await convertVideoToAnimatedWebp(videoFile, targetDuration, metadata);
 
     return {
       webpBuffer: webpResult.buffer,
@@ -889,8 +922,8 @@ function detectStickerAudioInput(info, rawQuery = "") {
   const isGifDocument = (doc) =>
     Boolean(
       doc &&
-        (/gif/i.test(String(doc.mimetype || "")) ||
-          /\.gif$/i.test(String(doc.fileName || "")))
+      (/gif/i.test(String(doc.mimetype || "")) ||
+        /\.gif$/i.test(String(doc.fileName || "")))
     );
 
   const currentImage = currentUnwrapped.imageMessage || null;
@@ -1411,7 +1444,7 @@ function runTikWmSerialized(fn, useQueue = true) {
     return await fn();
   };
   const next = _tikwmQueueTail.then(run, run);
-  _tikwmQueueTail = next.catch(() => {});
+  _tikwmQueueTail = next.catch(() => { });
   return next;
 }
 
@@ -1901,7 +1934,7 @@ async function handleStickerAudioCommand({
           throw new MediaValidationError(
             "NO_AUDIO_TRACK",
             `> 🎞️ *GIF não tem som próprio*\n` +
-              `> 💡 Responda o GIF com \`${cmd} nome\` ou link _(TikTok/YouTube/Reels)_`
+            `> 💡 Responda o GIF com \`${cmd} nome\` ou link _(TikTok/YouTube/Reels)_`
           );
         }
         throw vidErr;
@@ -2144,12 +2177,16 @@ async function handleStickerAudioCommand({
       sanitizeSecrets(err?.message || err)
     );
 
+    const errMsgText = String(err?.message || err || "");
+    const errStatus = err?.data || err?.output?.statusCode || err?.statusCode;
     if (code === "MEDIA_TOO_LARGE") {
       await reply("> ❌ *Arquivo muito grande*\n> 💡 Tente um arquivo menor");
     } else if (code === "MEDIA_TIMEOUT" || code === "MEDIA_PROCESS_TIMEOUT") {
       await reply("> ⏱️ *Demorou demais pra processar*\n> 💡 Tente outro termo ou arquivo menor");
-    } else if (code === "MISSING_CREDENTIALS" || code === "MEDIA_UNAVAILABLE") {
-      await reply("> ⚠️ *Mídia expirada*\n> 💡 Reenvie e tente novamente");
+    } else if (code === "MISSING_CREDENTIALS" || code === "MEDIA_UNAVAILABLE" || code === "DECRYPT_ERROR") {
+      await reply("> ⚠️ *Não consegui baixar essa mídia*\n> 💡 Reenvie o arquivo e tente novamente");
+    } else if (errStatus === 429 || /rate-overlimit|429/i.test(errMsgText)) {
+      await reply("> ⏳ *WhatsApp pediu uma pausa (limite temporário)*\n> 💡 Aguarde alguns segundos e tente novamente");
     } else {
       await reply("> ❌ *Não consegui criar a figurinha*\n> 💡 Tente novamente com outro termo ou mídia");
     }
@@ -2290,8 +2327,8 @@ async function handleAutoFiguMedia({
   const docMsg = unwrapped.documentMessage || null;
   const isGifDoc = Boolean(
     docMsg &&
-      (/gif/i.test(String(docMsg.mimetype || "")) ||
-        /\.gif$/i.test(String(docMsg.fileName || "")))
+    (/gif/i.test(String(docMsg.mimetype || "")) ||
+      /\.gif$/i.test(String(docMsg.fileName || "")))
   );
 
   if (!imgMsg && !vidMsg && !isGifDoc) {
