@@ -968,30 +968,127 @@ async function createConnection() {
         });
 
         const processLegend = (legenda, participantNumber) => {
-          return legenda
-            .replace(/#hora#/g, time)
-            .replace(/#nomedogp#/g, GroupMetadata_.subject)
-            .replace(/#numerodele#/g, "@" + participantNumber)
-            .replace(/#numerobot#/g, conn.user.id.split(":")[0])
+          return String(legenda || "")
+            .replace(/#hora#/gi, time)
+            .replace(/#nomedogp#/gi, GroupMetadata_.subject || "")
+            .replace(/@?#numerodele#/gi, "@" + participantNumber)
+            .replace(/#numerobot#/gi, conn.user.id.split(":")[0])
             .replace(
-              /#prefix#/g,
+              /#prefix#/gi,
               jsonGp[0].multiprefix ? jsonGp[0].prefixos[0] : setting.prefix
             )
-            .replace(/#descrição#/g, GroupMetadata_.desc || "");
+            .replace(/#descri[cç][aã]o#/gi, GroupMetadata_.desc || "");
         };
 
-        const sendWelcomeImage = async (titulo, tipo) => {
+        /**
+         * Resolve o participante de group-participants.update (string ou objeto, LID ou PN)
+         * garantindo correspondência EXATA entre `@${display}` na legenda e `mentionJid` em `mentions`.
+         */
+        const resolveWelcomeParticipant = async (rawParticipant) => {
+          const isObj = rawParticipant && typeof rawParticipant === "object";
+          const rawId = isObj
+            ? String(rawParticipant.id || rawParticipant.jid || rawParticipant.lid || "").trim()
+            : String(rawParticipant || "").trim();
+          const rawPn = isObj && rawParticipant.phoneNumber
+            ? String(rawParticipant.phoneNumber).trim()
+            : "";
+          const rawLid = isObj && rawParticipant.lid
+            ? String(rawParticipant.lid).trim()
+            : (rawId.endsWith("@lid") ? rawId : "");
+
+          const lookupNums = new Set(
+            [rawId, rawPn, rawLid]
+              .map((v) => extractNumber(v).replace(/\D/g, ""))
+              .filter(Boolean)
+          );
+
+          let metaMember = null;
+          if (Array.isArray(GroupMetadata_?.participants)) {
+            metaMember = GroupMetadata_.participants.find((gm) =>
+              [gm.id, gm.lid, gm.phoneNumber]
+                .filter(Boolean)
+                .some((v) => lookupNums.has(extractNumber(v).replace(/\D/g, "")))
+            );
+          }
+
+          let mappedPn = null;
+          const lidForLookup =
+            (metaMember?.id && String(metaMember.id).endsWith("@lid") ? metaMember.id : null) ||
+            metaMember?.lid ||
+            rawLid ||
+            (extractNumber(rawId).replace(/\D/g, "").length >= 14
+              ? `${extractNumber(rawId).replace(/\D/g, "")}@lid`
+              : null);
+
+          if (!rawPn && !metaMember?.phoneNumber && lidForLookup && conn?.signalRepository?.lidMapping?.getPNForLID) {
+            try {
+              mappedPn = await conn.signalRepository.lidMapping.getPNForLID(lidForLookup);
+            } catch { }
+          }
+
+          const pnCandidates = [
+            rawPn,
+            metaMember?.phoneNumber,
+            mappedPn,
+            metaMember?.id && String(metaMember.id).endsWith("@s.whatsapp.net") ? metaMember.id : null,
+            rawId.endsWith("@s.whatsapp.net") ? rawId : null,
+          ].filter(Boolean);
+
+          for (const cand of pnCandidates) {
+            const s = String(cand).trim();
+            if (s.endsWith("@lid")) continue;
+            const digits = extractNumber(s).replace(/\D/g, "");
+            if (digits && digits.length >= 8 && digits.length <= 15) {
+              const pnJid = `${digits}@s.whatsapp.net`;
+              return {
+                display: digits,
+                mentionJid: pnJid,
+                actionJid: metaMember?.id || rawId || pnJid,
+                phoneJid: pnJid,
+                lidJid: lidForLookup || null,
+              };
+            }
+          }
+
+          // Fallback LID válido (@lid no mentions + @<lid> no texto -> menção funciona!)
+          const fallbackLid = lidForLookup || rawId;
+          const lidDigits = extractNumber(fallbackLid).replace(/\D/g, "") || extractNumber(rawId);
+          const isLid =
+            Boolean(lidForLookup) ||
+            String(fallbackLid).endsWith("@lid") ||
+            lidDigits.length >= 14;
+          const finalMentionJid = isLid
+            ? `${lidDigits}@lid`
+            : `${lidDigits}@s.whatsapp.net`;
+
+          return {
+            display: lidDigits,
+            mentionJid: finalMentionJid,
+            actionJid: metaMember?.id || rawId || finalMentionJid,
+            phoneJid: isLid ? null : finalMentionJid,
+            lidJid: isLid ? finalMentionJid : null,
+          };
+        };
+
+        const sendWelcomeImage = async (titulo, tipo, resolvedParticipant) => {
           try {
-            const participant = ale2.participants[0];
-            const participantId = typeof participant === "string"
-              ? participant
-              : participant.id;
-            const participantNumber = participantId.split("@")[0];
+            const resolved =
+              resolvedParticipant ||
+              (await resolveWelcomeParticipant(ale2.participants[0]));
+            const participantNumber = resolved.display;
+            const mentionJid = resolved.mentionJid;
 
             let ppimg = null;
             try {
-              ppimg = await conn.profilePictureUrl(participantId, "image");
-            } catch (e) {
+              ppimg = await conn.profilePictureUrl(mentionJid, "image");
+            } catch {
+              try {
+                if (resolved.actionJid && resolved.actionJid !== mentionJid) {
+                  ppimg = await conn.profilePictureUrl(resolved.actionJid, "image");
+                }
+              } catch { }
+            }
+            if (!ppimg) {
               ppimg = "https://i.imgur.com/2wMJqoA.png";
             }
 
@@ -1004,7 +1101,7 @@ async function createConnection() {
               : (jsonGp[0].wellcome[tipo].fundo_saiu || Links_P.fundo2 || Links_P.fundo1 || "");
 
             const teks = processLegend(legendaTexto, participantNumber);
-            const mentions = ale2.participants.map(p => typeof p === "string" ? p : p.id);
+            const mentions = [mentionJid];
 
             if (typeof ppimg === "string" && ppimg.startsWith("https")) {
               const API_KEY = "Bronxys30092025";
@@ -1064,130 +1161,137 @@ async function createConnection() {
 
         // ==================== EVENTO ADD (ENTRADA) ====================
         if (ale2.action === "add") {
-          const participant = ale2.participants[0];
-          const participantId = getParticipantJid(participant);
-          const participantNumber = getParticipantNumber(participant);
-          console.log(`[BEMVINDO] Novo membro: ${participantNumber} em ${GroupMetadata_.subject}`);
+          for (const participant of (ale2.participants || [])) {
+            const resolved = await resolveWelcomeParticipant(participant);
+            const participantId = resolved.actionJid || getParticipantJid(participant);
+            const participantMentionJid = resolved.mentionJid;
+            const participantNumber = resolved.display;
+            console.log(`[BEMVINDO] Novo membro: ${participantNumber} em ${GroupMetadata_.subject}`);
 
-          // ═══════ VERIFICAÇÃO DE LISTA NEGRA GLOBAL ═══════
-          try {
-            const _nescessario = JSON.parse(fs.readFileSync("./dono/nescessario.json"));
-            const _listanegraG = _nescessario?.listanegraG;
-            if (Array.isArray(_listanegraG) && _listanegraG.length > 0) {
-              if (isJidInList(participantId, _listanegraG)) {
-                console.log(`[LISTA-NEGRA-GLOBAL] Usuário ${participantNumber} está na lista negra GLOBAL! Removendo de ${GroupMetadata_.subject}...`);
+            // ═══════ VERIFICAÇÃO DE LISTA NEGRA GLOBAL ═══════
+            let _bloqueadoListaNegra = false;
+            try {
+              const _nescessario = JSON.parse(fs.readFileSync("./dono/nescessario.json"));
+              const _listanegraG = _nescessario?.listanegraG;
+              if (Array.isArray(_listanegraG) && _listanegraG.length > 0) {
+                if (isJidInList(participantMentionJid, _listanegraG) || isJidInList(participantId, _listanegraG)) {
+                  console.log(`[LISTA-NEGRA-GLOBAL] Usuário ${participantNumber} está na lista negra GLOBAL! Removendo de ${GroupMetadata_.subject}...`);
 
+                  try {
+                    await conn.groupParticipantsUpdate(groupId, [participantId], "remove");
+                  } catch (e) {
+                    console.error("[LISTA-NEGRA-GLOBAL] Falha ao remover:", e.message);
+                  }
+
+                  try {
+                    const _lngAdmins = (GroupMetadata_?.participants || [])
+                      .filter((p) => p.admin)
+                      .map((p) => p.phoneNumber || p.id);
+                    const _lngMentions = [participantMentionJid, ..._lngAdmins];
+                    const _lngAdmTags = _lngAdmins.map((a) => `@${String(a).split("@")[0]}`).join(" ");
+
+                    await conn.sendMessage(groupId, {
+                      text: `🚫 *LISTA NEGRA GLOBAL* — Membro banido!\n\n👤 O usuário @${participantNumber} está na *lista negra global* do bot e foi removido automaticamente.\n\n📢 *ADMs notificados:* ${_lngAdmTags}`,
+                      mentions: _lngMentions,
+                    });
+                  } catch (e) {
+                    console.error("[LISTA-NEGRA-GLOBAL] Erro ao enviar aviso:", e.message);
+                  }
+
+                  _bloqueadoListaNegra = true;
+                }
+              }
+            } catch { }
+            if (_bloqueadoListaNegra) continue;
+            // ═══════ FIM LISTA NEGRA GLOBAL ═══════
+
+            // ═══════ VERIFICAÇÃO DE LISTA NEGRA DO GRUPO ═══════
+            if (Array.isArray(jsonGp[0]?.listanegra) && jsonGp[0].listanegra.length > 0) {
+              if (isJidInList(participantMentionJid, jsonGp[0].listanegra) || isJidInList(participantId, jsonGp[0].listanegra)) {
+                console.log(`[LISTA-NEGRA] Usuário ${participantNumber} está na lista negra do grupo ${GroupMetadata_.subject}! Removendo...`);
+
+                // 1. REMOVER o participante do grupo
                 try {
                   await conn.groupParticipantsUpdate(groupId, [participantId], "remove");
                 } catch (e) {
-                  console.error("[LISTA-NEGRA-GLOBAL] Falha ao remover:", e.message);
+                  console.error("[LISTA-NEGRA] Falha ao remover:", e.message);
                 }
 
+                // 2. AVISAR no grupo e MARCAR os ADMs
                 try {
-                  const _lngAdmins = (GroupMetadata_?.participants || [])
+                  const _lnAdmins = (GroupMetadata_?.participants || [])
                     .filter((p) => p.admin)
-                    .map((p) => p.id);
-                  const _lngMentions = [participantId, ..._lngAdmins];
-                  const _lngAdmTags = _lngAdmins.map((a) => `@${a.split("@")[0]}`).join(" ");
+                    .map((p) => p.phoneNumber || p.id);
+
+                  const _lnMentions = [participantMentionJid, ..._lnAdmins];
+                  const _lnAdmTags = _lnAdmins.map((a) => `@${String(a).split("@")[0]}`).join(" ");
+
+                  // Usar legenda personalizada se existir
+                  let _lnMsg = jsonGp[0]?.legenda_listanegra && jsonGp[0].legenda_listanegra !== "0"
+                    ? jsonGp[0].legenda_listanegra.replace(/@?#numerodele#/gi, `@${participantNumber}`)
+                    : `🚫 *LISTA NEGRA* — Membro banido!\n\n👤 O usuário @${participantNumber} estava na *lista negra* e foi removido automaticamente.`;
+
+                  _lnMsg += `\n\n📢 *ADMs notificados:* ${_lnAdmTags}`;
 
                   await conn.sendMessage(groupId, {
-                    text: `🚫 *LISTA NEGRA GLOBAL* — Membro banido!\n\n👤 O usuário @${participantNumber} está na *lista negra global* do bot e foi removido automaticamente.\n\n📢 *ADMs notificados:* ${_lngAdmTags}`,
-                    mentions: _lngMentions,
+                    text: _lnMsg,
+                    mentions: _lnMentions,
                   });
                 } catch (e) {
-                  console.error("[LISTA-NEGRA-GLOBAL] Erro ao enviar aviso:", e.message);
+                  console.error("[LISTA-NEGRA] Erro ao enviar aviso:", e.message);
                 }
 
-                return;
+                continue; // Não processar boas-vindas para quem foi banido
               }
             }
-          } catch { }
-          // ═══════ FIM LISTA NEGRA GLOBAL ═══════
+            // ═══════ FIM LISTA NEGRA ═══════
 
-          // ═══════ VERIFICAÇÃO DE LISTA NEGRA DO GRUPO ═══════
-          if (Array.isArray(jsonGp[0]?.listanegra) && jsonGp[0].listanegra.length > 0) {
-            if (isJidInList(participantId, jsonGp[0].listanegra)) {
-              console.log(`[LISTA-NEGRA] Usuário ${participantNumber} está na lista negra do grupo ${GroupMetadata_.subject}! Removendo...`);
+            const _phoneDigitsForFake = resolved.phoneJid ? extractNumber(resolved.phoneJid) : "";
+            if (jsonGp[0].antifake && _phoneDigitsForFake && !_phoneDigitsForFake.startsWith("55")) {
+              console.log(`[ANTI-FAKE] Removendo número estrangeiro: ${participantNumber} (${participantId})`);
+              const msgFake = jsonGp[0].legenda_estrangeiro && jsonGp[0].legenda_estrangeiro !== "0"
+                ? jsonGp[0].legenda_estrangeiro.replace(/@?#numerodele#/gi, `@${participantNumber}`)
+                : "⚠️ Números de outros países não são permitidos neste grupo. ⚠️";
 
-              // 1. REMOVER o participante do grupo
+              try {
+                await conn.sendMessage(groupId, { text: msgFake, mentions: [participantMentionJid] });
+              } catch (e) { console.error("[ANTI-FAKE] Erro ao enviar msg:", e.message); }
+
               try {
                 await conn.groupParticipantsUpdate(groupId, [participantId], "remove");
               } catch (e) {
-                console.error("[LISTA-NEGRA] Falha ao remover:", e.message);
+                console.error("[ANTI-FAKE] Falha ao remover estrangeiro:", e);
               }
-
-              // 2. AVISAR no grupo e MARCAR os ADMs
-              try {
-                const _lnAdmins = (GroupMetadata_?.participants || [])
-                  .filter((p) => p.admin)
-                  .map((p) => p.id);
-
-                const _lnMentions = [participantId, ..._lnAdmins];
-                const _lnAdmTags = _lnAdmins.map((a) => `@${a.split("@")[0]}`).join(" ");
-
-                // Usar legenda personalizada se existir
-                let _lnMsg = jsonGp[0]?.legenda_listanegra && jsonGp[0].legenda_listanegra !== "0"
-                  ? jsonGp[0].legenda_listanegra.replace(/#numerodele#/g, `@${participantNumber}`)
-                  : `🚫 *LISTA NEGRA* — Membro banido!\n\n👤 O usuário @${participantNumber} estava na *lista negra* e foi removido automaticamente.`;
-
-                _lnMsg += `\n\n📢 *ADMs notificados:* ${_lnAdmTags}`;
-
-                await conn.sendMessage(groupId, {
-                  text: _lnMsg,
-                  mentions: _lnMentions,
-                });
-              } catch (e) {
-                console.error("[LISTA-NEGRA] Erro ao enviar aviso:", e.message);
-              }
-
-              return; // Não processar boas-vindas para quem foi banido
+              continue;
+            } else if (jsonGp[0].antifake && _phoneDigitsForFake && _phoneDigitsForFake.startsWith("55")) {
+              console.log(`[ANTI-FAKE] Número brasileiro permitido: +${_phoneDigitsForFake}`);
             }
-          }
-          // ═══════ FIM LISTA NEGRA ═══════
 
-          if (jsonGp[0].antifake && participantNumber && !participantNumber.startsWith("55")) {
-            console.log(`[ANTI-FAKE] Removendo número estrangeiro: ${participantNumber} (${participantId})`);
-            const msgFake = jsonGp[0].legenda_estrangeiro && jsonGp[0].legenda_estrangeiro !== "0"
-              ? jsonGp[0].legenda_estrangeiro
-              : "⚠️ Números de outros países não são permitidos neste grupo. ⚠️";
-
-            try {
-              await conn.sendMessage(groupId, { text: msgFake, mentions: [participantId] });
-            } catch (e) { console.error("[ANTI-FAKE] Erro ao enviar msg:", e.message); }
-
-            try {
-              await conn.groupParticipantsUpdate(groupId, [participantId], "remove");
-            } catch (e) {
-              console.error("[ANTI-FAKE] Falha ao remover estrangeiro:", e);
+            if (isWelkom) {
+              await sendWelcomeImage("BEM VINDO(A)", 0, resolved);
+            } else if (isWelkom2) {
+              const legendabv = jsonGp[0].wellcome[1].legendabv;
+              const teks = processLegend(legendabv, participantNumber);
+              await conn.sendMessage(groupId, { text: teks, mentions: [participantMentionJid] });
             }
-            return;
-          } else if (jsonGp[0].antifake && participantNumber && participantNumber.startsWith("55")) {
-            console.log(`[ANTI-FAKE] Número brasileiro permitido: +${participantNumber}`);
-          }
-
-          if (isWelkom) {
-            await sendWelcomeImage("BEM VINDO(A)", 0);
-          } else if (isWelkom2) {
-            const legendabv = jsonGp[0].wellcome[1].legendabv;
-            const teks = processLegend(legendabv, participantNumber);
-            const mentions = ale2.participants.map(p => typeof p === "string" ? p : p.id);
-            await conn.sendMessage(groupId, { text: teks, mentions: mentions });
           }
         }
 
         // ==================== EVENTO REMOVE (SAÍDA) ====================
         if (ale2.action === "remove") {
-          const participant = ale2.participants[0];
-          const participantNumber = (typeof participant === "string" ? participant : participant.id).split("@")[0];
-          console.log(`[SAIU] Membro saiu: ${participantNumber} de ${GroupMetadata_.subject}`);
+          for (const participant of (ale2.participants || [])) {
+            const resolved = await resolveWelcomeParticipant(participant);
+            const participantNumber = resolved.display;
+            const participantMentionJid = resolved.mentionJid;
+            console.log(`[SAIU] Membro saiu: ${participantNumber} de ${GroupMetadata_.subject}`);
 
-          if (isSaiu1) {
-            await sendWelcomeImage("ATÉ LOGO", 0);
-          } else if (isSaiu2) {
-            const legendasaiu = jsonGp[0].wellcome[1].legendasaiu;
-            const teks = processLegend(legendasaiu, participantNumber);
-            const mentions = ale2.participants.map(p => typeof p === "string" ? p : p.id);
-            await conn.sendMessage(groupId, { text: teks, mentions: mentions });
+            if (isSaiu1) {
+              await sendWelcomeImage("ATÉ LOGO", 0, resolved);
+            } else if (isSaiu2) {
+              const legendasaiu = jsonGp[0].wellcome[1].legendasaiu;
+              const teks = processLegend(legendasaiu, participantNumber);
+              await conn.sendMessage(groupId, { text: teks, mentions: [participantMentionJid] });
+            }
           }
         }
       } catch (e) {

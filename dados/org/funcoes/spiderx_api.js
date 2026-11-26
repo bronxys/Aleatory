@@ -61,29 +61,29 @@ function getSpiderConfig(settingsOverride = null) {
 
   const token = String(
     process.env.SPIDER_API_TOKEN ||
-      fileSettings.spider_api_token ||
-      fileSettings.SPIDER_API_TOKEN ||
-      ""
+    fileSettings.spider_api_token ||
+    fileSettings.SPIDER_API_TOKEN ||
+    ""
   ).trim();
 
   const baseUrl = String(
     process.env.SPIDER_API_BASE_URL ||
-      fileSettings.spider_api_base_url ||
-      DEFAULT_BASE_URL
+    fileSettings.spider_api_base_url ||
+    DEFAULT_BASE_URL
   )
     .trim()
     .replace(/\/+$/, "");
 
   const ytmp3Path = String(
     process.env.SPIDER_API_YTMP3_PATH ||
-      fileSettings.spider_api_ytmp3_path ||
-      DEFAULT_YTMP3_PATH
+    fileSettings.spider_api_ytmp3_path ||
+    DEFAULT_YTMP3_PATH
   ).trim();
 
   const playAudioPath = String(
     process.env.SPIDER_API_PLAY_AUDIO_PATH ||
-      fileSettings.spider_api_play_audio_path ||
-      DEFAULT_PLAY_AUDIO_PATH
+    fileSettings.spider_api_play_audio_path ||
+    DEFAULT_PLAY_AUDIO_PATH
   ).trim();
 
   return { token, baseUrl, ytmp3Path, playAudioPath };
@@ -95,7 +95,7 @@ function getSpiderConfig(settingsOverride = null) {
 function looksLikeUrl(text) {
   if (!text || typeof text !== "string") return false;
   const trimmed = text.trim();
-  return /^(https?:\/\/|www\.|youtu\.be\/|youtube\.com\/|m\.youtube\.com\/|music\.youtube\.com\/)/i.test(
+  return /^(https?:\/\/|www\.|youtu\.be\/|youtube\.com\/|m\.youtube\.com\/|music\.youtube\.com\/|(?:vm\.|vt\.|m\.)?tiktok\.com\/|(?:m\.)?instagram\.com\/|instagr\.am\/|ddinstagram\.com\/)/i.test(
     trimmed
   );
 }
@@ -210,8 +210,8 @@ function classifyApiError(status, bodyText = "", rawErr = null) {
     return new SpiderXError(
       "SPIDERX_NO_CREDITS",
       "💳 *Créditos insuficientes na Spider X API.*\n" +
-        "> Pesquisas de música e links do YouTube exigem créditos ativos na Spider X API.\n" +
-        "> 💡 _Dica: vídeos de até 10s e imagem + áudio do WhatsApp funcionam *sem créditos*!_",
+      "> Pesquisas de música e links do YouTube exigem créditos ativos na Spider X API.\n" +
+      "> 💡 _Dica: vídeos de até 10s e imagem + áudio do WhatsApp funcionam *sem créditos*!_",
       `HTTP ${status || "N/A"}: ${bodyText.slice(0, 160)}`
     );
   }
@@ -225,7 +225,7 @@ function classifyApiError(status, bodyText = "", rawErr = null) {
     return new SpiderXError(
       "SPIDERX_AUTH_ERROR",
       "🔐 *Erro de autenticação na Spider X API.*\n" +
-        "> A chave de API configurada é inválida, está expirada ou sem permissão. Contate o dono do bot.",
+      "> A chave de API configurada é inválida, está expirada ou sem permissão. Contate o dono do bot.",
       `HTTP ${status || "N/A"} auth error`
     );
   }
@@ -354,8 +354,8 @@ async function requestSpiderXAudio(endpointPath, params, options = {}) {
     throw new SpiderXError(
       "SPIDERX_NO_TOKEN",
       "🔑 *Spider X API não configurada.*\n" +
-        "> Defina `SPIDER_API_TOKEN` no ambiente ou `spider_api_token` em `dados/settings.json`.\n" +
-        "> 💡 _Vídeos de até 10s e imagem + áudio do WhatsApp funcionam sem precisar de API!_"
+      "> Defina `SPIDER_API_TOKEN` no ambiente ou `spider_api_token` em `dados/settings.json`.\n" +
+      "> 💡 _Vídeos de até 10s e imagem + áudio do WhatsApp funcionam sem precisar de API!_"
     );
   }
 
@@ -446,10 +446,10 @@ async function requestSpiderXAudio(endpointPath, params, options = {}) {
   ) {
     const errMsg = String(
       parsedJson.message ||
-        parsedJson.mensagem ||
-        parsedJson.error ||
-        parsedJson.erro ||
-        ""
+      parsedJson.mensagem ||
+      parsedJson.error ||
+      parsedJson.erro ||
+      ""
     );
     throw classifyApiError(status, errMsg);
   }

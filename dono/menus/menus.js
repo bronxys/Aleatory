@@ -55,6 +55,7 @@ const menu = (prefix, NomeDoBot, sender) => {
 │ 么 ${prefix}play "música"
 │ 么 ${prefix}sticker
 │ 么 ${prefix}figaudio
+│ 么 ${prefix}infofig
 │ 么 ${prefix}infofigaudio
 │ 么 ${prefix}tiktok "link"
 │ 么 ${prefix}gtts "texto"
@@ -86,8 +87,9 @@ const adms = (prefix, sender) => {
 │ 么 ${prefix}antivideo
 │ 么 ${prefix}antiimg
 │ 么 ${prefix}antisticker
+│ 么 ${prefix}antipalavrao
+│ 么 ${prefix}antipalavra
 │ 么 ${prefix}antinotafake
-│ 么 ${prefix}antipalavrão
 │ 么 ${prefix}advlink
 │ 么 ${prefix}advlinkgp
 │ 么 ${prefix}adv "@"
@@ -96,7 +98,8 @@ const adms = (prefix, sender) => {
 │ 么 ${prefix}limparadv
 │ 么 ${prefix}addpalavra "X"
 │ 么 ${prefix}delpalavra "X"
-│ 么 ${prefix}listapalavrão
+│ 么 ${prefix}listapalavrao
+│ 么 ${prefix}limparpalavras
 │ 么 ${prefix}addnota
 │ 么 ${prefix}listanota
 │ 么 ${prefix}mute "@"
@@ -392,6 +395,7 @@ const menumidias = (prefix, sender) => {
 │ 么 ${prefix}figuaudio
 │ 么 ${prefix}sa
 │ 么 ${prefix}fa
+│ 么 ${prefix}infofig
 │ 么 ${prefix}infofigaudio
 │ 么 ${prefix}fstiker
 │ 么 ${prefix}attp "texto"

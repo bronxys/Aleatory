@@ -37,7 +37,11 @@
   },
   {
     "comando": "antipalavra",
-    "info": "Olá, Irei informar como funciona o antipalavra\n\nO antipalavra é melhorado por você mesmo(a), \"Como assim?\", existe os seguintes comandos:\n\n#prefixo#addpalavra\n\n#prefixo#delpalavra\n\n#prefixo#antipalavra\n\n-------------------------------\n\nPrimeiro, irei dá um exemplo: \n\n#prefixo#addpalavra lixo\n\nisso será incluído como um palavrão, \"mas como faço isso funcionar agora?\" \n\nVocê deve ativar a função por grupo, exemplo:\n\n#prefixo#antipalavra\n\nPara ativar, só usar o comando 1 vez, e para desativar, só usar novamente.\n\nE se você quer tirar a palavra dos palavrões, é só digitar :\n\n#prefixo#delpalavra lixo\n\n\"lixo\" é apenas a palavra que utilizei como exemplo, mas você que deve decidir qual palavra você adicionou ou quer tirar, literalmente escolher quais frases não deseja que seja falada no seu grupo.\n\né isso aí, Boa sorte.."
+    "info": "🚫 *Anti-Palavrão / Anti-Palavra*\n\nFiltra palavras proibidas no grupo e aplica advertências automáticas (mesmo sistema do `#prefixo#adv` e `#prefixo#perfil`).\n\n*Comandos (somente ADMs):*\n• `#prefixo#antipalavra` ou `#prefixo#antipalavrao` — Ativa/desativa no grupo\n• `#prefixo#addpalavra palavra` — Adiciona 1 ou várias (separe por vírgula)\n• `#prefixo#delpalavra palavra` — Remove da lista\n• `#prefixo#listapalavrao` (ou `#prefixo#listapalavra`) — Lista as palavras proibidas\n• `#prefixo#limparpalavras` — Limpa toda a lista\n\n*Punição progressiva:*\n• 1ª e 2ª vez: apaga a mensagem e aplica *+1 ADV* (visível no `#prefixo#perfil` e `#prefixo#advertidos`)\n• 3ª vez (*3/3 ADV*): *banimento automático* do grupo."
+  },
+  {
+    "comando": "antipalavrao",
+    "info": "🚫 *Anti-Palavrão / Anti-Palavra* (mesmo comando de `#prefixo#antipalavra`)\n\n• `#prefixo#antipalavrao` — Ativa/desativa o filtro no grupo\n• `#prefixo#addpalavra palavra` — Adiciona palavra(s)\n• `#prefixo#delpalavra palavra` — Remove palavra(s)\n• `#prefixo#listapalavrao` — Exibe a lista\n• `#prefixo#limparpalavras` — Limpa a lista\n\nCada infração apaga a mensagem e soma *+1 ADV* no perfil do membro. Ao atingir *3/3 ADV*, o membro é banido automaticamente."
   },
   {
     "comando": "listanegra",
@@ -505,31 +509,35 @@
   },
   {
     "comando": "stickeraudio",
-    "info": "🎵 *Figurinha com Áudio* (gatilhos: #prefixo#figaudio, #prefixo#figuaudio, #prefixo#audiosticker, #prefixo#sa, #prefixo#fa)\n\nModos disponíveis:\n1️⃣ Link do YouTube (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <link>`\n\n2️⃣ Nome da música (até 30s · usa créditos Spider X API):\nResponda uma figurinha ou envie uma imagem com `#prefixo#stickeraudio <nome>`\n\n3️⃣ Vídeo com áudio (qualquer duração → recorta os primeiros 10s · gratuito/local):\nEnvie ou responda qualquer vídeo com `#prefixo#stickeraudio`\n\n4️⃣ Imagem + Áudio (gratuito/local):\nResponda uma mensagem de áudio enviando uma imagem com `#prefixo#stickeraudio` na legenda.\n\n📖 Use `#prefixo#infofigaudio` para o tutorial completo (incluindo o modo automático com `#prefixo#autofigu`)."
+    "info": "🎵 *Figurinha com Áudio* (gatilhos: #prefixo#figaudio, #prefixo#figuaudio, #prefixo#audiosticker, #prefixo#sa, #prefixo#fa)\n\n• Vídeo (qualquer duração → recorta 10s): envie/responda com `#prefixo#sa`\n• Foto, GIF ou vídeo + Áudio: responda um áudio enviando a mídia com `#prefixo#sa`\n• Música ou link (YouTube, TikTok ou Instagram Reels): responda figurinha/foto/GIF com `#prefixo#sa nome ou link`\n• TikTok / Reels direto: envie `#prefixo#sa link`\n\n📖 Use `#prefixo#infofig` ou `#prefixo#infofigaudio` para ver o guia completo."
   },
   {
     "comando": "audiosticker",
-    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofig` para ver o tutorial completo."
   },
   {
     "comando": "figaudio",
-    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofig` para ver o tutorial completo."
   },
   {
     "comando": "figuaudio",
-    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+    "info": "🎵 Gatilho de `#prefixo#stickeraudio`. Use `#prefixo#infofig` para ver o tutorial completo."
   },
   {
     "comando": "sa",
-    "info": "🎵 Gatilho rápido de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+    "info": "🎵 Gatilho rápido de `#prefixo#stickeraudio`. Use `#prefixo#infofig` para ver o tutorial completo."
   },
   {
     "comando": "fa",
-    "info": "🎵 Gatilho rápido de `#prefixo#stickeraudio`. Use `#prefixo#infofigaudio` para ver o tutorial completo."
+    "info": "🎵 Gatilho rápido de `#prefixo#stickeraudio`. Use `#prefixo#infofig` para ver o tutorial completo."
+  },
+  {
+    "comando": "infofig",
+    "info": "📖 Exibe o tutorial completo com imagem das Figurinhas com Áudio (busca de memes/músicas no TikTok com fallback pro YouTube, links YouTube/TikTok/Instagram Reels, GIFs, vídeos e `#prefixo#autofigu`)."
   },
   {
     "comando": "infofigaudio",
-    "info": "📖 Exibe o tutorial completo das Figurinhas com Áudio (todos os gatilhos, 4 modos manuais e modo automático via `#prefixo#autofigu`)."
+    "info": "📖 Exibe o tutorial completo com imagem das Figurinhas com Áudio (mesmo comando de `#prefixo#infofig` — busca no TikTok primeiro com fallback automático pro YouTube)."
   },
   {
     "comando": "revelar",

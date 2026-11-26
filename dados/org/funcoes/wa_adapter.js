@@ -495,10 +495,82 @@ function unwrapMessageContainer(messageObj) {
       current = current.audioStickerMessage.message;
       continue;
     }
+    if (current.lottieStickerMessage?.message) {
+      current = current.lottieStickerMessage.message;
+      continue;
+    }
+    if (current.deviceSentMessage?.message) {
+      current = current.deviceSentMessage.message;
+      continue;
+    }
     break;
   }
 
   return { unwrapped: current, isViewOnce, containerType };
+}
+
+/**
+ * Detecta se a mensagem é uma figurinha com áudio nativa do WhatsApp
+ * (campo #134 audioStickerMessage ou stickerMessage.audioMessage),
+ * mesmo encapsulada em ephemeralMessage/deviceSentMessage/viewOnce.
+ */
+function isAudioStickerMessage(messageObj) {
+  if (!messageObj || typeof messageObj !== "object") return false;
+  let current = messageObj;
+  let depth = 0;
+  while (current && typeof current === "object" && depth < 6) {
+    depth++;
+    if (current.audioStickerMessage?.message?.stickerMessage || current.audioStickerMessage) {
+      return true;
+    }
+    if (current.stickerMessage?.audioMessage) {
+      return true;
+    }
+    if (current.ephemeralMessage?.message) {
+      current = current.ephemeralMessage.message;
+      continue;
+    }
+    if (current.viewOnceMessage?.message) {
+      current = current.viewOnceMessage.message;
+      continue;
+    }
+    if (current.viewOnceMessageV2?.message) {
+      current = current.viewOnceMessageV2.message;
+      continue;
+    }
+    if (current.viewOnceMessageV2Extension?.message) {
+      current = current.viewOnceMessageV2Extension.message;
+      continue;
+    }
+    if (current.deviceSentMessage?.message) {
+      current = current.deviceSentMessage.message;
+      continue;
+    }
+    break;
+  }
+  return false;
+}
+
+/**
+ * Detecta qualquer tipo de figurinha (normal, animada, figurinha com áudio #134,
+ * Lottie ou encapsulada em mensagens temporárias/ephemeralMessage/viewOnce).
+ */
+function isStickerMessage(messageObj) {
+  if (!messageObj || typeof messageObj !== "object") return false;
+  if (
+    messageObj.stickerMessage ||
+    messageObj.audioStickerMessage ||
+    messageObj.lottieStickerMessage
+  ) {
+    return true;
+  }
+  const { unwrapped } = unwrapMessageContainer(messageObj);
+  if (!unwrapped || typeof unwrapped !== "object") return false;
+  return Boolean(
+    unwrapped.stickerMessage ||
+      unwrapped.audioStickerMessage ||
+      unwrapped.lottieStickerMessage
+  );
 }
 
 /**
@@ -1005,8 +1077,12 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
  */
 function logIncomingAudioSticker(info) {
   try {
-    const msg = info?.message;
-    if (!msg || typeof msg !== "object") return false;
+    const rawMsg = info?.message;
+    if (!rawMsg || typeof rawMsg !== "object") return false;
+    const msg =
+      rawMsg.ephemeralMessage?.message ||
+      rawMsg.deviceSentMessage?.message ||
+      rawMsg;
     const fromWrapper = Boolean(msg.audioStickerMessage?.message?.stickerMessage);
     const sm =
       msg.audioStickerMessage?.message?.stickerMessage ||
@@ -1043,6 +1119,8 @@ module.exports = {
   getContextInfo,
   getQuotedMessage,
   unwrapMessageContainer,
+  isAudioStickerMessage,
+  isStickerMessage,
   extractViewOncePayload,
   downloadMediaBuffer,
   hasNativeAudioStickerSupport,
