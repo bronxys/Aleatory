@@ -1883,47 +1883,61 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
 
       //======================================\\
 
-      const _ = require("lodash");
-
-      let dog = [];
-      try {
-        dog = JSON.parse(fs.readFileSync("./dados/global/groups.json", "utf8"));
-      } catch (error) {
-        fs.writeFileSync(
-          "./dados/global/groups.json",
-          JSON.stringify(dog, null, 2),
-          "utf8",
-        );
+      // Cache em memória de groups.json (evita readFileSync/JSON.parse/writeFileSync em TODA mensagem!)
+      if (!global._aleatoryGroupsJsonMem) {
+        try {
+          const parsed = JSON.parse(fs.readFileSync("./dados/global/groups.json", "utf8"));
+          global._aleatoryGroupsJsonMem = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          global._aleatoryGroupsJsonMem = [];
+          try {
+            fs.writeFileSync("./dados/global/groups.json", "[]", "utf8");
+          } catch { }
+        }
+        global._aleatoryGroupsLastSaved = new Map();
       }
 
-      async function rgGroupM(from) {
+      async function rgGroupM(groupJid) {
+        const memGroups = global._aleatoryGroupsJsonMem;
         let abc;
         try {
-          abc = await conn.groupMetadata(from);
-        } catch (error) {
-          return dog.find((a) => a.id === from) || null;
+          abc = await conn.groupMetadata(groupJid);
+        } catch {
+          return memGroups.find((a) => a && a.id === groupJid) || null;
+        }
+        if (!abc || !abc.id) {
+          return memGroups.find((a) => a && a.id === groupJid) || null;
         }
 
-        let index = dog.findIndex((a) => a.id === from);
-        if (index !== -1) {
-          if (!_.isEqual(dog[index], abc)) {
-            dog[index] = abc;
-            fs.writeFileSync(
-              "./dados/global/groups.json",
-              JSON.stringify(dog, 2, null),
-              "utf8",
-            );
+        const idx = memGroups.findIndex((a) => a && a.id === groupJid);
+        const lastSavedAt = global._aleatoryGroupsLastSaved.get(groupJid) || 0;
+        const nowSave = Date.now();
+        let shouldPersist = false;
+
+        if (idx === -1) {
+          memGroups.push(abc);
+          shouldPersist = true;
+        } else if (nowSave - lastSavedAt >= 30_000) {
+          const prev = memGroups[idx];
+          const changed =
+            prev?.subject !== abc.subject ||
+            prev?.desc !== abc.desc ||
+            (prev?.participants?.length || 0) !== (abc?.participants?.length || 0) ||
+            prev?.addressingMode !== abc.addressingMode;
+          if (changed) {
+            memGroups[idx] = abc;
+            shouldPersist = true;
           }
-        } else {
-          dog.push(abc);
-          fs.writeFileSync(
-            "./dados/global/groups.json",
-            JSON.stringify(dog, 2, null),
-            "utf8",
-          );
         }
 
-        return dog.find((a) => a.id === from) || abc;
+        if (shouldPersist) {
+          global._aleatoryGroupsLastSaved.set(groupJid, nowSave);
+          try {
+            fs.writeFile("./dados/global/groups.json", JSON.stringify(memGroups, null, 2), "utf8", () => { });
+          } catch { }
+        }
+
+        return abc;
       }
 
       groupMetadata = isGroup ? await rgGroupM(from) : "";

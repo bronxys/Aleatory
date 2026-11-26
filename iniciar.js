@@ -81,18 +81,65 @@ const NodeCache = require("node-cache");
 
 // ═══════════════════════════════════════════════════════════
 // STORE DE MENSAGENS — Para o callback getMessage do Baileys 7.x
-// Armazena últimas mensagens para retry de descriptografia
+// Map limitado (FIFO, 2500 msgs / 5min TTL) — NUNCA lança ECACHEFULL
 // ═══════════════════════════════════════════════════════════
-const _messageStore = new NodeCache({ stdTTL: 300, maxKeys: 5000 }); // 5min TTL, max 5k msgs
+const _MESSAGE_STORE_MAX = 2500;
+const _MESSAGE_STORE_TTL_MS = 300_000;
+const _messageStoreMap = new Map();
+
+function _safeMessageStoreSet(id, msg) {
+  try {
+    if (!id || !msg) return;
+    if (_messageStoreMap.has(id)) _messageStoreMap.delete(id);
+    _messageStoreMap.set(id, { msg, ts: Date.now() });
+    while (_messageStoreMap.size > _MESSAGE_STORE_MAX) {
+      const oldestKey = _messageStoreMap.keys().next().value;
+      if (oldestKey === undefined) break;
+      _messageStoreMap.delete(oldestKey);
+    }
+  } catch { }
+}
+
+function _safeMessageStoreGet(id) {
+  try {
+    if (!id) return undefined;
+    const entry = _messageStoreMap.get(id);
+    if (!entry) return undefined;
+    if (Date.now() - entry.ts > _MESSAGE_STORE_TTL_MS) {
+      _messageStoreMap.delete(id);
+      return undefined;
+    }
+    return entry.msg;
+  } catch {
+    return undefined;
+  }
+}
+
 global._storeOutgoingMessage = (id, message) => {
-  if (id && message) _messageStore.set(id, { message });
+  if (id && message) _safeMessageStoreSet(id, { message });
 };
 
-// Cache de metadados de grupo para evitar rate-limits (5min TTL + fallback stale + deduplicação)
-const _groupMetadataCache = new NodeCache({ stdTTL: 300, useClones: false });
+// ═══ CACHES SEPARADOS DE METADADOS DE GRUPO ═══
+// 1) _baileysGroupCache: EXCLUSIVO para Baileys (cachedGroupMetadata) — guarda SOMENTE objetos puros/intactos
+//    vindos direto do WhatsApp (com participants + addressingMode). NUNCA recebe fallback de disco nem mutação!
+// 2) _groupMetadataCache / _groupMetadataStale: para lógica do bot (index.js, bem-vindo, ADV), protegido contra 429.
+const _baileysGroupCache = new NodeCache({ stdTTL: 180, checkperiod: 60, useClones: false });
+const _groupMetadataCache = new NodeCache({ stdTTL: 300, checkperiod: 60, useClones: false });
 const _groupMetadataStale = new Map();
+const _GROUP_STALE_MAX = 300;
 const _groupMetadataInFlight = new Map();
 let _groupMetadataRateLimitedUntil = 0;
+
+function _saveStaleGroupMeta(groupId, meta) {
+  if (!groupId || !meta) return;
+  if (_groupMetadataStale.has(groupId)) _groupMetadataStale.delete(groupId);
+  _groupMetadataStale.set(groupId, meta);
+  while (_groupMetadataStale.size > _GROUP_STALE_MAX) {
+    const oldest = _groupMetadataStale.keys().next().value;
+    if (oldest === undefined) break;
+    _groupMetadataStale.delete(oldest);
+  }
+}
 
 function _findGroupMetadataOnDisk(groupId) {
   try {
@@ -107,8 +154,16 @@ function _findGroupMetadataOnDisk(groupId) {
 }
 
 function _applyParticipantUpdateToCache(groupId, action, participants) {
+  // Invalidar cache do Baileys em add/remove para que a criptografia de grupo nunca use lista desatualizada
+  if (action === "add" || action === "remove") {
+    _baileysGroupCache.del(groupId);
+  }
+
   const cached = _groupMetadataCache.get(groupId) || _groupMetadataStale.get(groupId);
   if (!cached || !Array.isArray(cached.participants) || !Array.isArray(participants)) return;
+
+  // Clonar lista de participantes antes de mutar (nunca mutar referência compartilhada)
+  const updated = { ...cached, participants: cached.participants.map((m) => (m ? { ...m } : m)) };
 
   for (const p of participants) {
     const pId = typeof p === "string" ? p : (p.id || p.phoneNumber || "");
@@ -116,7 +171,7 @@ function _applyParticipantUpdateToCache(groupId, action, participants) {
     const pNum = String(pPn || pId).split("@")[0].split(":")[0];
     if (!pId && !pNum) continue;
 
-    const idx = cached.participants.findIndex((m) => {
+    const idx = updated.participants.findIndex((m) => {
       if (!m) return false;
       if (pId && (m.id === pId || m.lid === pId || m.phoneNumber === pId)) return true;
       if (pPn && (m.id === pPn || m.phoneNumber === pPn)) return true;
@@ -125,21 +180,21 @@ function _applyParticipantUpdateToCache(groupId, action, participants) {
     });
 
     if (action === "add" && idx === -1) {
-      cached.participants.push({
+      updated.participants.push({
         id: pId || pPn,
         ...(pPn ? { phoneNumber: pPn } : {}),
         admin: null,
       });
     } else if (action === "remove" && idx !== -1) {
-      cached.participants.splice(idx, 1);
+      updated.participants.splice(idx, 1);
     } else if (action === "promote" && idx !== -1) {
-      cached.participants[idx].admin = "admin";
+      updated.participants[idx].admin = "admin";
     } else if (action === "demote" && idx !== -1) {
-      cached.participants[idx].admin = null;
+      updated.participants[idx].admin = null;
     }
   }
-  _groupMetadataCache.set(groupId, cached);
-  _groupMetadataStale.set(groupId, cached);
+  _groupMetadataCache.set(groupId, updated);
+  _saveStaleGroupMeta(groupId, updated);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -361,7 +416,8 @@ const rl = readline.createInterface({
 });
 const question = (text) => new Promise((resolve) => rl.question(text, resolve));
 
-const msgRetryCounterCache = new NodeCache();
+// Cache com TTL de 10min para evitar vazamento de RAM em container de 1 GB
+const msgRetryCounterCache = new NodeCache({ stdTTL: 600, checkperiod: 120, useClones: false });
 
 // Função auxiliar para extrair o JID correto do participante (compatível com Baileys 7.0+)
 const getParticipantJid = (participant) => {
@@ -472,6 +528,8 @@ let _makeWASocket = null;
 let _baileysUtils = null;
 let _logger = null;
 let _reconnectAttempts = 0;
+let _sessionErrorAttempts = 0;
+let _bannerShownOnce = false;
 let _sessionResetDone = false;
 const _MAX_RETRIES_BEFORE_RESET = 50;
 let _schedulersInitialized = false;
@@ -585,15 +643,16 @@ function initializeSchedulers() {
 
 // ═══════════════════════════════════════════════════════════
 // TRATAR ERRO DE SESSÃO (NUNCA deleta sessão/QR code)
+// Backoff progressivo (30s -> 60s -> 5min) para não spammar o WhatsApp
 // ═══════════════════════════════════════════════════════════
 async function _handleSessionError(motivo) {
+  _sessionErrorAttempts += 1;
+  const waitSec = _sessionErrorAttempts === 1 ? 30 : _sessionErrorAttempts === 2 ? 60 : 300;
   console.log(`\n\x1b[31m[SESSÃO]\x1b[0m ${motivo}`);
-  // ══ NUNCA DELETAR A PASTA DE SESSÃO / QRCODE ══
-  // Apenas logar o erro e tentar reconectar
-  console.log(`\x1b[33m[SESSÃO]\x1b[0m A sessão NÃO será deletada. Tentando reconectar em 10s...`);
-  console.log(`\x1b[33m[SESSÃO]\x1b[0m Se realmente deslogou, delete manualmente a pasta "${qrcode}" e reinicie.`);
-  _isReconnecting = false; // Permitir nova reconexão
-  await new Promise(r => setTimeout(r, 10000));
+  console.log(`\x1b[33m[SESSÃO]\x1b[0m A sessão NÃO será deletada automaticamente. Próxima tentativa em ${waitSec}s...`);
+  console.log(`\x1b[33m[SESSÃO]\x1b[0m Se trocou de número ou deslogou, apague TODA a pasta "${qrcode}" e reinicie.`);
+  _isReconnecting = false;
+  await new Promise(r => setTimeout(r, waitSec * 1000));
   createConnection();
 }
 
@@ -677,8 +736,9 @@ async function createConnection() {
     // Exibir menu de seleção se não houver sessão ativa
     if (_isFirstConnection) {
       await selectConnectionMethod();
-    } else {
-      // ═══ RECONEXÃO — Banner Natalino Animado + Card Limpo ═══
+    } else if (!_bannerShownOnce) {
+      _bannerShownOnce = true;
+      // ═══ INICIALIZAÇÃO — Banner Natalino Animado (apenas 1x ao iniciar) ═══
       const { clearScreen: _cls, showBanner: _sBan, startRGBBanner, stopRGBBanner } = require("./menu_conexao.js");
       const _sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -690,6 +750,8 @@ async function createConnection() {
       _cls();
       _sBan();
       showConnectingCard();
+    } else {
+      console.log("\x1b[36m[CONEXÃO]\x1b[0m Reconectando ao WhatsApp...");
     }
 
     let pairingPhoneNumber = null;
@@ -711,7 +773,7 @@ async function createConnection() {
       msgRetryCounterCache,
       markOnlineOnConnect: false,  // false = não suprime notificações do celular
       syncFullHistory: false,
-      generateHighQualityLinkPreview: true,
+      generateHighQualityLinkPreview: false, // evita download de previews (economiza RAM e acelera envios)
       keepAliveIntervalMs: 25_000, // 25s (ideal para manter NAT/firewalls ativos)
       emitOwnEvents: false,
       connectTimeoutMs: 60_000,
@@ -720,11 +782,11 @@ async function createConnection() {
       // ═══ getMessage — ESSENCIAL para Baileys 7.x ═══
       // Permite retry de descriptografia quando mensagem chega fora de ordem
       getMessage: async (key) => {
-        const stored = _messageStore.get(key.id);
+        const stored = _safeMessageStoreGet(key?.id);
         return stored?.message || undefined;
       },
-      // ═══ Cache de metadados de grupo — Evita rate-limits ═══
-      cachedGroupMetadata: async (jid) => _groupMetadataCache.get(jid) || _groupMetadataStale.get(jid),
+      // ═══ Cache PURO de metadados para criptografia do Baileys (NUNCA usa disco/mutação) ═══
+      cachedGroupMetadata: async (jid) => _baileysGroupCache.get(jid),
     });
 
     // ═══ WRAPPER GLOBAL DE conn.groupMetadata (Cache 5min + Dedup + Proteção 429) ═══
@@ -748,8 +810,12 @@ async function createConnection() {
         try {
           const fresh = await _rawGroupMetadata(jid);
           if (fresh) {
+            // Salvar cópia intacta no cache puro do Baileys somente se tiver participants + addressingMode válidos
+            if (Array.isArray(fresh.participants) && fresh.participants.length > 0 && fresh.addressingMode) {
+              _baileysGroupCache.set(jid, fresh);
+            }
             _groupMetadataCache.set(jid, fresh);
-            _groupMetadataStale.set(jid, fresh);
+            _saveStaleGroupMeta(jid, fresh);
           }
           return fresh;
         } catch (err) {
@@ -759,6 +825,7 @@ async function createConnection() {
             _groupMetadataRateLimitedUntil = Date.now() + 60_000;
             const fallback = _groupMetadataStale.get(jid) || _findGroupMetadataOnDisk(jid);
             if (fallback) {
+              // NUNCA colocar fallback de disco no _baileysGroupCache! Apenas no cache de leitura do app
               _groupMetadataCache.set(jid, fallback, 60);
               return fallback;
             }
@@ -813,6 +880,38 @@ async function createConnection() {
       }
     }
 
+    // ── Registrar handlers de mensagens e grupos UMA ÚNICA VEZ neste socket (evita duplicação se 'open' disparar 2x) ──
+    const startAle = require("./index.js");
+    conn.ev.on("messages.upsert", async (upsert) => {
+      try {
+        if (upsert.messages) {
+          for (const msg of upsert.messages) {
+            if (msg.key?.id && msg.message) {
+              _safeMessageStoreSet(msg.key.id, msg);
+            }
+          }
+        }
+        await startAle(upsert, conn, qrcode, sessionStartTime || Date.now());
+      } catch (err) {
+        console.error("[MSG] Erro ao processar mensagem:", err?.message || err);
+      }
+    });
+
+    // ═══ ATUALIZAR CACHE DE METADADOS DE GRUPO (sem mutar cache do Baileys) ═══
+    conn.ev.on("groups.update", async (updates) => {
+      for (const update of updates) {
+        if (!update?.id) continue;
+        // Invalidar cache do Baileys para evitar divergência em addressingMode/ephemeralDuration
+        _baileysGroupCache.del(update.id);
+        const existing = _groupMetadataCache.get(update.id);
+        if (existing && typeof existing === "object") {
+          const merged = { ...existing, ...update };
+          _groupMetadataCache.set(update.id, merged);
+          _saveStaleGroupMeta(update.id, merged);
+        }
+      }
+    });
+
     // ═══════ HANDLER DE CONEXÃO (NÃO RECURSIVO) ═══════
     conn.ev.on("connection.update", async (update) => {
       try {
@@ -824,43 +923,54 @@ async function createConnection() {
         }
 
         if (connection === "close") {
-          // ═══ LIBERAR FLAG DE RECONEXÃO ═══
+          // Limpar global.conn para que schedulers não tentem enviar em socket morto
+          if (global.conn === conn) global.conn = null;
           _isReconnecting = false;
 
-          const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+          const errObj = lastDisconnect?.error;
+          const reason = new Boom(errObj)?.output?.statusCode;
+          const errDetail = errObj?.message || "";
+          const errTag = errObj?.data?.tag || (typeof errObj?.data === "string" ? errObj.data : "");
+          const detailSuffix = [errDetail, errTag].filter(Boolean).join(" / ");
 
-          // ── SESSÃO ENCERRADA (LoggedOut) ou CREDENCIAIS ──
-          // NUNCA deletar sessão automaticamente — apenas tentar reconectar
+          // Em erro 500 (badSession / Stream Errored), limpar cache puro do Baileys antes de reconectar
+          if (reason === 500 || reason === DisconnectReason.badSession) {
+            _baileysGroupCache.flushAll();
+          }
+
+          // ── SESSÃO ENCERRADA (LoggedOut), BAN/PROIBIDO (403), CONFLITO (440) ou CREDENCIAIS (401/405) ──
           if (reason === DisconnectReason.loggedOut) {
-            console.log(`\x1b[31m[CONEXÃO]\x1b[0m LoggedOut detectado.`);
-            await _handleSessionError("WhatsApp reportou LoggedOut. Tentando reconectar...");
+            await _handleSessionError(`WhatsApp reportou LoggedOut (${detailSuffix || "401"}).`);
             return;
           }
 
-          if (reason === 401 || reason === 405) {
-            console.log(`\x1b[31m[CONEXÃO]\x1b[0m Código ${reason} — possível erro temporário de credenciais.`);
-            await _handleSessionError(`Erro ${reason} reportado. Tentando reconectar sem deletar sessão...`);
+          if (reason === DisconnectReason.connectionReplaced || reason === 440) {
+            await _handleSessionError("Sessão substituída (440) — outro processo conectou com o mesmo número.");
+            return;
+          }
+
+          if (reason === 401 || reason === 403 || reason === 405) {
+            await _handleSessionError(`Código ${reason} (${detailSuffix || "erro de sessão/credenciais"}).`);
             return;
           }
 
           // ── RESTART REQUIRED (515) ──
           if (reason === DisconnectReason.restartRequired || reason === 515) {
-            console.log(`\x1b[33m[RECONEXÃO]\x1b[0m WhatsApp pediu restart. Reconectando em 3s...`);
+            console.log(`\x1b[33m[RECONEXÃO]\x1b[0m WhatsApp pediu restart (515). Reconectando em 3s...`);
             _reconnectAttempts = 0;
             await new Promise(r => setTimeout(r, 3000));
-            createConnection(); // Cria NOVO socket, limpa o anterior
+            createConnection();
             return;
           }
 
-          // ── PROBLEMA DE INTERNET / CONEXÃO TEMPORÁRIA ──
+          // ── PROBLEMA DE INTERNET / STREAM ERROR (500/428/408) ──
           _reconnectAttempts++;
 
           if (_reconnectAttempts >= _MAX_RETRIES_BEFORE_RESET) {
             console.log(`\x1b[31m[CONEXÃO]\x1b[0m ${_MAX_RETRIES_BEFORE_RESET} tentativas falharam.`);
-            // NÃO deleta sessão — apenas reseta contador e tenta de novo após longa pausa
             _reconnectAttempts = 0;
             console.log(`\x1b[33m[RECONEXÃO]\x1b[0m Resetando contador. Próxima tentativa em 5 minutos...`);
-            await new Promise(r => setTimeout(r, 300_000)); // 5 min
+            await new Promise(r => setTimeout(r, 300_000));
             createConnection();
             return;
           }
@@ -871,90 +981,37 @@ async function createConnection() {
 
           console.log(
             `\x1b[33m[RECONEXÃO]\x1b[0m Tentativa ${_reconnectAttempts}/${_MAX_RETRIES_BEFORE_RESET}` +
-            ` | Motivo: ${reason || "desconhecido"}` +
+            ` | Motivo: ${reason || "desconhecido"}${detailSuffix ? ` (${detailSuffix})` : ""}` +
             ` | Próxima em ${_delaySec}s...`
           );
 
           await new Promise(r => setTimeout(r, _delayMs));
-          createConnection(); // Cria NOVO socket, limpa o anterior
+          createConnection();
 
         } else if (connection === "open") {
           _reconnectAttempts = 0;
-          _isReconnecting = false; // Reconexão completa
+          _sessionErrorAttempts = 0;
+          _isReconnecting = false;
           sessionStartTime = Date.now();
-          global.conn = conn; // ═══ ÚNICO LUGAR onde global.conn é definido ═══
-          _backupCreds(); // Backup de segurança a cada conexão bem-sucedida
-
-          // ── Registrar handler de mensagens (NESTE socket) ──
-          const startAle = require("./index.js");
-          conn.ev.on("messages.upsert", async (upsert) => {
-            try {
-              // ═══ ARMAZENAR MENSAGENS PARA getMessage (retry de descriptografia) ═══
-              if (upsert.messages) {
-                for (const msg of upsert.messages) {
-                  if (msg.key?.id && msg.message) {
-                    _messageStore.set(msg.key.id, msg);
-                  }
-                }
-              }
-              await startAle(upsert, conn, qrcode, sessionStartTime);
-            } catch (err) {
-              console.error("[MSG] Erro ao processar mensagem:", err?.message || err);
-            }
-          });
-
-          // ═══ POPULAR CACHE DE METADADOS DE GRUPO (protegido contra 429 rate-overlimit) ═══
-          conn.ev.on("groups.update", async (updates) => {
-            for (const update of updates) {
-              if (!update?.id) continue;
-              const existing = _groupMetadataCache.get(update.id);
-              if (existing && typeof existing === "object") {
-                Object.assign(existing, update);
-                _groupMetadataCache.set(update.id, existing);
-              }
-            }
-          });
+          global.conn = conn;
+          _backupCreds();
 
           // ── Inicializar schedulers UMA VEZ (global, usam global.conn) ──
           const _schedInfo = initializeSchedulers();
 
-          // ═══ BROADCAST AUTOMÁTICO — PRIMEIRA CONEXÃO (Natal 9.0) ═══
-          const _broadcastFlagPath = path.join(__dirname, "dados", "_broadcast_v9_sent.flag");
-          const _broadcastJaEnviado = fs.existsSync(_broadcastFlagPath);
-
           // ═══ PAINEL ONLINE CONSOLIDADO (MOBILE & PC) ═══
+          // Broadcast automático desativado por segurança anti-ban ao conectar número novo (use !novidades manualmente)
           showOnlineDashboard({
             waVersion,
             keepAliveSec: 25,
             modulesActive: _schedInfo.modulesActive,
             modulesTotal: _schedInfo.modulesTotal,
             aluguelAtivo: _schedInfo.aluguelAtivo,
-            broadcastStatus: _broadcastJaEnviado ? "ok" : "scheduled",
+            broadcastStatus: "ok",
           });
-
-          if (!_broadcastJaEnviado) {
-            setTimeout(async () => {
-              try {
-                const { broadcastNovidades } = require("./index.js");
-                if (typeof broadcastNovidades === "function") {
-                  showWarning("Disparando novidades v9.0 + áudio...");
-                  const result = await broadcastNovidades(conn, {
-                    customText: "",
-                  });
-                  if (result?.success) {
-                    showSuccess(`Novidades enviadas: ${result.successCount} grupos · ${result.audioCount || 0} áudios`);
-                    try { fs.writeFileSync(_broadcastFlagPath, new Date().toISOString(), "utf-8"); } catch { }
-                  }
-                }
-              } catch (err) {
-                showError(`Falha no broadcast: ${err?.message || err}`);
-              }
-            }, 15000);
-          }
         }
       } catch (e) {
         console.error("[CONEXÃO] Erro no handler de connection.update:", e?.message || e);
-        // NUNCA crashar — logar e continuar
       }
     });
 
