@@ -158,7 +158,7 @@ async function withTempDir(fn) {
   try {
     return await fn(dir);
   } finally {
-    await fsp.rm(dir, { recursive: true, force: true }).catch(() => {});
+    await fsp.rm(dir, { recursive: true, force: true }).catch(() => { });
   }
 }
 
@@ -558,6 +558,8 @@ async function extractAndEncodeOpusAudio(inputPath, maxSeconds) {
         "-i",
         inputPath,
         "-vn",
+        "-map",
+        "0:a:0",
         "-t",
         String(limit),
         "-ar",
@@ -1078,16 +1080,16 @@ async function handleStickerAudioCommand({
     if (detected.reason === "MISSING_AUDIO_OR_QUERY") {
       return await reply(
         `🎵 Informe o *nome da música* ou *link do YouTube* junto com o comando, ou responda a um áudio enviando a imagem!\n\n` +
-          buildUsageHelp(prefix, command)
+        buildUsageHelp(prefix, command)
       );
     }
     if (detected.reason === "MISSING_VISUAL_FOR_QUERY") {
       const cmd = `${prefix}${command}`;
       return await reply(
         `🖼️ *Faltou a figurinha ou imagem* para colocar esse áudio!\n\n` +
-          `• *Responda uma figurinha* com:\n  \`${cmd} ${detected.query}\`\n` +
-          `• Ou *envie uma imagem* com \`${cmd} ${detected.query}\` na legenda.\n` +
-          `• Para transformar um *vídeo direto* em figurinha com som, envie/responda o vídeo apenas com \`${cmd}\`.`
+        `• *Responda uma figurinha* com:\n  \`${cmd} ${detected.query}\`\n` +
+        `• Ou *envie uma imagem* com \`${cmd} ${detected.query}\` na legenda.\n` +
+        `• Para transformar um *vídeo direto* em figurinha com som, envie/responda o vídeo apenas com \`${cmd}\`.`
       );
     }
     return await reply(buildUsageHelp(prefix, command));
@@ -1100,7 +1102,7 @@ async function handleStickerAudioCommand({
   };
 
   try {
-    conn.sendMessage(from, { react: { text: "⏳", key: info.key } }).catch(() => {});
+    conn.sendMessage(from, { react: { text: "⏳", key: info.key } }).catch(() => { });
 
     let processed;
 
@@ -1146,7 +1148,7 @@ async function handleStickerAudioCommand({
       if (!isValidYouTubeUrl(detected.query)) {
         return await reply(
           "❌ *Link do YouTube inválido.*\n" +
-            "> Envie um link válido como `https://youtu.be/...`, `https://www.youtube.com/watch?v=...` ou `https://youtube.com/shorts/...`."
+          "> Envie um link válido como `https://youtu.be/...`, `https://www.youtube.com/watch?v=...` ou `https://youtube.com/shorts/...`."
         );
       }
 
@@ -1207,7 +1209,7 @@ async function handleStickerAudioCommand({
       quoted: info,
     });
 
-    conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => {});
+    conn.sendMessage(from, { react: { text: "✅", key: info.key } }).catch(() => { });
 
     return {
       ok: true,
@@ -1221,7 +1223,7 @@ async function handleStickerAudioCommand({
       messageId: delivery.messageId || null,
     };
   } catch (err) {
-    conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => {});
+    conn.sendMessage(from, { react: { text: "❌", key: info.key } }).catch(() => { });
 
     if (err instanceof SpiderXError || err instanceof MediaValidationError) {
       console.error(

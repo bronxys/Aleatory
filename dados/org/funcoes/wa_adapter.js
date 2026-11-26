@@ -28,6 +28,8 @@ const PROJECT_ROOT = path.resolve(__dirname, "..", "..", "..");
 const DEFAULT_MAX_MEDIA_BYTES = 25 * 1024 * 1024; // 25 MB
 const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30000;
 
+const AUDIO_STICKER_FIELD24_TAG = 192; // (24 << 3) | 0  -> 0xc0 0x01 (StickerMessage campo #24 = 0)
+const AUDIO_STICKER_FIELD25_TAG = 202; // (25 << 3) | 2  -> 0xca 0x01 (StickerMessage campo #25 = emoji UTF-8)
 const AUDIO_STICKER_INNER_TAG = 210; // (26 << 3) | 2  -> 0xd2 0x01 (StickerMessage.audioMessage)
 const AUDIO_STICKER_OUTER_TAG = 1074; // (134 << 3) | 2 -> 0xb2 0x08 (Message.audioStickerMessage)
 const STREAMING_SIDECAR_CHUNK_SIZE = 64 * 1024; // 65536 bytes (padrão WhatsApp/whatsmeow)
@@ -134,6 +136,15 @@ function installNativeAudioStickerProtoExtension(baileysOrProto) {
   StickerMessage.encode = function encode(message, writer) {
     writer = stickerEncode(message, writer);
     if (message?.audioMessage != null) {
+      // Campo #24 (varint = 0, presente em 100% dos stickers sonoros oficiais — Baileys#2932)
+      const field24Val =
+        typeof message.stickerField24 === "number" ? message.stickerField24 : 0;
+      writer.uint32(AUDIO_STICKER_FIELD24_TAG).uint32(field24Val);
+      // Campo #25 (emoji UTF-8 associado ao sticker sonoro, ex.: "🎵" — Baileys#2932)
+      if (typeof message.stickerEmoji === "string" && message.stickerEmoji.length > 0) {
+        writer.uint32(AUDIO_STICKER_FIELD25_TAG).string(message.stickerEmoji);
+      }
+      // Campo #26 (AudioMessage aninhado, sem ptt — Baileys#2932)
       AudioMessage.encode(
         message.audioMessage,
         writer.uint32(AUDIO_STICKER_INNER_TAG).fork()
@@ -146,7 +157,17 @@ function installNativeAudioStickerProtoExtension(baileysOrProto) {
   StickerMessage.fromObject = function fromObject(object) {
     const message = stickerFromObject(object);
     if (object?.audioMessage != null) {
-      message.audioMessage = AudioMessage.fromObject(object.audioMessage);
+      message.stickerField24 =
+        typeof object.stickerField24 === "number" ? object.stickerField24 : 0;
+      if (typeof object.stickerEmoji === "string" && object.stickerEmoji.length > 0) {
+        message.stickerEmoji = object.stickerEmoji;
+      }
+      const audioMsg = AudioMessage.fromObject(object.audioMessage);
+      // Clientes oficiais omitem campo #6 (ptt) dentro de StickerMessage.audioMessage (Baileys#2932)
+      if (object.audioMessage.ptt !== true) {
+        delete audioMsg.ptt;
+      }
+      message.audioMessage = audioMsg;
     }
     return message;
   };
@@ -219,12 +240,19 @@ function installNativeAudioStickerProtoExtension(baileysOrProto) {
       )
     ) {
       try {
-        const audioMsg = scanEmbeddedField(
-          rawSlice,
-          AUDIO_STICKER_INNER_TAG,
-          (bytes) => AudioMessage.decode(bytes)
-        );
-        if (audioMsg) message.audioMessage = audioMsg;
+        const r = protobuf.Reader.create(rawSlice);
+        while (r.pos < r.len) {
+          const tag = r.uint32();
+          if (tag === AUDIO_STICKER_FIELD24_TAG) {
+            message.stickerField24 = r.uint32();
+          } else if (tag === AUDIO_STICKER_FIELD25_TAG) {
+            message.stickerEmoji = r.string();
+          } else if (tag === AUDIO_STICKER_INNER_TAG) {
+            message.audioMessage = AudioMessage.decode(r.bytes());
+          } else {
+            r.skipType(tag & 7);
+          }
+        }
       } catch {
         // preservar decodificação padrão em caso de bytes inesperados
       }
@@ -824,16 +852,41 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
       ? Buffer.from(waveform)
       : Buffer.alloc(64, 15);
 
+  // Upload do sticker no endpoint oficial /mms/sticker (tulir/whatsmeow#1366 -> UploadSticker),
+  // mantendo criptografia HKDF "WhatsApp Image Keys" e sem alterar MEDIA_PATH_MAP.sticker do resto do bot.
+  const uploadStickerToMms = async (filePath, opts) => {
+    const pathMap = baileys.MEDIA_PATH_MAP;
+    if (pathMap && typeof pathMap === "object") {
+      if (!pathMap["audio-sticker"]) {
+        pathMap["audio-sticker"] = "/mms/sticker";
+      }
+      try {
+        const uploaded = await conn.waUploadToServer(filePath, {
+          ...opts,
+          mediaType: "audio-sticker",
+        });
+        if (uploaded && (uploaded.mediaUrl || uploaded.directPath)) {
+          return uploaded;
+        }
+      } catch (err) {
+        console.warn(
+          `[STICKERAUDIO] Upload /mms/sticker falhou (${err?.message || err}); usando fallback /mms/image.`
+        );
+      }
+    }
+    return await conn.waUploadToServer(filePath, opts);
+  };
+
   const [stickerMedia, audioMedia] = await Promise.all([
     prepareWAMessageMedia(
       { sticker: webpBuffer },
-      { upload: conn.waUploadToServer }
+      { upload: uploadStickerToMms }
     ),
     prepareWAMessageMedia(
       {
         audio: audioBuffer,
         mimetype: "audio/ogg; codecs=opus",
-        ptt: true,
+        ptt: false,
         seconds: normalizedSeconds,
         waveform: normalizedWaveform,
       },
@@ -847,7 +900,7 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     throw new Error("O Baileys não preparou o stickerMessage ou audioMessage.");
   }
 
-  // Padrão oficial WhatsApp (exigido especialmente pelo cliente iOS): metadados 512x512
+  // Padrão oficial WhatsApp (iOS/Android/Web — whatsmeow#1366 + Baileys#2932):
   stickerMessage.width = 512;
   stickerMessage.height = 512;
   stickerMessage.isAnimated = isAnimated === true;
@@ -855,6 +908,8 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   stickerMessage.isAvatar = false;
   stickerMessage.isAiSticker = false;
   stickerMessage.stickerSentTs = Date.now();
+  stickerMessage.stickerField24 = 0;
+  stickerMessage.stickerEmoji = "🎵";
 
   const quoted = sendOptions.quoted;
   if (quoted?.key?.id && quoted?.message) {
@@ -865,8 +920,10 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
     };
   }
 
+  // No wire real do WhatsApp (Baileys#2932), AudioMessage dentro de StickerMessage.#26
+  // usa "audio/ogg; codecs=opus", waveform 64B, streamingSidecar e campo #6 (ptt) OMITIDO!
   audioMessage.mimetype = "audio/ogg; codecs=opus";
-  audioMessage.ptt = true;
+  delete audioMessage.ptt;
   audioMessage.seconds = normalizedSeconds;
   audioMessage.waveform = normalizedWaveform;
 
@@ -931,7 +988,7 @@ async function sendStickerWithAudio(conn, jid, payload, sendOptions = {}) {
   await conn.relayMessage(jid, relayPayload, { messageId });
 
   console.log(
-    `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#26, stanza media/sticker) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated}, sidecar=${audioSidecar?.length || 0}B)`
+    `[STICKERAUDIO] Enviada via audioStickerMessage (#134/#24/#25/#26, /mms/sticker, stanza media/sticker) -> jid=${jid} id=${messageId} sticker=${webpBuffer.length}B audio=${audioBuffer.length}B (${audioMessage.seconds}s, animated=${stickerMessage.isAnimated}, sidecar=${audioSidecar?.length || 0}B, path=${String(stickerMessage.directPath || "").slice(0, 22)})`
   );
 
   return {

@@ -19258,6 +19258,8 @@ _Remove da lista negra global_
           var boij2 =
             RSM?.videoMessage ||
             info.message?.videoMessage ||
+            RSM?.ptvMessage ||
+            info.message?.ptvMessage ||
             RSM?.viewOnceMessageV2?.message?.videoMessage ||
             info.message?.viewOnceMessageV2?.message?.videoMessage ||
             info.message?.viewOnceMessage?.message?.videoMessage ||
@@ -19272,7 +19274,10 @@ _Remove da lista negra global_
               author: author2,
             });
             await DLT_FL(encmediaa);
-          } else if (boij2 && boij2?.seconds < 11) {
+          } else if (boij2) {
+            if (Number(boij2?.fileLength || 0) > 64 * 1024 * 1024) {
+              return reply("❌ O vídeo é muito grande (máximo 64 MB).");
+            }
             var pack = `⚝ ⇝ Solicitado por:\n⚝ ⇝ Bot:\n⚝ ⇝ Dono:`;
             var author2 = `⚒${pushname}\n⚒${NomeDoBot}\n${NickDono}`;
             reply(Res_Aguarde);
@@ -19284,7 +19289,7 @@ _Remove da lista negra global_
             await DLT_FL(encmedia);
           } else {
             reply(
-              `Enviar imagem / vídeo / gif com legenda \n${prefix}sticker (duração do adesivo de vídeo de 1 a 10 segundos)`,
+              `Enviar ou marcar uma imagem / vídeo / gif com o comando ${prefix + command} (vídeos maiores que 10s são recortados automaticamente nos primeiros 10 segundos)`,
             );
           }
           break;
@@ -19331,6 +19336,8 @@ _Remove da lista negra global_
           var boij =
             RSM?.videoMessage ||
             info.message?.videoMessage ||
+            RSM?.ptvMessage ||
+            info.message?.ptvMessage ||
             RSM?.viewOnceMessageV2?.message?.videoMessage ||
             info.message?.viewOnceMessageV2?.message?.videoMessage ||
             info.message?.viewOnceMessage?.message?.videoMessage ||
@@ -19345,7 +19352,10 @@ _Remove da lista negra global_
               author: author2,
             });
             await DLT_FL(encmediaa);
-          } else if (boij && boij.seconds < 11) {
+          } else if (boij) {
+            if (Number(boij?.fileLength || 0) > 64 * 1024 * 1024) {
+              return reply("❌ O vídeo é muito grande (máximo 64 MB).");
+            }
             var pack = `⚝ ⇝ Solicitado por:\n⚝ ⇝ Bot:\n⚝ ⇝ Dono:`;
             var author2 = `⚒${pushname}\n⚒${NomeDoBot}\n⚒${NickDono}`;
             reply(Res_Aguarde);
@@ -19357,8 +19367,7 @@ _Remove da lista negra global_
             await DLT_FL(encmedia);
           } else {
             return reply(
-              `Marque uma imagem, ou um vídeo de ate 9.9 segundos, ou uma visualização única, para fazer figurinha, com o comando ${prefix + command
-              }`,
+              `Marque uma imagem, um vídeo (recorta automaticamente os primeiros 10 segundos) ou uma visualização única para fazer figurinha com o comando ${prefix + command}`,
             );
           }
           break;

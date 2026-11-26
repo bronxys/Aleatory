@@ -38,23 +38,36 @@ const tmpFileIn = path.join(tmpdir(), `${Crypto.randomBytes(6).readUIntLE(0, 6).
 
 fs.writeFileSync(tmpFileIn, media);
 
+try {
 await new Promise((resolve, reject) => {
 ff(tmpFileIn)
+.inputOptions(["-ss", "0", "-t", "10"])
 .on("error", reject)
 .on("end", () => resolve(true))
 .addOutputOptions([
- "-vcodec",
+"-vcodec",
 "libwebp",
 "-vf",
- "scale=220:220,fps=12,pad=0:0:-1:-1:color=white@0.0,split[a][b];[a]palettegen=reserve_transparent=on:transparency_color=ffffff[p];[b][p]paletteuse"])
+"scale=220:220,fps=12,pad=0:0:-1:-1:color=white@0.0,split[a][b];[a]palettegen=reserve_transparent=on:transparency_color=ffffff[p];[b][p]paletteuse",
+"-loop",
+"0",
+"-t",
+"10",
+"-preset",
+"default",
+"-an",
+"-vsync",
+"0"
+])
 .toFormat("webp")
 .save(tmpFileOut);
 });
 
-const buff = fs.readFileSync(tmpFileOut);
-fs.unlinkSync(tmpFileOut);
-fs.unlinkSync(tmpFileIn);
-return buff;
+return fs.readFileSync(tmpFileOut);
+} finally {
+try { if (fs.existsSync(tmpFileOut)) fs.unlinkSync(tmpFileOut); } catch {}
+try { if (fs.existsSync(tmpFileIn)) fs.unlinkSync(tmpFileIn); } catch {}
+}
 }
 
 async function writeExifImg2 (media, metadata) {
