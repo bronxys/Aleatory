@@ -196,7 +196,7 @@ function classifyApiError(status, bodyText = "", rawErr = null) {
   ) {
     return new SpiderXError(
       "SPIDERX_TIMEOUT",
-      "⏱️ *Tempo limite excedido* ao consultar a Spider X API. Tente novamente em alguns instantes.",
+      "> ⏱️ *Não consegui baixar a tempo*\n> 💡 Tente outro nome ou mande o link/vídeo",
       rawErr?.message || "timeout"
     );
   }
@@ -209,9 +209,7 @@ function classifyApiError(status, bodyText = "", rawErr = null) {
   ) {
     return new SpiderXError(
       "SPIDERX_NO_CREDITS",
-      "💳 *Créditos insuficientes na Spider X API.*\n" +
-      "> Pesquisas de música e links do YouTube exigem créditos ativos na Spider X API.\n" +
-      "> 💡 _Dica: vídeos de até 10s e imagem + áudio do WhatsApp funcionam *sem créditos*!_",
+      "> ⚠️ *Limite da API atingido*\n> 💡 Envie um vídeo ou áudio direto",
       `HTTP ${status || "N/A"}: ${bodyText.slice(0, 160)}`
     );
   }
@@ -224,8 +222,7 @@ function classifyApiError(status, bodyText = "", rawErr = null) {
   ) {
     return new SpiderXError(
       "SPIDERX_AUTH_ERROR",
-      "🔐 *Erro de autenticação na Spider X API.*\n" +
-      "> A chave de API configurada é inválida, está expirada ou sem permissão. Contate o dono do bot.",
+      "> 🔐 *Erro na chave da API*\n> 💡 Avise o dono do bot",
       `HTTP ${status || "N/A"} auth error`
     );
   }
@@ -239,7 +236,7 @@ function classifyApiError(status, bodyText = "", rawErr = null) {
   ) {
     return new SpiderXError(
       "SPIDERX_NOT_FOUND",
-      "🔎 *Música não encontrada* ou link indisponível. Verifique o nome/link e tente novamente.",
+      "> 🔎 *Áudio não encontrado*\n> 💡 Tente outro nome ou mande o link/vídeo",
       `HTTP ${status || "N/A"} not found`
     );
   }
@@ -254,14 +251,14 @@ function classifyApiError(status, bodyText = "", rawErr = null) {
   ) {
     return new SpiderXError(
       "SPIDERX_UNAVAILABLE",
-      "🌐 *Spider X API indisponível no momento.* Tente novamente mais tarde.",
+      "> ⚠️ *Erro ao buscar o áudio*\n> 💡 Tente novamente em instantes",
       `HTTP ${status || rawErr?.code || "network"}`
     );
   }
 
   return new SpiderXError(
     "SPIDERX_UNAVAILABLE",
-    "⚠️ *Não foi possível processar o áudio pela Spider X API no momento.* Tente novamente.",
+    "> ⚠️ *Erro ao buscar o áudio*\n> 💡 Tente novamente em instantes",
     `HTTP ${status || "N/A"}: ${bodyText.slice(0, 160)}`
   );
 }

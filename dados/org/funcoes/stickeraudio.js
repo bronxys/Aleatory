@@ -1096,59 +1096,212 @@ function buildInfoFigAudioTutorial(prefix = "!", NomeDoBot = "Aleatory-Bot") {
   );
 }
 
+const SEARCH_AUDIO_CACHE_MAX = 30;
+const SEARCH_AUDIO_CACHE_TTL_MS = 15 * 60 * 1000; // 15 min
+const SEARCH_AUDIO_CACHE_MAX_BYTES = 2 * 1024 * 1024; // 2 MB por item
+const _searchAudioCache = new Map();
+
+function normalizeCacheKey(query) {
+  return String(query || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCachedSearchAudio(query) {
+  const key = normalizeCacheKey(query);
+  if (!key) return null;
+  const entry = _searchAudioCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > SEARCH_AUDIO_CACHE_TTL_MS) {
+    _searchAudioCache.delete(key);
+    return null;
+  }
+  return entry;
+}
+
+function setCachedSearchAudio(query, data) {
+  const key = normalizeCacheKey(query);
+  if (!key || !Buffer.isBuffer(data?.buffer) || data.buffer.length > SEARCH_AUDIO_CACHE_MAX_BYTES) {
+    return;
+  }
+  if (_searchAudioCache.size >= SEARCH_AUDIO_CACHE_MAX) {
+    const oldestKey = _searchAudioCache.keys().next().value;
+    if (oldestKey) _searchAudioCache.delete(oldestKey);
+  }
+  _searchAudioCache.set(key, {
+    buffer: data.buffer,
+    title: data.title || query,
+    source: data.source || "cache",
+    ts: Date.now(),
+  });
+}
+
 /**
- * Fallback gratuito via API Bronxys (reqapi.play) caso spider_api_token não esteja configurado.
+ * Converte string de duração do YouTube ("0:18", "3:45", "1:12:00") em segundos.
+ * Retorna Infinity para lives/durações inválidas.
+ */
+function parseClockDurationSeconds(raw) {
+  const s = String(raw || "").trim();
+  if (!s || /live|ao vivo/i.test(s)) return Infinity;
+  const parts = s.split(":").map((p) => Number(p));
+  if (parts.length < 2 || parts.length > 3 || parts.some((n) => !Number.isFinite(n) || n < 0)) {
+    return Infinity;
+  }
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] * 3600 + parts[1] * 60 + parts[2];
+}
+
+/**
+ * Fallback gratuito via API Bronxys (reqapi.ytsearch + reqapi.play / reqapi.play2).
+ *
+ * Otimizações anti-falha e anti-timeout:
+ * 1) Para buscas por nome, consulta reqapi.ytsearch (com retry sem palavras genéricas)
+ *    e seleciona até 2 vídeos CURTOS (<= 5 min, fallback <= 10 min), pulando compilações e lives.
+ * 2) Timeout balanceado de 25s por tentativa (falha rápido em vídeos travados) com
+ *    failover automático play -> play2 e candidato #1 -> candidato #2.
  */
 async function fetchAudioViaBronxysFallback(queryOrUrl, reqapi, httpClient = axios) {
   if (!reqapi || typeof reqapi.play !== "function") return null;
-  const mediaUrl = reqapi.play(queryOrUrl, true);
-  let res;
-  try {
-    res = await httpClient.get(mediaUrl, {
-      timeout: 35000,
-      responseType: "arraybuffer",
-      maxContentLength: 25 * 1024 * 1024,
-      maxBodyLength: 25 * 1024 * 1024,
-      validateStatus: () => true,
-      headers: { "User-Agent": "Aleatory-Bot/9.0" },
-    });
-  } catch (err) {
-    const isTimeout =
-      err?.code === "ECONNABORTED" ||
-      err?.code === "ETIMEDOUT" ||
-      /timeout|timed out/i.test(String(err?.message || ""));
-    throw new SpiderXError(
-      isTimeout ? "SPIDERX_TIMEOUT" : "SPIDERX_UNAVAILABLE",
-      isTimeout
-        ? "⏱️ *Tempo limite excedido* ao baixar o áudio do YouTube. Tente novamente em instantes."
-        : "🌐 *Não foi possível baixar o áudio do YouTube no momento.* Tente novamente em instantes.",
-      sanitizeSecrets(err?.message || err?.code || "bronxys_network_error")
-    );
+
+  const rawQuery = String(queryOrUrl || "").trim();
+  const targetsToTry = [];
+
+  if (!looksLikeUrl(rawQuery) && typeof reqapi.ytsearch === "function") {
+    const searchQueries = [rawQuery];
+    const simplified = cleanTikTokFallbackQuery(rawQuery);
+    if (simplified && simplified.toLowerCase() !== rawQuery.toLowerCase()) {
+      searchQueries.push(simplified);
+    }
+
+    for (const sq of searchQueries) {
+      try {
+        const results = await reqapi.ytsearch(sq);
+        if (Array.isArray(results) && results.length > 0) {
+          const withMeta = results
+            .filter((r) => r && typeof r.url === "string" && /^https?:\/\//i.test(r.url))
+            .map((r) => ({
+              url: r.url,
+              titulo: r.titulo || rawQuery,
+              secs: parseClockDurationSeconds(r.tempo),
+            }));
+
+          const short5m = withMeta.filter((r) => r.secs >= 1 && r.secs <= 300);
+          const short10m = withMeta.filter((r) => r.secs > 300 && r.secs <= 600);
+          const ranked = [...short5m, ...short10m, ...withMeta.filter((r) => r.secs > 600)];
+
+          for (const item of ranked) {
+            if (!targetsToTry.some((t) => t.target === item.url)) {
+              targetsToTry.push({ target: item.url, title: item.titulo, secs: item.secs });
+            }
+            if (targetsToTry.length >= 2) break;
+          }
+          if (targetsToTry.length > 0) break;
+        }
+      } catch (searchErr) {
+        console.warn(
+          `[STICKERAUDIO][YT-BRONXYS] ytsearch falhou (${sanitizeSecrets(searchErr?.message || searchErr)}); tentando direto via play.`
+        );
+      }
+    }
   }
-  if (!res || res.status < 200 || res.status >= 300) {
-    throw new SpiderXError(
+
+  if (targetsToTry.length === 0) {
+    targetsToTry.push({ target: rawQuery, title: rawQuery, secs: null });
+  }
+
+  let lastErr = null;
+  for (let tIdx = 0; tIdx < targetsToTry.length; tIdx++) {
+    const cand = targetsToTry[tIdx];
+    if (tIdx === 0 && cand.secs != null) {
+      console.log(
+        `[STICKERAUDIO][YT-BRONXYS] Vídeo curto escolhido: "${String(cand.title).slice(0, 55)}" (${Number.isFinite(cand.secs) ? `${cand.secs}s` : "?"})`
+      );
+    } else if (tIdx > 0) {
+      console.log(
+        `[STICKERAUDIO][YT-BRONXYS] Tentando 2º resultado do YouTube: "${String(cand.title).slice(0, 55)}"`
+      );
+    }
+
+    const endpoints = [reqapi.play(cand.target, true)];
+    if (typeof reqapi.play2 === "function") {
+      endpoints.push(reqapi.play2(cand.target, true));
+    }
+
+    for (let i = 0; i < endpoints.length; i++) {
+      const mediaUrl = endpoints[i];
+      const engineLabel = i === 0 ? "play" : "play2";
+      const attemptTimeout = tIdx === 0 ? 25000 : 20000;
+      let res;
+      try {
+        res = await httpClient.get(mediaUrl, {
+          timeout: attemptTimeout,
+          responseType: "arraybuffer",
+          maxContentLength: 25 * 1024 * 1024,
+          maxBodyLength: 25 * 1024 * 1024,
+          validateStatus: () => true,
+          headers: { "User-Agent": "Aleatory-Bot/9.0" },
+        });
+      } catch (err) {
+        const isTimeout =
+          err?.code === "ECONNABORTED" ||
+          err?.code === "ETIMEDOUT" ||
+          /timeout|timed out/i.test(String(err?.message || ""));
+        lastErr = new SpiderXError(
+          isTimeout ? "SPIDERX_TIMEOUT" : "SPIDERX_UNAVAILABLE",
+          isTimeout
+            ? "> ⏱️ *Não consegui baixar a tempo*\n> 💡 Tente outro nome ou mande o link/vídeo"
+            : "> ⚠️ *Erro ao buscar o áudio*\n> 💡 Tente novamente em instantes",
+          sanitizeSecrets(err?.message || err?.code || `bronxys_${engineLabel}_network_error`)
+        );
+        if (i < endpoints.length - 1) {
+          console.warn(
+            `[STICKERAUDIO][YT-BRONXYS] ${engineLabel} falhou (${lastErr.code}); tentando motor secundário play2...`
+          );
+        }
+        continue;
+      }
+
+      if (!res || res.status < 200 || res.status >= 300) {
+        lastErr = new SpiderXError(
+          "SPIDERX_UNAVAILABLE",
+          "> ⚠️ *Erro ao buscar o áudio*\n> 💡 Tente novamente em instantes",
+          `Bronxys ${engineLabel} HTTP ${res?.status || "N/A"}`
+        );
+        continue;
+      }
+
+      const buf = Buffer.isBuffer(res.data) ? res.data : Buffer.from(res.data || "");
+      const ct = String(res.headers?.["content-type"] || "").toLowerCase();
+      const head = buf.slice(0, 64).toString("utf8").trim().toLowerCase();
+      if (
+        buf.length < 1024 ||
+        ct.includes("text/html") ||
+        ct.includes("application/json") ||
+        head.startsWith("<!doctype") ||
+        head.startsWith("<html") ||
+        head.startsWith("{")
+      ) {
+        lastErr = new SpiderXError(
+          "SPIDERX_NOT_FOUND",
+          "> 🔎 *Áudio não encontrado*\n> 💡 Tente outro nome ou mande o link/vídeo"
+        );
+        continue;
+      }
+
+      return { buffer: buf, title: cand.title, duration: null, source: "bronxys_fallback" };
+    }
+  }
+
+  throw (
+    lastErr ||
+    new SpiderXError(
       "SPIDERX_UNAVAILABLE",
-      "🌐 *Não foi possível baixar o áudio do YouTube no momento.* Tente novamente em instantes.",
-      `Bronxys fallback HTTP ${res?.status || "N/A"}`
-    );
-  }
-  const buf = Buffer.isBuffer(res.data) ? res.data : Buffer.from(res.data || "");
-  const ct = String(res.headers?.["content-type"] || "").toLowerCase();
-  const head = buf.slice(0, 64).toString("utf8").trim().toLowerCase();
-  if (
-    buf.length < 1024 ||
-    ct.includes("text/html") ||
-    ct.includes("application/json") ||
-    head.startsWith("<!doctype") ||
-    head.startsWith("<html") ||
-    head.startsWith("{")
-  ) {
-    throw new SpiderXError(
-      "SPIDERX_NOT_FOUND",
-      "🔎 *Não foi possível extrair o áudio desse link/música.* Tente outro termo ou envie o vídeo/áudio diretamente."
-    );
-  }
-  return { buffer: buf, title: queryOrUrl, duration: null, source: "bronxys_fallback" };
+      "> ⚠️ *Erro ao buscar o áudio*\n> 💡 Tente novamente em instantes"
+    )
+  );
 }
 
 /**
@@ -1179,8 +1332,8 @@ async function downloadExternalMediaBuffer(
     throw new SpiderXError(
       isTimeout ? "SPIDERX_TIMEOUT" : "SPIDERX_UNAVAILABLE",
       isTimeout
-        ? `⏱️ *Tempo limite excedido* ao baixar a mídia do ${platformLabel}. Tente novamente em instantes.`
-        : `🌐 *Não foi possível baixar a mídia do ${platformLabel} no momento.* Tente novamente em instantes.`,
+        ? `> ⏱️ *Não consegui baixar do ${platformLabel} a tempo*\n> 💡 Tente novamente em instantes`
+        : `> ⚠️ *Erro ao baixar do ${platformLabel}*\n> 💡 Verifique se o vídeo é público`,
       sanitizeSecrets(err?.message || err?.code || `${platformLabel}_network_error`)
     );
   }
@@ -1188,7 +1341,7 @@ async function downloadExternalMediaBuffer(
   if (!res || res.status < 200 || res.status >= 300) {
     throw new SpiderXError(
       "SPIDERX_UNAVAILABLE",
-      `🌐 *Não foi possível baixar a mídia do ${platformLabel} no momento.* Verifique se o perfil/vídeo é público.`,
+      `> ⚠️ *Não consegui baixar do ${platformLabel}*\n> 💡 Verifique se o vídeo é público`,
       `${platformLabel} HTTP ${res?.status || "N/A"}`
     );
   }
@@ -1239,6 +1392,42 @@ async function downloadExternalMediaBuffer(
 }
 
 const TIKWM_SEARCH_ENDPOINT = "https://www.tikwm.com/api/feed/search";
+const TIKWM_MIN_INTERVAL_MS = 1250; // TikWM gratuito permite 1 req/s por IP
+let _tikwmQueueTail = Promise.resolve();
+let _tikwmLastReqAt = 0;
+
+/**
+ * Serializa chamadas de busca na TikWM respeitando 1 req/s para evitar
+ * bloqueios quando dois membros usam /sa no mesmo segundo.
+ */
+function runTikWmSerialized(fn, useQueue = true) {
+  if (!useQueue) return fn();
+  const run = async () => {
+    const elapsed = Date.now() - _tikwmLastReqAt;
+    if (_tikwmLastReqAt > 0 && elapsed < TIKWM_MIN_INTERVAL_MS) {
+      await new Promise((r) => setTimeout(r, TIKWM_MIN_INTERVAL_MS - elapsed));
+    }
+    _tikwmLastReqAt = Date.now();
+    return await fn();
+  };
+  const next = _tikwmQueueTail.then(run, run);
+  _tikwmQueueTail = next.catch(() => {});
+  return next;
+}
+
+/**
+ * Remove palavras genéricas de enchimento ("áudio", "audio", "som", "música")
+ * para uma 2ª tentativa mais limpa no TikTok caso o termo literal volte vazio.
+ */
+function cleanTikTokFallbackQuery(query) {
+  return String(query || "")
+    .replace(
+      /(?:^|(?<=[\s,.;:!?()\-]))(?:[aá]udios?|som|sons|m[uú]sicas?|efeito\s+sonoro)(?=$|[\s,.;:!?()\-])/gi,
+      " "
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function resolveTikWmUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== "string") return null;
@@ -1259,55 +1448,65 @@ function resolveTikWmUrl(rawUrl) {
  */
 async function searchAndFetchTikTokAudioByName(query, options = {}) {
   const httpClient = options.httpClient || axios;
+  const isMockHttp = Boolean(options.httpClient && options.httpClient !== axios);
   const reqapi = options.reqapi || null;
   const cleanQuery = String(query || "").trim();
   if (!cleanQuery) {
     throw new Error("TIKTOK_EMPTY_QUERY");
   }
 
-  const doSearch = async () => {
-    const res = await httpClient.get(TIKWM_SEARCH_ENDPOINT, {
-      params: { keywords: cleanQuery, count: 8, cursor: 0 },
-      timeout: 12000,
-      responseType: "arraybuffer",
-      validateStatus: () => true,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        Accept: "application/json",
-      },
-    });
+  const doSearch = async (keywords) => {
+    return await runTikWmSerialized(async () => {
+      const res = await httpClient.get(TIKWM_SEARCH_ENDPOINT, {
+        params: { keywords, count: 8, cursor: 0 },
+        timeout: 15000,
+        responseType: "arraybuffer",
+        validateStatus: () => true,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+          Accept: "application/json",
+        },
+      });
 
-    if (!res || res.status < 200 || res.status >= 300) {
-      throw new Error(`TIKTOK_SEARCH_HTTP_${res?.status || "ERR"}`);
-    }
+      if (!res || res.status < 200 || res.status >= 300) {
+        throw new Error(`TIKTOK_SEARCH_HTTP_${res?.status || "ERR"}`);
+      }
 
-    const rawText = Buffer.isBuffer(res.data)
-      ? res.data.toString("utf8")
-      : typeof res.data === "string"
-        ? res.data
-        : JSON.stringify(res.data || {});
+      const rawText = Buffer.isBuffer(res.data)
+        ? res.data.toString("utf8")
+        : typeof res.data === "string"
+          ? res.data
+          : JSON.stringify(res.data || {});
 
-    let parsed;
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      throw new Error("TIKTOK_SEARCH_NON_JSON");
+      let parsed;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch {
+        throw new Error("TIKTOK_SEARCH_NON_JSON");
+      }
+      return parsed;
+    }, !isMockHttp);
+  };
+
+  const searchWithRateRetry = async (keywords) => {
+    let parsed = await doSearch(keywords);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (
+        parsed &&
+        parsed.code !== 0 &&
+        /limit|rate|too many|1 request/i.test(String(parsed.msg || ""))
+      ) {
+        await new Promise((r) => setTimeout(r, isMockHttp ? 50 : 1250));
+        parsed = await doSearch(keywords);
+      } else {
+        break;
+      }
     }
     return parsed;
   };
 
-  let parsed = await doSearch();
-
-  // Retry único de 1.1s caso o limite gratuito de 1 req/s da TikWM seja atingido
-  if (
-    parsed &&
-    parsed.code !== 0 &&
-    /limit|rate|too many|1 request/i.test(String(parsed.msg || ""))
-  ) {
-    await new Promise((r) => setTimeout(r, 1100));
-    parsed = await doSearch();
-  }
+  let parsed = await searchWithRateRetry(cleanQuery);
 
   if (!parsed || parsed.code !== 0) {
     throw new Error(
@@ -1315,11 +1514,40 @@ async function searchAndFetchTikTokAudioByName(query, options = {}) {
     );
   }
 
-  const rawVideos = Array.isArray(parsed?.data?.videos)
+  let rawVideos = Array.isArray(parsed?.data?.videos)
     ? parsed.data.videos
     : Array.isArray(parsed?.data)
       ? parsed.data
       : [];
+
+  // Se não achou nada, tenta variações mais limpas (sem "áudio"/"som" e sem acentos)
+  if (!rawVideos.length) {
+    const altQueries = [];
+    const simplified = cleanTikTokFallbackQuery(cleanQuery);
+    if (simplified && simplified.toLowerCase() !== cleanQuery.toLowerCase()) {
+      altQueries.push(simplified);
+    }
+    const noAccents = normalizeCacheKey(simplified || cleanQuery);
+    if (
+      noAccents &&
+      noAccents !== cleanQuery.toLowerCase() &&
+      !altQueries.some((q) => q.toLowerCase() === noAccents)
+    ) {
+      altQueries.push(noAccents);
+    }
+
+    for (const altQ of altQueries) {
+      const retryParsed = await searchWithRateRetry(altQ);
+      if (retryParsed && retryParsed.code === 0) {
+        rawVideos = Array.isArray(retryParsed?.data?.videos)
+          ? retryParsed.data.videos
+          : Array.isArray(retryParsed?.data)
+            ? retryParsed.data
+            : [];
+        if (rawVideos.length > 0) break;
+      }
+    }
+  }
 
   if (!rawVideos.length) {
     throw new Error("TIKTOK_NO_RESULTS");
@@ -1353,11 +1581,12 @@ async function searchAndFetchTikTokAudioByName(query, options = {}) {
     throw new Error("TIKTOK_NO_PLAYABLE_CANDIDATES");
   }
 
-  // Preferir entradas com duração > 0 primeiro, mantendo a ordem de relevância
+  // Priorizar clipes curtos ideais para figurinha (2s–90s), mantendo ordem de relevância
   const ordered = [
-    ...candidates.filter((c) => c.duration > 0),
+    ...candidates.filter((c) => c.duration >= 2 && c.duration <= 90),
+    ...candidates.filter((c) => c.duration > 90 || (c.duration > 0 && c.duration < 2)),
     ...candidates.filter((c) => c.duration <= 0),
-  ].slice(0, 3);
+  ].slice(0, 4);
 
   let lastErr = null;
   for (const cand of ordered) {
@@ -1375,7 +1604,7 @@ async function searchAndFetchTikTokAudioByName(query, options = {}) {
           "TikTok",
           httpClient,
           MAX_VIDEO_BYTES,
-          15000
+          18000
         );
         return {
           buffer,
@@ -1657,10 +1886,12 @@ async function handleStickerAudioCommand({
     }
 
     // ─── MODO 2: Nome do áudio/meme/música + Imagem/Figurinha/GIF/Vídeo ───
-    // Prioridade: TikTok (melhor catálogo de áudios de memes, 0 créditos) -> fallback automático p/ YouTube
+    // Prioridade: Cache local -> TikTok (memes, 0 créditos) -> fallback automático p/ YouTube (vídeos curtos)
     else if (detected.mode === 2) {
       const isAnimVisual = detected.visualType === "video" || detected.visualType === "gif";
       const hasSpiderToken = Boolean(getSpiderConfig(settings).token);
+      const useCache = !httpClient || httpClient === axios;
+      const cachedAudio = useCache ? getCachedSearchAudio(detected.query) : null;
 
       const visualPromise = downloadMediaBuffer(
         detected.visualMsg,
@@ -1668,77 +1899,104 @@ async function handleStickerAudioCommand({
         downloadContentFromMessage,
         { maxBytes: isAnimVisual ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES, timeoutMs: isAnimVisual ? 60000 : 30000 }
       );
-      const tiktokSearchPromise = searchAndFetchTikTokAudioByName(detected.query, {
-        httpClient,
-        reqapi,
-      }).catch((ttErr) => ({ __tiktokError: ttErr }));
 
-      const [visualBuffer, tiktokResult] = await Promise.all([
-        visualPromise,
-        tiktokSearchPromise,
-      ]);
+      let resolvedAudio = false;
 
-      let resolvedFromTikTok = false;
-      if (!tiktokResult?.__tiktokError && Buffer.isBuffer(tiktokResult?.buffer)) {
+      if (cachedAudio) {
+        const visualBuffer = await visualPromise;
         try {
           processed = await processMusicStickerMode(
             visualBuffer,
             detected.visualType,
-            tiktokResult.buffer,
+            cachedAudio.buffer,
             2,
             metadata
           );
           processed.usesApiCredits = false;
-          processed.audioSource = "tiktok_search";
-          resolvedFromTikTok = true;
+          processed.audioSource = cachedAudio.source;
+          resolvedAudio = true;
           console.log(
-            `[STICKERAUDIO][MODO 2] Áudio obtido via TikTok: "${String(tiktokResult.title || detected.query).slice(0, 60)}" (${tiktokResult.buffer.length}B)`
+            `[STICKERAUDIO][MODO 2] Cache HIT (${cachedAudio.source}): "${detected.query.slice(0, 55)}"`
           );
-        } catch (ttProcErr) {
-          console.warn(
-            `[STICKERAUDIO][MODO 2] Áudio retornado pelo TikTok inválido (${sanitizeSecrets(ttProcErr?.message || ttProcErr)}); usando fallback YouTube...`
-          );
+        } catch {
+          _searchAudioCache.delete(normalizeCacheKey(detected.query));
         }
-      } else {
-        console.log(
-          `[STICKERAUDIO][MODO 2] TikTok indisponível/sem resultado (${sanitizeSecrets(tiktokResult?.__tiktokError?.message || "empty")}); usando fallback YouTube para "${detected.query.slice(0, 60)}"`
-        );
       }
 
-      if (!resolvedFromTikTok) {
-        let ytData;
-        if (!hasSpiderToken && reqapi) {
-          ytData = await fetchAudioViaBronxysFallback(detected.query, reqapi, httpClient);
-        } else {
+      if (!resolvedAudio) {
+        const tiktokSearchPromise = searchAndFetchTikTokAudioByName(detected.query, {
+          httpClient,
+          reqapi,
+        }).catch((ttErr) => ({ __tiktokError: ttErr }));
+
+        const [visualBuffer, tiktokResult] = await Promise.all([
+          visualPromise,
+          tiktokSearchPromise,
+        ]);
+
+        if (!tiktokResult?.__tiktokError && Buffer.isBuffer(tiktokResult?.buffer)) {
           try {
-            ytData = await fetchYouTubeAudioByName(detected.query, { settings, httpClient });
-          } catch (spiderErr) {
-            if (
-              reqapi &&
-              typeof reqapi.play === "function" &&
-              (spiderErr?.code === "SPIDERX_NO_CREDITS" ||
-                spiderErr?.code === "SPIDERX_UNAVAILABLE" ||
-                spiderErr?.code === "SPIDERX_TIMEOUT")
-            ) {
-              console.warn(
-                `[STICKERAUDIO][MODO 2] Spider X falhou (${spiderErr.code}); tentando fallback YouTube Bronxys...`
-              );
-              ytData = await fetchAudioViaBronxysFallback(detected.query, reqapi, httpClient);
-            } else {
-              throw spiderErr;
-            }
+            processed = await processMusicStickerMode(
+              visualBuffer,
+              detected.visualType,
+              tiktokResult.buffer,
+              2,
+              metadata
+            );
+            processed.usesApiCredits = false;
+            processed.audioSource = "tiktok_search";
+            resolvedAudio = true;
+            if (useCache) setCachedSearchAudio(detected.query, tiktokResult);
+            console.log(
+              `[STICKERAUDIO][MODO 2] Áudio obtido via TikTok: "${String(tiktokResult.title || detected.query).slice(0, 60)}" (${tiktokResult.buffer.length}B)`
+            );
+          } catch (ttProcErr) {
+            console.warn(
+              `[STICKERAUDIO][MODO 2] Áudio retornado pelo TikTok inválido (${sanitizeSecrets(ttProcErr?.message || ttProcErr)}); usando fallback YouTube...`
+            );
           }
+        } else {
+          console.log(
+            `[STICKERAUDIO][MODO 2] TikTok indisponível/sem resultado (${sanitizeSecrets(tiktokResult?.__tiktokError?.message || "empty")}); usando fallback YouTube para "${detected.query.slice(0, 60)}"`
+          );
         }
 
-        processed = await processMusicStickerMode(
-          visualBuffer,
-          detected.visualType,
-          ytData.buffer,
-          2,
-          metadata
-        );
-        processed.audioSource = ytData.source || "youtube";
-        processed.usesApiCredits = ytData.source !== "bronxys_fallback";
+        if (!resolvedAudio) {
+          let ytData;
+          if (!hasSpiderToken && reqapi) {
+            ytData = await fetchAudioViaBronxysFallback(detected.query, reqapi, httpClient);
+          } else {
+            try {
+              ytData = await fetchYouTubeAudioByName(detected.query, { settings, httpClient });
+            } catch (spiderErr) {
+              if (
+                reqapi &&
+                typeof reqapi.play === "function" &&
+                (spiderErr?.code === "SPIDERX_NO_CREDITS" ||
+                  spiderErr?.code === "SPIDERX_UNAVAILABLE" ||
+                  spiderErr?.code === "SPIDERX_TIMEOUT")
+              ) {
+                console.warn(
+                  `[STICKERAUDIO][MODO 2] Spider X falhou (${spiderErr.code}); tentando fallback YouTube Bronxys...`
+                );
+                ytData = await fetchAudioViaBronxysFallback(detected.query, reqapi, httpClient);
+              } else {
+                throw spiderErr;
+              }
+            }
+          }
+
+          processed = await processMusicStickerMode(
+            visualBuffer,
+            detected.visualType,
+            ytData.buffer,
+            2,
+            metadata
+          );
+          processed.audioSource = ytData.source || "youtube";
+          processed.usesApiCredits = ytData.source !== "bronxys_fallback";
+          if (useCache) setCachedSearchAudio(detected.query, ytData);
+        }
       }
     }
 
@@ -1778,19 +2036,13 @@ async function handleStickerAudioCommand({
     );
 
     if (code === "MEDIA_TOO_LARGE") {
-      await reply("❌ O arquivo enviado excede o tamanho máximo permitido.");
+      await reply("> ❌ *Arquivo muito grande*\n> 💡 Tente um arquivo menor");
     } else if (code === "MEDIA_TIMEOUT" || code === "MEDIA_PROCESS_TIMEOUT") {
-      await reply(
-        "⏱️ Tempo limite excedido ao processar a mídia. Tente com um arquivo menor."
-      );
+      await reply("> ⏱️ *Demorou demais pra processar*\n> 💡 Tente outro termo ou arquivo menor");
     } else if (code === "MISSING_CREDENTIALS" || code === "MEDIA_UNAVAILABLE") {
-      await reply(
-        "⚠️ Mídia indisponível ou expirada no WhatsApp. Reenvie e tente novamente."
-      );
+      await reply("> ⚠️ *Mídia expirada*\n> 💡 Reenvie e tente novamente");
     } else {
-      await reply(
-        "❌ Ocorreu um erro ao processar a figurinha com áudio. Verifique o arquivo e tente novamente."
-      );
+      await reply("> ❌ *Não consegui criar a figurinha*\n> 💡 Tente novamente com outro termo ou mídia");
     }
 
     return { ok: false, mode: detected.mode, code };
