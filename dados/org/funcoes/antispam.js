@@ -5,9 +5,8 @@ const { unwrapMessageContainer, isStickerMessage } = require("./wa_adapter.js");
 const DEFAULT_CONFIG = {
   // ── 1) Limite RÍGIDO de comandos: 1 comando a cada 5s por pessoa ──
   cmdCooldownMs: 5000,
-  // Se insistir e tentar enviar 4+ comandos bloqueados em 10s ignorando o aviso -> +1 ADV
-  cmdFloodWarnLimit: 4,
-  cmdFloodWindowMs: 10000,
+  // Aviso de "aguarde 5s" enviado no máximo 1x por usuário a cada 1 minuto (depois bloqueia em silêncio)
+  cmdNoticeCooldownMs: 60000,
 
   // ── 2) Flood por categoria -> apaga rajada + aplica ADV (3/3 = BAN) ──
   // Mensagens de texto comuns
@@ -34,15 +33,17 @@ const DEFAULT_CONFIG = {
   mixedWindowMs: 8000,
 
   // ── 3) Proteção anti-ban para o número do bot ──
+  // Aviso de flood enviado no máximo 1x por usuário a cada 1 minuto (se flodar de novo dentro de 1m, ignora em silêncio)
+  floodNoticeCooldownMs: 60000,
   // Pausa pós-ADV: impede aplicar 2 ADVs na mesma rajada e reduz respostas do bot
   floodGraceMs: 5000,
   // Limite de avisos de cooldown por grupo (mesmo se 10 pessoas spammarem juntas, o bot não floda respostas)
   groupNoticeCooldownMs: 2500,
   // Máximo de mensagens apagadas por rajada (com intervalo entre deletes no index.js)
   maxDeletePerBurst: 5,
-  // Controle de memória (container 1 GB)
+  // Controle de memória (container 1 GB — maior que 60s para preservar o cooldown de 1 min)
   maxTrackedUsers: 600,
-  staleEntryMs: 60000,
+  staleEntryMs: 120000,
 };
 
 const _userStates = new Map();
@@ -160,9 +161,10 @@ function getOrCreateState(stateKey, now, cfg = DEFAULT_CONFIG) {
     st = {
       events: [], // [{ ts, category, key, normText }]
       cmdCooldownUntil: 0,
-      cmdNotifiedInCooldown: false,
-      cmdBlockedTimestamps: [],
+      cmdNoticeMutedUntil: 0,
+      floodNoticeMutedUntil: 0,
       floodGraceUntil: 0,
+      floodGraceAllowDelete: false,
       lastSeen: now,
     };
     _userStates.set(stateKey, st);
@@ -179,13 +181,27 @@ function canSendGroupNotice(groupId, now, cfg) {
 }
 
 function triggerFloodWarn(st, now, cfg, kind, reason, items) {
+  // Se o bot já avisou esse usuário sobre flood há menos de 1 minuto, ignora silenciosamente (sem flood do bot!)
+  if (now < st.floodNoticeMutedUntil) {
+    st.events = [];
+    st.floodGraceUntil = now + cfg.floodGraceMs;
+    st.floodGraceAllowDelete = false;
+    return {
+      action: "flood_muted",
+      kind,
+      reason,
+      blockProcessing: true,
+    };
+  }
+
   const keysToDelete = items
     .map((x) => x.key)
     .filter(Boolean)
     .slice(-cfg.maxDeletePerBurst);
   st.events = [];
-  st.cmdBlockedTimestamps = [];
+  st.floodNoticeMutedUntil = now + cfg.floodNoticeCooldownMs;
   st.floodGraceUntil = now + cfg.floodGraceMs;
+  st.floodGraceAllowDelete = true;
   return {
     action: "warn",
     kind,
@@ -202,6 +218,7 @@ function triggerFloodWarn(st, now, cfg, kind, reason, items) {
  * - { action: "allow" }
  * - { action: "cmd_cooldown", remainingSec, shouldNotify, blockCommand: true }
  * - { action: "grace_skip", deleteKey, blockProcessing: true }
+ * - { action: "flood_muted", kind, reason, blockProcessing: true }
  * - { action: "warn", kind, reason, keysToDelete, blockProcessing: true }
  */
 function evaluateAntiSpam({
@@ -220,40 +237,17 @@ function evaluateAntiSpam({
   const stateKey = `${groupId}_${userKey}`;
   const st = getOrCreateState(stateKey, now, cfg);
 
-  // ── 1) Proteção RÍGIDA de comandos: 1 comando a cada 5 segundos por pessoa ──
+  // ── 1) Proteção RÍGIDA de comandos: 1 comando a cada 5s por pessoa (aviso no máx. 1x por minuto) ──
   if (isCmd) {
     if (now < st.cmdCooldownUntil) {
-      st.cmdBlockedTimestamps.push(now);
-      st.cmdBlockedTimestamps = st.cmdBlockedTimestamps.filter(
-        (ts) => now - ts < cfg.cmdFloodWindowMs
-      );
-
-      // Se insistir em spammar 4+ comandos bloqueados em 10s ignorando o cooldown -> ADV
-      if (
-        cfg.cmdFloodWarnLimit > 0 &&
-        st.cmdBlockedTimestamps.length >= cfg.cmdFloodWarnLimit &&
-        now >= st.floodGraceUntil
-      ) {
-        st.cmdCooldownUntil = now + cfg.cmdCooldownMs;
-        st.cmdNotifiedInCooldown = true;
-        return triggerFloodWarn(
-          st,
-          now,
-          cfg,
-          "cmd_flood",
-          "Flood de comandos",
-          msgKey ? [{ key: msgKey }] : []
-        );
-      }
-
       const remainingSec = Math.max(
         1,
         Math.ceil((st.cmdCooldownUntil - now) / 1000)
       );
       const shouldNotify =
-        !st.cmdNotifiedInCooldown && canSendGroupNotice(groupId, now, cfg);
+        now >= st.cmdNoticeMutedUntil && canSendGroupNotice(groupId, now, cfg);
       if (shouldNotify) {
-        st.cmdNotifiedInCooldown = true;
+        st.cmdNoticeMutedUntil = now + cfg.cmdNoticeCooldownMs;
       }
       return {
         action: "cmd_cooldown",
@@ -263,9 +257,8 @@ function evaluateAntiSpam({
       };
     }
 
-    // 1º comando liberado -> já inicia imediatamente o cooldown de 5s para o próximo comando!
+    // 1º comando liberado -> inicia imediatamente o cooldown de 5s (sem resetar o silêncio de 1 min do aviso)
     st.cmdCooldownUntil = now + cfg.cmdCooldownMs;
-    st.cmdNotifiedInCooldown = false;
     return { action: "allow" };
   }
 
@@ -273,7 +266,7 @@ function evaluateAntiSpam({
   if (now < st.floodGraceUntil) {
     return {
       action: "grace_skip",
-      deleteKey: msgKey || null,
+      deleteKey: st.floodGraceAllowDelete ? (msgKey || null) : null,
       blockProcessing: true,
     };
   }

@@ -3062,7 +3062,12 @@ const startAle = async (upsert, conn, qrcode, sessionStartTim) => {
             return; // Bloqueia execução do comando e evita spam de respostas do bot
           }
 
-          // 2) Mensagens residuais na mesma rajada pós-ADV -> apaga com throttle anti-ban e bloqueia processamento
+          // 2) Flood repetido dentro da janela de silêncio de 1 minuto -> ignora silenciosamente (sem flood do bot)
+          if (_asEval.action === "flood_muted") {
+            return;
+          }
+
+          // 3) Mensagens residuais na mesma rajada pós-ADV -> apaga com throttle anti-ban e bloqueia processamento
           if (_asEval.action === "grace_skip") {
             if (IS_DELETE && isBotGroupAdmins && _asEval.deleteKey) {
               const _lastAsDel = _antiSpamDeleteThrottle.get(from) || 0;
@@ -19576,11 +19581,11 @@ _Remove da lista negra global_
             const _asStatus = !_asAtual;
             const _asTxt = _asStatus
               ? `> 🛡️ *Anti-Spam Rígido ativado*\n` +
-                `> ⚡ Comandos: *1 a cada ${ANTISPAM_CFG.cmdCooldownMs / 1000}s* por pessoa _(insistir = ADV)_\n` +
+                `> ⚡ Comandos: *1 a cada ${ANTISPAM_CFG.cmdCooldownMs / 1000}s* por pessoa _(aviso 1x/min)_\n` +
                 `> 🔗 Links: *${ANTISPAM_CFG.linkLimit}* em *${ANTISPAM_CFG.linkWindowMs / 1000}s* · 🎬 Vídeos: *${ANTISPAM_CFG.videoLimit}* em *${ANTISPAM_CFG.videoWindowMs / 1000}s* → *ADV*\n` +
                 `> 🎭 Figurinhas: *${ANTISPAM_CFG.stickerLimit}* em *${ANTISPAM_CFG.stickerWindowMs / 1000}s* · 🖼️ Mídias: *${ANTISPAM_CFG.mediaLimit}* em *${ANTISPAM_CFG.mediaWindowMs / 1000}s* → *ADV*\n` +
                 `> 💬 Mensagens: *${ANTISPAM_CFG.msgLimit}* em *${ANTISPAM_CFG.msgWindowMs / 1000}s* _(ou ${ANTISPAM_CFG.repeatLimit} repetidas / ${ANTISPAM_CFG.mixedLimit} mistas)_ → *ADV*\n` +
-                `> 🚫 *3/3 ADV* = banimento automático · ADMs e dono isentos\n` +
+                `> 🔇 Avisos limitados a *1x por minuto/usuário* · *3/3 ADV* = ban · ADMs/dono isentos\n` +
                 `> 💡 Detalhes: \`${prefix}infoantispam\``
               : `> 🔓 *Anti-Spam desativado*`;
 
@@ -19671,12 +19676,13 @@ _Remove da lista negra global_
         case "infoantispan": {
           const _infoAsTxt =
             `🛡️ *Guia — Anti-Spam Rígido*\n\n` +
-            `> ⚡ *Comandos:* limite estrito de *1 comando a cada ${ANTISPAM_CFG.cmdCooldownMs / 1000}s* por pessoa _(tentar forçar ${ANTISPAM_CFG.cmdFloodWarnLimit}+ comandos bloqueados em ${ANTISPAM_CFG.cmdFloodWindowMs / 1000}s = +1 ADV)_\n` +
+            `> ⚡ *Comandos:* limite estrito de *1 comando a cada ${ANTISPAM_CFG.cmdCooldownMs / 1000}s* por pessoa _(aviso enviado no máx. 1x por minuto; depois bloqueia em silêncio)_\n` +
             `> 🔗 *Flood de links:* ${ANTISPAM_CFG.linkLimit} links em ${ANTISPAM_CFG.linkWindowMs / 1000}s → apaga e aplica *+1 ADV*\n` +
             `> 🎬 *Flood de vídeos:* ${ANTISPAM_CFG.videoLimit} vídeos em ${ANTISPAM_CFG.videoWindowMs / 1000}s → apaga e aplica *+1 ADV*\n` +
             `> 🎭 *Flood de figurinhas:* ${ANTISPAM_CFG.stickerLimit} figurinhas em ${ANTISPAM_CFG.stickerWindowMs / 1000}s _(normais, animadas e c/ áudio)_ → apaga e aplica *+1 ADV*\n` +
             `> 🖼️ *Flood de mídias:* ${ANTISPAM_CFG.mediaLimit} fotos/áudios/docs em ${ANTISPAM_CFG.mediaWindowMs / 1000}s → apaga e aplica *+1 ADV*\n` +
-            `> 💬 *Flood de mensagens:* ${ANTISPAM_CFG.msgLimit} msgs em ${ANTISPAM_CFG.msgWindowMs / 1000}s _(ou ${ANTISPAM_CFG.repeatLimit} repetidas / ${ANTISPAM_CFG.mixedLimit} mistas)_ → apaga e aplica *+1 ADV*\n\n` +
+            `> 💬 *Flood de mensagens:* ${ANTISPAM_CFG.msgLimit} msgs em ${ANTISPAM_CFG.msgWindowMs / 1000}s _(ou ${ANTISPAM_CFG.repeatLimit} repetidas / ${ANTISPAM_CFG.mixedLimit} mistas)_ → apaga e aplica *+1 ADV*\n` +
+            `> 🔇 *Anti-flood do bot:* após avisar um usuário, novos floods/excessos dele ficam em silêncio por *1 minuto*\n\n` +
             `*Punições (integradas ao \`${prefix}perfil\` e \`${prefix}advertidos\`):*\n` +
             `• 1ª vez: Advertência *1/3*\n` +
             `• 2ª vez: Advertência *2/3*\n` +

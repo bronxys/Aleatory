@@ -15,7 +15,7 @@
     "antilink2": false,
     "antifake": false,
     "Odelete": false,
-    "antispam": false,
+    "antispam": true,
     "anticatalogo": false,
     "sistemGold": false,
     "visuUnica": false,
@@ -102,6 +102,20 @@
     "autoresposta": false,
     "jogos": false,
     "bangp": false,
-    "iaAleatory": false
+    "iaAleatory": false,
+    "warnings": {
+      "139548487110696": {
+        "count": 1,
+        "reasons": [
+          {
+            "reason": "@139548487110696 pornografia próxima é ban",
+            "date": "2026-11-26T20:52:41.400Z"
+          }
+        ],
+        "jid": "139548487110696@lid",
+        "phoneNumber": "5511969283765@s.whatsapp.net",
+        "lastWarning": "2026-11-26T20:52:41.400Z"
+      }
+    }
   }
 ]
